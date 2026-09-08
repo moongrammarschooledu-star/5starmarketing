@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { MapPin, ArrowUpRight } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
-import { projects } from "@/lib/data/projects";
+import { projectsRepository } from "@/lib/repositories/projects.repository";
 import clsx from "clsx";
 
 const statusStyle: Record<string, string> = {
@@ -10,7 +10,9 @@ const statusStyle: Record<string, string> = {
   Upcoming: "bg-ink/10 text-ink",
 };
 
-export function Projects() {
+export async function Projects() {
+  const projects = await projectsRepository.list();
+
   return (
     <section id="projects" className="bg-surface-muted py-20 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -29,7 +31,7 @@ export function Projects() {
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden">
                 <Image
-                  src={project.image}
+                  src={project.images[0]}
                   alt={project.name}
                   fill
                   sizes="(min-width: 1024px) 300px, 90vw"

@@ -1,13 +1,16 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Ruler, MessageCircle, Star } from "lucide-react";
-import type { Property } from "@/lib/data/properties";
+import type { Property } from "@/lib/models/property";
 import { whatsappLink } from "@/lib/site";
+import { trackWhatsAppInquiryAction } from "@/lib/actions/inquiries.actions";
 
 const statusBadgeStyle: Record<string, string> = {
   Reserved: "bg-ink/80 text-white",
   Sold: "bg-ink/80 text-white",
-  Rented: "bg-ink/80 text-white",
+  Inactive: "bg-ink/80 text-white",
 };
 
 export function PropertyCard({ property }: { property: Property }) {
@@ -79,6 +82,7 @@ export function PropertyCard({ property }: { property: Property }) {
             )}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackWhatsAppInquiryAction(property.title, property.id)}
             className="flex items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >
             <MessageCircle className="h-3.5 w-3.5" /> Inquiry

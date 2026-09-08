@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Ruler, Phone, MessageCircle, CheckCircle2, Tag } from "lucide-react";
-import { properties, getPropertyById } from "@/lib/data/properties";
-import { site, whatsappLink } from "@/lib/site";
+import { ArrowLeft, MapPin, Ruler, Phone, CheckCircle2, Tag } from "lucide-react";
+import { propertiesRepository } from "@/lib/repositories/properties.repository";
+import { site } from "@/lib/site";
 import { PropertyGallery } from "@/components/PropertyGallery";
 import { PropertyInquiryForm } from "@/components/PropertyInquiryForm";
+import { PropertyWhatsAppButton } from "@/components/PropertyWhatsAppButton";
 
-export function generateStaticParams() {
-  return properties.map((p) => ({ id: p.id }));
-}
+// Properties are added/edited/removed live via the admin dashboard, so
+// this route is rendered per-request rather than pre-built at deploy time.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -17,7 +18,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const property = getPropertyById(id);
+  const property = await propertiesRepository.getById(id);
   if (!property) return { title: "Property Not Found" };
 
   return {
@@ -37,7 +38,7 @@ export default async function PropertyDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const property = getPropertyById(id);
+  const property = await propertiesRepository.getById(id);
   if (!property) notFound();
 
   const whatsappMessage = `Assalam-o-Alaikum, I am interested in ${property.title}. Please share complete details.`;
@@ -117,7 +118,7 @@ export default async function PropertyDetailsPage({
                 <iframe
                   title={`${property.title} location`}
                   src={`https://maps.google.com/maps?q=${encodeURIComponent(
-                    property.location
+                    property.mapsQuery || property.location
                   )}&z=14&output=embed`}
                   className="h-64 w-full"
                   loading="lazy"
@@ -139,14 +140,11 @@ export default async function PropertyDetailsPage({
                 >
                   <Phone className="h-4 w-4" /> Call
                 </a>
-                <a
-                  href={whatsappLink(whatsappMessage)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-full bg-success px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
-                >
-                  <MessageCircle className="h-4 w-4" /> WhatsApp
-                </a>
+                <PropertyWhatsAppButton
+                  propertyId={property.id}
+                  propertyTitle={property.title}
+                  message={whatsappMessage}
+                />
               </div>
             </div>
 

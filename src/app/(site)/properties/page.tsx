@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { PropertiesBrowser } from "@/components/PropertiesBrowser";
+import { propertiesRepository } from "@/lib/repositories/properties.repository";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Properties",
@@ -12,7 +15,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function PropertiesPage() {
+export default async function PropertiesPage() {
+  const properties = await propertiesRepository.list();
+
   return (
     <main className="bg-surface-muted">
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
@@ -35,7 +40,7 @@ export default function PropertiesPage() {
         </div>
 
         <div className="mt-10">
-          <PropertiesBrowser />
+          <PropertiesBrowser properties={properties} />
         </div>
       </div>
     </main>

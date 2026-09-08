@@ -2,10 +2,10 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
 import { PropertyCard } from "./PropertyCard";
-import { properties } from "@/lib/data/properties";
+import { propertiesRepository } from "@/lib/repositories/properties.repository";
 
-export function FeaturedProperties() {
-  const featured = properties.filter((p) => p.featured).slice(0, 3);
+export async function FeaturedProperties() {
+  const featured = await propertiesRepository.listFeatured(3);
 
   return (
     <section id="properties" className="bg-surface py-20 sm:py-24">

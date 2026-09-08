@@ -8,6 +8,11 @@ import { InvestmentSection } from "@/components/InvestmentSection";
 import { ConstructionSection } from "@/components/ConstructionSection";
 import { Contact } from "@/components/Contact";
 
+// Featured properties/projects/services come from the in-memory
+// repositories, which admins update live — this page must not be frozen
+// as a static snapshot from build time.
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
     <main>

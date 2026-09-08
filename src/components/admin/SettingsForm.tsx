@@ -1,0 +1,105 @@
+"use client";
+
+import { useActionState } from "react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import type { WebsiteSettings } from "@/lib/models/settings";
+import { updateSettingsAction, type SettingsFormState } from "@/lib/actions/settings.actions";
+import { ImageUploader } from "./ImageUploader";
+
+export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
+  const [state, formAction, pending] = useActionState<SettingsFormState, FormData>(updateSettingsAction, {});
+
+  return (
+    <form action={formAction} className="space-y-6">
+      <div className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-primary">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        These settings aren&apos;t wired to the live public site yet — the site still reads from
+        its static config. This page manages the record that STEP 4 (Supabase) will connect.
+      </div>
+
+      {state?.error && (
+        <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
+          <AlertCircle className="h-4.5 w-4.5 shrink-0" /> {state.error}
+        </div>
+      )}
+      {state?.success && (
+        <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/5 px-4 py-3 text-sm font-semibold text-success">
+          <CheckCircle2 className="h-4.5 w-4.5 shrink-0" /> Settings saved.
+        </div>
+      )}
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Business Information</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Business Name" name="businessName" required defaultValue={settings.businessName} />
+          <Field label="Tagline" name="tagline" defaultValue={settings.tagline} />
+          <Field label="Phone" name="phone" defaultValue={settings.phone} />
+          <Field label="WhatsApp" name="whatsapp" defaultValue={settings.whatsapp} />
+          <Field label="Email" name="email" type="email" defaultValue={settings.email} />
+          <Field label="Address" name="address" defaultValue={settings.address} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Social Media</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Facebook URL" name="facebookUrl" defaultValue={settings.facebookUrl} />
+          <Field label="Instagram URL" name="instagramUrl" defaultValue={settings.instagramUrl} />
+          <Field label="TikTok URL" name="tiktokUrl" defaultValue={settings.tiktokUrl} />
+          <Field label="YouTube URL" name="youtubeUrl" defaultValue={settings.youtubeUrl} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Logo &amp; Favicon</h2>
+        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-ink">Logo</span>
+            <ImageUploader name="logoUrl" initialImages={settings.logoUrl ? [settings.logoUrl] : []} />
+          </div>
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-ink">Favicon</span>
+            <ImageUploader name="faviconUrl" initialImages={settings.faviconUrl ? [settings.faviconUrl] : []} />
+          </div>
+        </div>
+      </section>
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+      >
+        {pending ? "Saving..." : "Save Settings"}
+      </button>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  name,
+  defaultValue,
+  required,
+  type = "text",
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string;
+  required?: boolean;
+  type?: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5 text-sm">
+      <span className="font-semibold text-ink">
+        {label} {required && <span className="text-primary">*</span>}
+      </span>
+      <input
+        type={type}
+        name={name}
+        defaultValue={defaultValue}
+        required={required}
+        className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
+      />
+    </label>
+  );
+}

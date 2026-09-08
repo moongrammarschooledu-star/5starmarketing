@@ -4,19 +4,19 @@ import { useMemo, useState } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import {
-  properties,
   propertyTypes,
   purposes,
   locationAreas,
   sizeCategories,
   paymentOptions,
   priceRanges,
+  type Property,
   type PropertyType,
   type Purpose,
   type LocationArea,
   type SizeCategory,
   type PaymentOption,
-} from "@/lib/data/properties";
+} from "@/lib/models/property";
 
 const ALL = "All";
 
@@ -38,7 +38,7 @@ const defaultFilters: FilterState = {
   paymentOption: ALL,
 };
 
-export function PropertiesBrowser() {
+export function PropertiesBrowser({ properties }: { properties: Property[] }) {
   const [pending, setPending] = useState<FilterState>(defaultFilters);
   const [applied, setApplied] = useState<FilterState>(defaultFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -59,7 +59,7 @@ export function PropertiesBrowser() {
       }
       return true;
     });
-  }, [applied]);
+  }, [applied, properties]);
 
   function handleSearch() {
     setApplied(pending);

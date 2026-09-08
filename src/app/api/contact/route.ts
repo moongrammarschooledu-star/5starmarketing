@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { inquiriesRepository } from "@/lib/repositories/inquiries.repository";
 
-// Validates and accepts contact-form submissions. It does not yet send an
-// email or SMS — wire this up to a provider (e.g. Resend, Nodemailer, or a
-// webhook to WhatsApp Business API) before relying on it for real leads.
+// Validates contact-form submissions and saves them as a real lead in the
+// admin dashboard (Inquiries). It does not yet email/SMS the admin —
+// wire that up to a provider (e.g. Resend, Nodemailer, or a webhook to the
+// WhatsApp Business API) once one is chosen; the lead is still captured
+// here either way.
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
@@ -30,8 +33,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid email address." }, { status: 400 });
   }
 
-  // TODO: forward this lead to email/CRM/WhatsApp once a provider is chosen.
-  console.log("New 5STAR.M contact-form lead:", { name, phone, email, message, property });
+  await inquiriesRepository.create({
+    name: name.trim(),
+    phone: phone.trim(),
+    email: typeof email === "string" && email.trim() ? email.trim() : undefined,
+    propertyTitle: typeof property === "string" && property.trim() ? property.trim() : undefined,
+    message: message.trim(),
+    source: "Contact Form",
+  });
 
   return NextResponse.json({ ok: true });
 }

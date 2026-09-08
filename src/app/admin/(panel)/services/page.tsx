@@ -1,9 +1,9 @@
-import { servicesRepository } from "@/lib/repositories/services.repository";
+import { serviceService } from "@/services/serviceService";
 import { ServicesManager } from "@/components/admin/ServicesManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminServicesPage() {
-  const services = await servicesRepository.list();
+  const services = await serviceService.list();
   return <ServicesManager services={services} />;
 }

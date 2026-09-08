@@ -11,23 +11,38 @@ import {
   FolderPlus,
   ExternalLink,
   ArrowRight,
+  AlertTriangle,
 } from "lucide-react";
-import { propertiesRepository } from "@/lib/repositories/properties.repository";
-import { inquiriesRepository } from "@/lib/repositories/inquiries.repository";
+import { propertyService } from "@/services/propertyService";
+import { inquiryService } from "@/services/inquiryService";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 
-// The in-memory repositories change on every admin action, so this page
-// must never be served from a cached static snapshot.
+// Data changes on every admin action, so this page must never be served
+// from a cached static snapshot.
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const [propertyStats, inquiryStats, recentProperties, recentInquiries] = await Promise.all([
-    propertiesRepository.stats(),
-    inquiriesRepository.stats(),
-    propertiesRepository.list().then((l) => l.slice(0, 5)),
-    inquiriesRepository.listRecent(5),
-  ]);
+  let propertyStats = { total: 0, available: 0, sold: 0, featured: 0 };
+  let inquiryStats = { total: 0, new: 0 };
+  let recentProperties: Awaited<ReturnType<typeof propertyService.list>> = [];
+  let recentInquiries: Awaited<ReturnType<typeof inquiryService.listRecent>> = [];
+  let loadError: string | null = null;
+
+  try {
+    const [pStats, iStats, properties, inquiries] = await Promise.all([
+      propertyService.stats(),
+      inquiryService.stats(),
+      propertyService.list().then((l) => l.slice(0, 5)),
+      inquiryService.listRecent(5),
+    ]);
+    propertyStats = pStats;
+    inquiryStats = iStats;
+    recentProperties = properties;
+    recentInquiries = inquiries;
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "Could not load dashboard data.";
+  }
 
   return (
     <div>
@@ -58,6 +73,12 @@ export default async function AdminDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {loadError && (
+        <div className="mt-6 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
+          <AlertTriangle className="h-4.5 w-4.5 shrink-0" /> {loadError}
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Total Properties" value={propertyStats.total} icon={Building2} />

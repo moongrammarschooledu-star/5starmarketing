@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { projectsRepository } from "@/lib/repositories/projects.repository";
+import { projectService } from "@/services/projectService";
 import type { ProjectStatus } from "@/lib/models/project";
 
 function revalidateAll() {
@@ -40,11 +40,15 @@ export async function saveProjectAction(
   const input = buildInput(formData);
   if (!input.name) return { error: "Project name is required." };
 
-  if (id) {
-    const updated = await projectsRepository.update(id, input);
-    if (!updated) return { error: "Project not found." };
-  } else {
-    await projectsRepository.create(input);
+  try {
+    if (id) {
+      const updated = await projectService.update(id, input);
+      if (!updated) return { error: "Project not found." };
+    } else {
+      await projectService.create(input);
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not save this project." };
   }
 
   revalidateAll();
@@ -52,6 +56,10 @@ export async function saveProjectAction(
 }
 
 export async function deleteProjectAction(id: string) {
-  await projectsRepository.remove(id);
-  revalidateAll();
+  try {
+    await projectService.remove(id);
+    revalidateAll();
+  } catch (e) {
+    console.error("deleteProjectAction failed:", e);
+  }
 }

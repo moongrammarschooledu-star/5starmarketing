@@ -1,11 +1,12 @@
-import { usersRepository } from "@/lib/repositories/users.repository";
-import { toPublicUser } from "@/lib/models/user";
+import { redirect } from "next/navigation";
+import { profileService } from "@/services/profileService";
 import { ProfileForm } from "@/components/admin/ProfileForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminProfilePage() {
-  const user = toPublicUser(await usersRepository.getAdmin());
+  const user = await profileService.getCurrentAdmin();
+  if (!user) redirect("/admin/login");
 
   return (
     <div className="mx-auto max-w-2xl">

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
-import { propertiesRepository } from "@/lib/repositories/properties.repository";
+import { propertyService } from "@/services/propertyService";
 import { PropertiesTable } from "@/components/admin/PropertiesTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPropertiesPage() {
-  const properties = await propertiesRepository.list();
+  const properties = await propertyService.list();
 
   return (
     <div>

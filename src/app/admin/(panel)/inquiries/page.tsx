@@ -1,10 +1,10 @@
-import { inquiriesRepository } from "@/lib/repositories/inquiries.repository";
+import { inquiryService } from "@/services/inquiryService";
 import { InquiriesTable } from "@/components/admin/InquiriesTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminInquiriesPage() {
-  const inquiries = await inquiriesRepository.list();
+  const inquiries = await inquiryService.list();
 
   return (
     <div>

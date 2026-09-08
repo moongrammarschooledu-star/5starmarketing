@@ -162,7 +162,8 @@ export function Contact() {
 
             {status === "success" && (
               <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-success">
-                <CheckCircle2 className="h-4 w-4" /> Thank you — we&apos;ll get back to you shortly.
+                <CheckCircle2 className="h-4 w-4" /> Thank you! Your inquiry has been received.
+                Our team will contact you soon.
               </p>
             )}
             {status === "error" && (

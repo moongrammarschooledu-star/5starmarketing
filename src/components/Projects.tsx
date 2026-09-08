@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { MapPin, ArrowUpRight } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
-import { projectsRepository } from "@/lib/repositories/projects.repository";
+import { projectService } from "@/services/projectService";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
 import clsx from "clsx";
 
 const statusStyle: Record<string, string> = {
@@ -11,7 +12,16 @@ const statusStyle: Record<string, string> = {
 };
 
 export async function Projects() {
-  const projects = await projectsRepository.list();
+  let projects: Awaited<ReturnType<typeof projectService.list>> = [];
+  if (isSupabaseConfigured()) {
+    try {
+      projects = await projectService.list();
+    } catch (e) {
+      console.error("Projects: failed to load projects:", e);
+    }
+  }
+
+  if (projects.length === 0) return null;
 
   return (
     <section id="projects" className="bg-surface-muted py-20 sm:py-24">

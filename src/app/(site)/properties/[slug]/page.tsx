@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Ruler, Phone, CheckCircle2, Tag } from "lucide-react";
-import { propertiesRepository } from "@/lib/repositories/properties.repository";
+import { propertyService } from "@/services/propertyService";
 import { site } from "@/lib/site";
 import { PropertyGallery } from "@/components/PropertyGallery";
 import { PropertyInquiryForm } from "@/components/PropertyInquiryForm";
@@ -15,10 +15,10 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const property = await propertiesRepository.getById(id);
+  const { slug } = await params;
+  const property = await propertyService.getBySlug(slug);
   if (!property) return { title: "Property Not Found" };
 
   return {
@@ -35,10 +35,10 @@ export async function generateMetadata({
 export default async function PropertyDetailsPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const property = await propertiesRepository.getById(id);
+  const { slug } = await params;
+  const property = await propertyService.getBySlug(slug);
   if (!property) notFound();
 
   const whatsappMessage = `Assalam-o-Alaikum, I am interested in ${property.title}. Please share complete details.`;
@@ -149,7 +149,7 @@ export default async function PropertyDetailsPage({
             </div>
 
             <div className="mt-5">
-              <PropertyInquiryForm propertyTitle={property.title} />
+              <PropertyInquiryForm propertyId={property.id} propertyTitle={property.title} />
             </div>
           </div>
         </div>

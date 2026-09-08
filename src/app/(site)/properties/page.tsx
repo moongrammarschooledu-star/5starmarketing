@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Building2 } from "lucide-react";
 import { PropertiesBrowser } from "@/components/PropertiesBrowser";
-import { propertiesRepository } from "@/lib/repositories/properties.repository";
+import { propertyService } from "@/services/propertyService";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,16 @@ export const metadata: Metadata = {
 };
 
 export default async function PropertiesPage() {
-  const properties = await propertiesRepository.list();
+  let properties: Awaited<ReturnType<typeof propertyService.list>> = [];
+  let loadError = !isSupabaseConfigured();
+
+  if (!loadError) {
+    try {
+      properties = await propertyService.list();
+    } catch {
+      loadError = true;
+    }
+  }
 
   return (
     <main className="bg-surface-muted">
@@ -33,14 +44,21 @@ export default async function PropertiesPage() {
             Explore houses, flats, plots and commercial properties with 5STAR.M
             Estate &amp; Builders.
           </p>
-          <p className="mt-2 text-xs font-medium text-muted-foreground">
-            These are demo listings for illustration only — contact us on
-            WhatsApp for real, current availability.
-          </p>
         </div>
 
         <div className="mt-10">
-          <PropertiesBrowser properties={properties} />
+          {loadError ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
+              <Building2 className="mb-3 h-8 w-8 text-muted-foreground" />
+              <p className="font-semibold text-ink">Properties are temporarily unavailable</p>
+              <p className="mt-1 max-w-sm text-sm text-muted">
+                We couldn&apos;t load listings right now — please check back shortly, or contact
+                us directly on WhatsApp.
+              </p>
+            </div>
+          ) : (
+            <PropertiesBrowser properties={properties} />
+          )}
         </div>
       </div>
     </main>

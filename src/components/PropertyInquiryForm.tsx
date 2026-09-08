@@ -5,7 +5,13 @@ import { Send, CheckCircle2 } from "lucide-react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-export function PropertyInquiryForm({ propertyTitle }: { propertyTitle: string }) {
+export function PropertyInquiryForm({
+  propertyId,
+  propertyTitle,
+}: {
+  propertyId: string;
+  propertyTitle: string;
+}) {
   const [status, setStatus] = useState<Status>("idle");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -18,7 +24,7 @@ export function PropertyInquiryForm({ propertyTitle }: { propertyTitle: string }
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, property: propertyTitle }),
+        body: JSON.stringify({ ...data, property: propertyTitle, propertyId }),
       });
       if (!res.ok) throw new Error("Request failed");
       setStatus("success");
@@ -70,7 +76,8 @@ export function PropertyInquiryForm({ propertyTitle }: { propertyTitle: string }
 
       {status === "success" && (
         <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-success">
-          <CheckCircle2 className="h-4 w-4" /> Thank you — we&apos;ll get back to you shortly.
+          <CheckCircle2 className="h-4 w-4" /> Thank you! Your inquiry has been received. Our
+          team will contact you soon.
         </p>
       )}
       {status === "error" && (

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { propertiesRepository } from "@/lib/repositories/properties.repository";
+import { propertyService } from "@/services/propertyService";
 import type {
   PaymentOption,
   Property,
@@ -13,12 +13,16 @@ import type {
   SizeCategory,
 } from "@/lib/models/property";
 
-function revalidateAll(id?: string) {
+function revalidateAll(slug?: string) {
   revalidatePath("/admin/dashboard");
   revalidatePath("/admin/properties");
   revalidatePath("/properties");
   revalidatePath("/");
-  if (id) revalidatePath(`/properties/${id}`);
+  if (slug) revalidatePath(`/properties/${slug}`);
+}
+
+function errorMessage(e: unknown, fallback: string) {
+  return e instanceof Error ? e.message : fallback;
 }
 
 function buildInputFromForm(formData: FormData) {
@@ -56,7 +60,9 @@ function buildInputFromForm(formData: FormData) {
     description: String(formData.get("description") ?? "").trim(),
     features,
     amenities,
-    images: images.length ? images : ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop"],
+    images: images.length
+      ? images
+      : ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop"],
   };
 }
 
@@ -71,8 +77,14 @@ export async function createPropertyAction(
   const input = buildInputFromForm(formData);
   if (!input.title) return { error: "Property title is required." };
 
-  const property = await propertiesRepository.create(input);
-  revalidateAll(property.id);
+  let property;
+  try {
+    property = await propertyService.create(input);
+  } catch (e) {
+    return { error: errorMessage(e, "Could not create this property. Please try again.") };
+  }
+
+  revalidateAll(property.slug);
   redirect("/admin/properties");
 }
 
@@ -84,26 +96,43 @@ export async function updatePropertyAction(
   const input = buildInputFromForm(formData);
   if (!input.title) return { error: "Property title is required." };
 
-  const updated = await propertiesRepository.update(id, input);
+  let updated;
+  try {
+    updated = await propertyService.update(id, input);
+  } catch (e) {
+    return { error: errorMessage(e, "Could not update this property. Please try again.") };
+  }
   if (!updated) return { error: "Property not found." };
 
-  revalidateAll(id);
+  revalidateAll(updated.slug);
   redirect("/admin/properties");
 }
 
 export async function deletePropertyAction(id: string) {
-  await propertiesRepository.remove(id);
-  revalidateAll(id);
+  try {
+    await propertyService.remove(id);
+    revalidateAll();
+  } catch (e) {
+    console.error("deletePropertyAction failed:", e);
+  }
 }
 
 export async function toggleFeaturedAction(id: string) {
-  const property = await propertiesRepository.getById(id);
-  if (!property) return;
-  await propertiesRepository.update(id, { featured: !property.featured });
-  revalidateAll(id);
+  try {
+    const property = await propertyService.getById(id);
+    if (!property) return;
+    await propertyService.update(id, { featured: !property.featured });
+    revalidateAll(property.slug);
+  } catch (e) {
+    console.error("toggleFeaturedAction failed:", e);
+  }
 }
 
 export async function changeStatusAction(id: string, status: Property["status"]) {
-  await propertiesRepository.update(id, { status });
-  revalidateAll(id);
+  try {
+    const updated = await propertyService.update(id, { status });
+    revalidateAll(updated?.slug);
+  } catch (e) {
+    console.error("changeStatusAction failed:", e);
+  }
 }

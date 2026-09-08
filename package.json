@@ -9,7 +9,8 @@
     "lint": "node node_modules/eslint/bin/eslint.js ."
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.47.10",
     "clsx": "^2.1.1",
     "lucide-react": "^0.469.0",
     "next": "^15.5.4",
@@ -20,7 +21,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -11,7 +11,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
-import { servicesRepository } from "@/lib/repositories/services.repository";
+import { serviceService } from "@/services/serviceService";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 const iconMap: Record<string, LucideIcon> = {
   Home,
@@ -25,7 +26,16 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 export async function Services() {
-  const services = await servicesRepository.listEnabled();
+  let services: Awaited<ReturnType<typeof serviceService.listEnabled>> = [];
+  if (isSupabaseConfigured()) {
+    try {
+      services = await serviceService.listEnabled();
+    } catch (e) {
+      console.error("Services: failed to load services:", e);
+    }
+  }
+
+  if (services.length === 0) return null;
 
   return (
     <section id="services" className="bg-surface py-20 sm:py-24">

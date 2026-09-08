@@ -1,128 +1,185 @@
-# 5STAR.M Estate & Builders — Website
+# 5STAR.M Estate & Builders — Website + Admin Dashboard
 
-A complete, responsive real-estate & construction business website for
-**5STAR.M Estate & Builders**, built with Next.js, TypeScript and Tailwind CSS.
+A complete real-estate & construction business website with a full admin
+dashboard, backed by **Supabase** (Auth + Postgres + Storage).
 
 ## 1. How to run the project
-
-You need [Node.js](https://nodejs.org) 18 or newer installed.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open **http://localhost:3000** in your browser. The site auto-reloads
-whenever you save a file.
+Then open **http://localhost:3000**. Public site: `/`, `/properties`,
+`/properties/[slug]`. Admin dashboard: `/admin/login`.
 
-> Note: the `&` in this folder's name breaks Windows' normal `npm`
-> shortcuts for running local tools, so the scripts in `package.json` call
-> `next`/`eslint` directly via `node` instead of the usual shorthand. You
-> don't need to do anything differently — `npm run dev` just works.
+To build for production: `npm run build` then `npm run start`.
 
-To build for production:
+## 2. Connecting Supabase (required)
 
-```bash
-npm run build
-npm run start
+The site and dashboard run on Supabase for authentication, the database and
+image storage. Without it configured, the public site still renders (with
+empty/error states instead of listings) and `/admin/*` always redirects to
+login — nothing crashes, but nothing works either. Here's how to turn it on.
+
+### Step 1 — Create a Supabase project
+
+Go to [supabase.com](https://supabase.com), create a free project, and wait
+for it to finish provisioning (~2 minutes).
+
+### Step 2 — Run the database migration
+
+Open your project's **SQL Editor** (left sidebar) → **New query**, paste
+the entire contents of [`supabase/schema.sql`](supabase/schema.sql), and
+click **Run**. This creates all 6 tables, indexes, RLS policies, the
+`property-images` Storage bucket and its policies. It's safe to re-run.
+
+Optionally, also run [`supabase/seed.sql`](supabase/seed.sql) the same way
+to add demo listings/projects/services for testing — every row is clearly
+titled `DEMO — ...` so it's obvious what to delete once you add real data.
+
+### Step 3 — Get your API keys
+
+In your Supabase project: **Settings → API**. Copy:
+
+- **Project URL**
+- **anon / public** key (⚠️ not the `service_role` key — never use that
+  one here or anywhere client-reachable)
+
+### Step 4 — Set the two environment variables
+
+Copy `.env.local.example` to `.env.local` and fill in:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-## 2. How to change the logo
+Restart `npm run dev` after saving.
 
-The logo is a hand-coded, scalable icon (not an image file) so it stays sharp
-at every size and works on both light and dark backgrounds.
+### Step 5 — Create your first admin user
 
-- Edit **`src/components/Logo.tsx`**:
-  - `LogoIcon` — the roofline + hammer mark (SVG shapes).
-  - `Logo` — the icon plus the "5 STAR.M / ESTATE & BUILDERS" wordmark.
-- The browser-tab favicon is **`src/app/icon.svg`** — a matching, simplified
-  version of the same mark.
+There's no public sign-up page (intentionally — this is a private admin
+dashboard). Create your login in the Supabase dashboard:
 
-If you'd rather use your original logo **image file** instead of the coded
-version: drop the file into `public/images/logo.png`, then replace the
-contents of `Logo.tsx` with a simple `<Image src="/images/logo.png" ... />`.
+1. **Authentication → Users → Add user → Create new user**.
+2. Enter your email and a password, and check **Auto Confirm User**.
+3. That's it — a matching row in `admin_profiles` is created automatically
+   (see the `on_auth_user_created` trigger in `schema.sql`).
+4. Go to `/admin/login` on your site and sign in with that email/password.
 
-## 3. How to change business information
+To add a second admin later, repeat the same steps with another email.
 
-Everything — phone, WhatsApp number, email, address, director name, tagline,
-social links — lives in **one file**:
+## 3. Environment variables required
 
-`src/lib/site.ts`
+Exactly two, both safe to expose to the browser (the `NEXT_PUBLIC_` prefix
+is intentional — access control comes from Row Level Security, not from
+keeping these secret):
 
-Edit the values there and they update everywhere on the site automatically
-(navbar, footer, contact section, WhatsApp links, click-to-call links).
+| Variable | Where to find it |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon/public key |
 
-## 4. How to add / edit properties
+The `service_role` key is never used anywhere in this codebase.
 
-Property listings are demo data in **`src/lib/data/properties.ts`**.
+## 4. Storage bucket
 
-Each property is one object in the `properties` array:
+`supabase/schema.sql` creates a bucket named **`property-images`**
+(public read, authenticated write) and its policies automatically — no
+manual setup needed in the Storage UI. Property/project images and the
+Settings page's logo/favicon uploads all go through this one bucket.
+Admins upload from the dashboard (file picker with instant preview, or a
+pasted hosted URL); files are validated server-side (JPEG/PNG/WEBP/GIF
+only, 5MB max) before upload.
 
-```ts
-{
-  id: "unique-id",
-  title: "Property Title",
-  type: "House", // "House" | "Flat" | "Plot" | "Commercial"
-  purpose: "Buy", // "Buy" | "Sell" | "Invest"
-  location: "Johar Town, Lahore",
-  size: "10 Marla",
-  price: "PKR 2.5 Crore", // or "Price on Request"
-  paymentOption: "Cash / Easy Installments",
-  description: "Short description...",
-  image: "https://...", // property photo URL
-}
-```
+## 5. Authentication
 
-Copy an existing object, change the values, and it will appear automatically
-in the Properties section and its filters.
+- **Real Supabase Auth** (email + password) — no custom auth, no
+  passwords stored in this app's own database, no localStorage tricks.
+- `middleware.ts` refreshes the session on every request and redirects
+  anyone without a valid session away from `/admin/*` (except
+  `/admin/login`) straight to `/admin/login?redirect=<original path>`.
+- Logout (`/admin/profile` sidebar → Logout) calls `supabase.auth.signOut()`
+  and clears the session cookie.
+- Change your password anytime from `/admin/profile`.
 
-## 5. How to add / edit projects
+## 6. How to add properties / projects / services
 
-Project portfolio data is in **`src/lib/data/projects.ts`** — same pattern:
-copy an object in the `projects` array and edit its fields.
+Everything is managed from the admin dashboard — no code edits needed:
 
-## 6. How to change images
+- **Properties**: `/admin/properties/new`, or edit/delete from
+  `/admin/properties`. New properties get a unique slug generated from the
+  title automatically and immediately appear on the public `/properties`
+  page and (if marked Featured) on the homepage.
+- **Projects**: `/admin/projects` → Add Project.
+- **Services**: `/admin/services` → Add Service, or toggle Enable/Disable
+  to control what shows on the homepage.
+- **Website Settings**: `/admin/settings` (business info, socials,
+  logo/favicon).
 
-- **Hero, About, Investment, Construction section photos**: each lives
-  directly inside its component file (`src/components/Hero.tsx`,
-  `About.tsx`, `InvestmentSection.tsx`, `ConstructionSection.tsx`) as an
-  `<Image src="...">`. Replace the `src` with your own photo URL, or put a
-  file in `public/images/` and use `src="/images/your-file.jpg"`.
-- **Property/project photos**: edit the `image` field in
-  `src/lib/data/properties.ts` / `projects.ts`.
-- Demo photos currently come from Unsplash — swap them for your own
-  professional property/site photography as it becomes available.
+## 7. Testing checklist
 
-## 7. Contact form
+Run through this after connecting your Supabase project:
 
-The form on the Contact section posts to `src/app/api/contact/route.ts`,
-which validates the submission and logs it to the server console. **It does
-not yet email or SMS you the lead** — connect it to a provider such as
-[Resend](https://resend.com), Nodemailer, or a CRM webhook before relying on
-it for real inquiries. Until then, WhatsApp is the fastest channel and is
-wired up throughout the site.
+- [ ] `/admin/login` → log in with your Supabase user → lands on `/admin/dashboard`
+- [ ] Visiting `/admin/dashboard` while logged out redirects to `/admin/login`
+- [ ] `/admin/properties/new` → fill the form, upload 1–2 images → **Create Property** → redirected to the list, new row appears
+- [ ] The new property appears on `/properties` and, if Featured, on `/`
+- [ ] Open the property's public page at `/properties/<slug>` — gallery, details, map, "Request Property Details" form all render
+- [ ] Submit that inquiry form → success message shown → appears in `/admin/inquiries`
+- [ ] Change the inquiry's status in the dashboard → persists on reload
+- [ ] Edit the property (price/status/images) → change reflects on the public page
+- [ ] Toggle Featured / change Status from the properties table → updates immediately
+- [ ] Delete a property → confirmation modal appears → confirms → removed from both admin and public
+- [ ] Logout → redirected to `/admin/login`, protected routes now redirect again
+- [ ] Test on mobile width — sidebar becomes a drawer, forms/tables stay usable
+- [ ] Click a WhatsApp button on a property → opens WhatsApp **and** logs a lead in `/admin/inquiries`
+- [ ] Click a phone number → triggers a call on mobile
+- [ ] Submit the homepage contact form with an invalid email → validation error, no submission
 
-## 8. How to deploy on Vercel
+I verified the build compiles cleanly and every page renders without
+crashing (including with Supabase deliberately unconfigured, to confirm
+the empty/error states work) — but I could not run this checklist against
+real data myself, since I don't have your Supabase credentials. Please run
+through it once you've connected your project.
 
-1. Push this project to a GitHub repository.
-2. Go to [vercel.com](https://vercel.com), click **New Project**, and import
-   the repository.
-3. Framework preset: **Next.js** (auto-detected). No extra configuration is
-   required for the default build.
-4. Click **Deploy**. Vercel will give you a live URL (e.g.
-   `5starm.vercel.app`) — you can later attach your own domain
-   (e.g. `5starm.com`) under Project → Settings → Domains.
+## 8. Deploying to Vercel
+
+1. Push this repo to GitHub (already done if you're reading this from the
+   repo).
+2. In Vercel: **New Project** → import the repo → framework auto-detects
+   as Next.js.
+3. **Before deploying**, add the same two environment variables under
+   **Settings → Environment Variables**:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Deploy. On future pushes to `main`, Vercel redeploys automatically.
+5. In Supabase, no extra config is needed for a Vercel domain — RLS
+   doesn't care about origin. (If you later add Supabase Auth email
+   redirects, set the Site URL under Supabase → Authentication → URL
+   Configuration to your Vercel domain.)
 
 ## Project structure
 
 ```
 src/
   app/
-    layout.tsx        SEO metadata, fonts
-    page.tsx           assembles all sections
-    api/contact/        contact form endpoint
-  components/           one file per section (Navbar, Hero, About, ...)
+    (site)/            Public site — layout with Navbar/Footer, home, /properties, /properties/[slug]
+    admin/
+      login/             Public login page
+      (panel)/           Everything behind auth — dashboard, properties, inquiries, projects, services, settings, profile
+    api/contact/         Public contact-form endpoint → inquiries table
+  middleware.ts         Supabase session refresh + /admin/* route protection
+  components/            UI components (admin/ subfolder for dashboard-only pieces)
   lib/
-    site.ts             business info (single source of truth)
-    data/                properties.ts, projects.ts, services.ts
+    supabase/            client.ts (browser), server.ts (Server Components/Actions), middleware.ts
+    models/               TypeScript types: Property, Project, Service, Inquiry, AdminUser, WebsiteSettings
+    actions/              Server Actions — call services/, never Supabase directly
+    site.ts               Static fallback business info used by components that need synchronous values
+  services/               propertyService, projectService, serviceService, inquiryService, settingsService, profileService
+                           — the only files that talk to Supabase; swap internals here if you ever change backends
+supabase/
+  schema.sql             Full migration: tables, indexes, RLS policies, storage bucket — run this first
+  seed.sql                Optional demo data, clearly marked — run this second (optional)
 ```

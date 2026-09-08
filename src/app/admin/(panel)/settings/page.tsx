@@ -1,10 +1,10 @@
-import { settingsRepository } from "@/lib/repositories/settings.repository";
+import { settingsService } from "@/services/settingsService";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  const settings = await settingsRepository.get();
+  const settings = await settingsService.get();
 
   return (
     <div className="mx-auto max-w-3xl">

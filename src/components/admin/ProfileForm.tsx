@@ -3,10 +3,10 @@
 import { useActionState, useState } from "react";
 import Image from "next/image";
 import { AlertCircle, CheckCircle2, UserCircle } from "lucide-react";
-import type { AdminUserPublic } from "@/lib/models/user";
+import type { AdminUser } from "@/lib/models/user";
 import { updateProfileAction, type ProfileFormState } from "@/lib/actions/profile.actions";
 
-export function ProfileForm({ user }: { user: AdminUserPublic }) {
+export function ProfileForm({ user }: { user: AdminUser }) {
   const [state, formAction, pending] = useActionState<ProfileFormState, FormData>(updateProfileAction, {});
   const [preview, setPreview] = useState(user.profileImage);
 
@@ -79,6 +79,10 @@ export function ProfileForm({ user }: { user: AdminUserPublic }) {
               defaultValue={user.email}
               className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
             />
+            <span className="text-xs text-muted">
+              Changing this sends a confirmation link to the new address — it won&apos;t take
+              effect until you click it.
+            </span>
           </label>
         </div>
         <div className="mt-3 text-xs text-muted">
@@ -89,16 +93,7 @@ export function ProfileForm({ user }: { user: AdminUserPublic }) {
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="font-heading text-base font-bold text-ink">Change Password</h2>
         <p className="mt-1 text-xs text-muted">Leave blank to keep your current password.</p>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-semibold text-ink">Current Password</span>
-            <input
-              type="password"
-              name="currentPassword"
-              autoComplete="current-password"
-              className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
-            />
-          </label>
+        <div className="mt-4">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-semibold text-ink">New Password</span>
             <input
@@ -106,7 +101,7 @@ export function ProfileForm({ user }: { user: AdminUserPublic }) {
               name="newPassword"
               autoComplete="new-password"
               minLength={8}
-              className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
+              className="w-full max-w-sm rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
             />
           </label>
         </div>

@@ -71,7 +71,7 @@ export function PropertyCard({ property }: { property: Property }) {
 
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <Link
-            href={`/properties/${property.id}`}
+            href={`/properties/${property.slug}`}
             className="flex items-center justify-center rounded-full border-2 border-ink/15 px-3 py-2.5 text-xs font-bold text-ink transition-colors hover:border-primary hover:text-primary"
           >
             View Details

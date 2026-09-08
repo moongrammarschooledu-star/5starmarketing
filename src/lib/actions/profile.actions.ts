@@ -1,8 +1,7 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { usersRepository } from "@/lib/repositories/users.repository";
+import { profileService } from "@/services/profileService";
 
 export interface ProfileFormState {
   error?: string;
@@ -16,28 +15,31 @@ export async function updateProfileAction(
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const profileImage = String(formData.get("profileImage") ?? "").trim();
-  const currentPassword = String(formData.get("currentPassword") ?? "");
   const newPassword = String(formData.get("newPassword") ?? "");
 
   if (!name || !email) return { error: "Name and email are required." };
+  if (newPassword && newPassword.length < 8) {
+    return { error: "New password must be at least 8 characters." };
+  }
 
-  const user = await usersRepository.getAdmin();
+  try {
+    const current = await profileService.getCurrentAdmin();
+    if (!current) return { error: "You are not signed in." };
 
-  if (newPassword) {
-    if (!currentPassword) {
-      return { error: "Enter your current password to set a new one." };
+    await profileService.updateProfile({
+      name,
+      title: current.title,
+      profileImage: profileImage || undefined,
+    });
+
+    if (email !== current.email) {
+      await profileService.updateEmail(email);
     }
-    const matches = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!matches) {
-      return { error: "Current password is incorrect." };
+    if (newPassword) {
+      await profileService.updatePassword(newPassword);
     }
-    if (newPassword.length < 8) {
-      return { error: "New password must be at least 8 characters." };
-    }
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    await usersRepository.update({ name, email, profileImage: profileImage || undefined, passwordHash });
-  } else {
-    await usersRepository.update({ name, email, profileImage: profileImage || undefined });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not update your profile." };
   }
 
   revalidatePath("/admin/profile");

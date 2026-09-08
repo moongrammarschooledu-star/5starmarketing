@@ -1,11 +1,20 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Home } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
 import { PropertyCard } from "./PropertyCard";
-import { propertiesRepository } from "@/lib/repositories/properties.repository";
+import { propertyService } from "@/services/propertyService";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export async function FeaturedProperties() {
-  const featured = await propertiesRepository.listFeatured(3);
+  let featured: Awaited<ReturnType<typeof propertyService.listFeatured>> = [];
+
+  if (isSupabaseConfigured()) {
+    try {
+      featured = await propertyService.listFeatured(3);
+    } catch (e) {
+      console.error("FeaturedProperties: failed to load featured properties:", e);
+    }
+  }
 
   return (
     <section id="properties" className="bg-surface py-20 sm:py-24">
@@ -25,11 +34,27 @@ export async function FeaturedProperties() {
           </Link>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
-        </div>
+        {featured.length === 0 ? (
+          <div className="mt-10 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-16 text-center">
+            <Home className="mb-3 h-8 w-8 text-muted-foreground" />
+            <p className="font-semibold text-ink">No featured properties yet</p>
+            <p className="mt-1 max-w-sm text-sm text-muted">
+              Check back soon, or browse all current listings.
+            </p>
+            <Link
+              href="/properties"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
+            >
+              View All Properties <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

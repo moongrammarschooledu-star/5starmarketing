@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { servicesRepository } from "@/lib/repositories/services.repository";
+import { serviceService } from "@/services/serviceService";
 
 function revalidateAll() {
   revalidatePath("/admin/services");
@@ -23,18 +23,22 @@ export async function saveServiceAction(
   const icon = String(formData.get("icon") ?? "Home");
   if (!title) return { error: "Service title is required." };
 
-  if (id) {
-    const updated = await servicesRepository.update(id, { title, description, icon });
-    if (!updated) return { error: "Service not found." };
-  } else {
-    const all = await servicesRepository.list();
-    await servicesRepository.create({
-      title,
-      description,
-      icon,
-      enabled: true,
-      order: all.length + 1,
-    });
+  try {
+    if (id) {
+      const updated = await serviceService.update(id, { title, description, icon });
+      if (!updated) return { error: "Service not found." };
+    } else {
+      const all = await serviceService.list();
+      await serviceService.create({
+        title,
+        description,
+        icon,
+        enabled: true,
+        order: all.length + 1,
+      });
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not save this service." };
   }
 
   revalidateAll();
@@ -42,13 +46,21 @@ export async function saveServiceAction(
 }
 
 export async function toggleServiceEnabledAction(id: string) {
-  const service = await servicesRepository.getById(id);
-  if (!service) return;
-  await servicesRepository.update(id, { enabled: !service.enabled });
-  revalidateAll();
+  try {
+    const service = await serviceService.getById(id);
+    if (!service) return;
+    await serviceService.update(id, { enabled: !service.enabled });
+    revalidateAll();
+  } catch (e) {
+    console.error("toggleServiceEnabledAction failed:", e);
+  }
 }
 
 export async function deleteServiceAction(id: string) {
-  await servicesRepository.remove(id);
-  revalidateAll();
+  try {
+    await serviceService.remove(id);
+    revalidateAll();
+  } catch (e) {
+    console.error("deleteServiceAction failed:", e);
+  }
 }

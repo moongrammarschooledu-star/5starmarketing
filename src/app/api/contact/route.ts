@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { inquiriesRepository } from "@/lib/repositories/inquiries.repository";
+import { inquiryService } from "@/services/inquiryService";
 
-// Validates contact-form submissions and saves them as a real lead in the
-// admin dashboard (Inquiries). It does not yet email/SMS the admin —
-// wire that up to a provider (e.g. Resend, Nodemailer, or a webhook to the
-// WhatsApp Business API) once one is chosen; the lead is still captured
-// here either way.
+// Validates contact-form submissions and saves them as a real lead
+// (Supabase `inquiries` table) visible in the admin dashboard. It does not
+// yet email/SMS the admin — wire that up to a provider (e.g. Resend,
+// Nodemailer, or a webhook to the WhatsApp Business API) once one is
+// chosen; the lead is still captured here either way.
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
   }
 
-  const { name, phone, email, message, property } = body as Record<string, unknown>;
+  const { name, phone, email, message, property, propertyId } = body as Record<string, unknown>;
 
   if (
     typeof name !== "string" ||
@@ -33,14 +33,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid email address." }, { status: 400 });
   }
 
-  await inquiriesRepository.create({
-    name: name.trim(),
-    phone: phone.trim(),
-    email: typeof email === "string" && email.trim() ? email.trim() : undefined,
-    propertyTitle: typeof property === "string" && property.trim() ? property.trim() : undefined,
-    message: message.trim(),
-    source: "Contact Form",
-  });
+  try {
+    await inquiryService.create({
+      name: name.trim(),
+      phone: phone.trim(),
+      email: typeof email === "string" && email.trim() ? email.trim() : undefined,
+      propertyId: typeof propertyId === "string" && propertyId.trim() ? propertyId.trim() : undefined,
+      propertyTitle: typeof property === "string" && property.trim() ? property.trim() : undefined,
+      message: message.trim(),
+      source: "Contact Form",
+    });
+  } catch (error) {
+    // The service already logs the real error server-side — never forward
+    // raw database error details to the client.
+    console.error("Contact form submission failed:", error);
+    return NextResponse.json(
+      { ok: false, error: "Could not submit your message. Please try WhatsApp instead." },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

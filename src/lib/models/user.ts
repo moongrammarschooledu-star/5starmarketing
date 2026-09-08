@@ -1,22 +1,14 @@
-export type AdminRole = "Admin" | "Director";
-
+// Admin identity is now entirely Supabase Auth + admin_profiles — there is
+// no password field here at all. Supabase's GoTrue service owns the
+// password (hashing, verification, reset flows); this app never sees it.
 export interface AdminUser {
   id: string;
+  email: string;
   name: string;
   title: string;
-  email: string;
-  role: AdminRole;
   profileImage?: string;
-  /** bcrypt hash — never sent to the client. */
-  passwordHash: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export type AdminUserPublic = Omit<AdminUser, "passwordHash">;
-
-export function toPublicUser(user: AdminUser): AdminUserPublic {
-  const { passwordHash, ...rest } = user;
-  void passwordHash;
-  return rest;
-}
+export type AdminProfileInput = Pick<AdminUser, "name" | "title" | "profileImage">;

@@ -1,0 +1,357 @@
+-- =====================================================================
+-- 5STAR.M Estate & Builders — Supabase schema
+--
+-- Run this once in your Supabase project's SQL Editor
+-- (Dashboard → SQL Editor → New query → paste this whole file → Run).
+-- It is safe to re-run: every statement uses IF NOT EXISTS / OR REPLACE
+-- so re-running it after a partial failure won't duplicate anything.
+-- =====================================================================
+
+create extension if not exists "pgcrypto";
+
+-- ---------------------------------------------------------------------
+-- admin_profiles
+-- One row per admin user, keyed to a Supabase Auth user (auth.users).
+-- Auth itself (email/password) is handled entirely by Supabase Auth —
+-- this table only holds the extra display info the dashboard needs.
+-- ---------------------------------------------------------------------
+create table if not exists public.admin_profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  name text not null default 'Admin',
+  title text not null default 'Administrator',
+  profile_image text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
+-- website_settings
+-- Single-row table (id is always 1) holding editable business info.
+-- ---------------------------------------------------------------------
+create table if not exists public.website_settings (
+  id smallint primary key default 1,
+  business_name text not null default '5STAR.M Estate & Builders',
+  tagline text not null default 'NOW YOU WILL DREAM — WE WILL FULFILL IT',
+  phone text not null default '+92 319 8430458',
+  whatsapp text not null default '+92 319 8430458',
+  email text not null default 'maos.edu@gmail.com',
+  address text not null default '1037-E-1 Johar Town, Lahore, Pakistan',
+  logo_url text,
+  favicon_url text,
+  facebook_url text default '',
+  instagram_url text default '',
+  tiktok_url text default '',
+  youtube_url text default '',
+  updated_at timestamptz not null default now(),
+  constraint website_settings_single_row check (id = 1)
+);
+
+insert into public.website_settings (id)
+values (1)
+on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------
+-- properties
+-- ---------------------------------------------------------------------
+create table if not exists public.properties (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  slug text not null unique,
+  property_type text not null check (
+    property_type in ('house', 'flat', 'residential_plot', 'commercial')
+  ),
+  purpose text not null check (purpose in ('sale', 'rent', 'investment')),
+  location text not null,
+  location_area text not null default 'Other Locations' check (
+    location_area in ('Lahore', 'Johar Town', 'Other Locations')
+  ),
+  size text not null,
+  size_category text not null default 'Custom' check (
+    size_category in ('3 Marla', '5 Marla', '10 Marla', '1 Kanal', 'Custom')
+  ),
+  price text not null,
+  price_value numeric,
+  payment_option text not null check (
+    payment_option in ('cash', 'installments', 'both')
+  ),
+  status text not null default 'available' check (
+    status in ('available', 'reserved', 'sold', 'inactive')
+  ),
+  featured boolean not null default false,
+  description text not null default '',
+  features text[] not null default '{}',
+  amenities text[] not null default '{}',
+  images text[] not null default '{}',
+  maps_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists properties_status_idx on public.properties (status);
+create index if not exists properties_featured_idx on public.properties (featured);
+create index if not exists properties_type_idx on public.properties (property_type);
+create index if not exists properties_slug_idx on public.properties (slug);
+
+-- ---------------------------------------------------------------------
+-- projects
+-- ---------------------------------------------------------------------
+create table if not exists public.projects (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text not null unique,
+  location text not null,
+  property_type text not null default 'Residential',
+  status text not null default 'upcoming' check (
+    status in ('upcoming', 'ongoing', 'completed')
+  ),
+  description text not null default '',
+  images text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists projects_status_idx on public.projects (status);
+
+-- ---------------------------------------------------------------------
+-- services
+-- ---------------------------------------------------------------------
+create table if not exists public.services (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  icon text not null default 'Home',
+  enabled boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists services_enabled_idx on public.services (enabled);
+
+-- ---------------------------------------------------------------------
+-- inquiries
+-- ---------------------------------------------------------------------
+create table if not exists public.inquiries (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text not null default '',
+  email text,
+  property_id uuid references public.properties (id) on delete set null,
+  property_title text,
+  message text not null,
+  source text not null default 'website' check (
+    source in ('website', 'whatsapp', 'contact_form')
+  ),
+  status text not null default 'new' check (
+    status in ('new', 'contacted', 'follow_up', 'closed')
+  ),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists inquiries_status_idx on public.inquiries (status);
+create index if not exists inquiries_property_idx on public.inquiries (property_id);
+
+-- ---------------------------------------------------------------------
+-- updated_at auto-touch trigger, shared by every table above
+-- ---------------------------------------------------------------------
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists set_updated_at on public.properties;
+create trigger set_updated_at before update on public.properties
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.projects;
+create trigger set_updated_at before update on public.projects
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.services;
+create trigger set_updated_at before update on public.services
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.inquiries;
+create trigger set_updated_at before update on public.inquiries
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.website_settings;
+create trigger set_updated_at before update on public.website_settings
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.admin_profiles;
+create trigger set_updated_at before update on public.admin_profiles
+  for each row execute function public.set_updated_at();
+
+-- Auto-create an admin_profiles row whenever a new Supabase Auth user is
+-- created, so the dashboard always has a profile to read/update.
+create or replace function public.handle_new_admin_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.admin_profiles (id, name, title)
+  values (new.id, coalesce(new.raw_user_meta_data ->> 'name', 'Admin'), 'Director')
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_admin_user();
+
+-- =====================================================================
+-- Row Level Security
+-- Public (anon) visitors: read-only, and only "public" rows (available/
+-- featured properties, enabled services, any project). Every write
+-- requires an authenticated Supabase session (i.e. a logged-in admin).
+-- =====================================================================
+
+alter table public.properties enable row level security;
+alter table public.projects enable row level security;
+alter table public.services enable row level security;
+alter table public.inquiries enable row level security;
+alter table public.website_settings enable row level security;
+alter table public.admin_profiles enable row level security;
+
+-- properties: public can read everything except "inactive" listings;
+-- admins (any authenticated user) can do everything.
+drop policy if exists "properties_public_read" on public.properties;
+create policy "properties_public_read"
+  on public.properties for select
+  to anon, authenticated
+  using (status <> 'inactive');
+
+drop policy if exists "properties_admin_write" on public.properties;
+create policy "properties_admin_write"
+  on public.properties for all
+  to authenticated
+  using (true)
+  with check (true);
+
+-- projects: public can read all; admins can write.
+drop policy if exists "projects_public_read" on public.projects;
+create policy "projects_public_read"
+  on public.projects for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "projects_admin_write" on public.projects;
+create policy "projects_admin_write"
+  on public.projects for all
+  to authenticated
+  using (true)
+  with check (true);
+
+-- services: public can read only enabled services; admins can read/write all.
+drop policy if exists "services_public_read" on public.services;
+create policy "services_public_read"
+  on public.services for select
+  to anon
+  using (enabled = true);
+
+drop policy if exists "services_admin_all" on public.services;
+create policy "services_admin_all"
+  on public.services for all
+  to authenticated
+  using (true)
+  with check (true);
+
+-- inquiries: anyone (including anonymous website visitors) can submit an
+-- inquiry, but only admins can read, update or delete them — a visitor
+-- must never be able to read other people's leads.
+drop policy if exists "inquiries_public_insert" on public.inquiries;
+create policy "inquiries_public_insert"
+  on public.inquiries for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "inquiries_admin_read" on public.inquiries;
+create policy "inquiries_admin_read"
+  on public.inquiries for select
+  to authenticated
+  using (true);
+
+drop policy if exists "inquiries_admin_update" on public.inquiries;
+create policy "inquiries_admin_update"
+  on public.inquiries for update
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "inquiries_admin_delete" on public.inquiries;
+create policy "inquiries_admin_delete"
+  on public.inquiries for delete
+  to authenticated
+  using (true);
+
+-- website_settings: public can read; only admins can write.
+drop policy if exists "settings_public_read" on public.website_settings;
+create policy "settings_public_read"
+  on public.website_settings for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "settings_admin_write" on public.website_settings;
+create policy "settings_admin_write"
+  on public.website_settings for update
+  to authenticated
+  using (true)
+  with check (true);
+
+-- admin_profiles: an admin can only read/update their own profile row.
+drop policy if exists "profile_self_read" on public.admin_profiles;
+create policy "profile_self_read"
+  on public.admin_profiles for select
+  to authenticated
+  using (id = auth.uid());
+
+drop policy if exists "profile_self_update" on public.admin_profiles;
+create policy "profile_self_update"
+  on public.admin_profiles for update
+  to authenticated
+  using (id = auth.uid())
+  with check (id = auth.uid());
+
+-- =====================================================================
+-- Storage: property-images bucket
+-- Public read (so <Image> tags and the browser can load them directly),
+-- writes restricted to authenticated admins.
+-- =====================================================================
+
+insert into storage.buckets (id, name, public)
+values ('property-images', 'property-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "property_images_public_read" on storage.objects;
+create policy "property_images_public_read"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'property-images');
+
+drop policy if exists "property_images_admin_write" on storage.objects;
+create policy "property_images_admin_write"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'property-images');
+
+drop policy if exists "property_images_admin_update" on storage.objects;
+create policy "property_images_admin_update"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'property-images');
+
+drop policy if exists "property_images_admin_delete" on storage.objects;
+create policy "property_images_admin_delete"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'property-images');

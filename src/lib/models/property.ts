@@ -1,7 +1,8 @@
 // Shared Property model — used by both the public site and the admin
-// dashboard. This is the single source of truth for the shape of a
-// property record; swap PropertyRepository's implementation to talk to
-// Supabase later without touching this file or any UI that imports it.
+// dashboard. This is the app-facing shape (UI-friendly labels like
+// "House", "For Sale"); src/services/propertyService.ts maps it to/from
+// the DB's snake_case enum values (house, sale, ...) so this file and
+// every component that imports it never has to change.
 
 export type PropertyType = "House" | "Flat" | "Residential Plot" | "Commercial Property";
 export type Purpose = "For Sale" | "For Rent" | "Investment";
@@ -12,6 +13,7 @@ export type LocationArea = "Lahore" | "Johar Town" | "Other Locations";
 
 export interface Property {
   id: string;
+  slug: string;
   title: string;
   type: PropertyType;
   purpose: Purpose;
@@ -33,7 +35,7 @@ export interface Property {
   updatedAt: string;
 }
 
-export type PropertyInput = Omit<Property, "id" | "createdAt" | "updatedAt">;
+export type PropertyInput = Omit<Property, "id" | "slug" | "createdAt" | "updatedAt">;
 
 export const propertyTypes: PropertyType[] = [
   "House",

@@ -2,6 +2,7 @@ export type ProjectStatus = "Upcoming" | "Ongoing" | "Completed";
 
 export interface Project {
   id: string;
+  slug: string;
   name: string;
   location: string;
   type: string;
@@ -12,6 +13,6 @@ export interface Project {
   updatedAt: string;
 }
 
-export type ProjectInput = Omit<Project, "id" | "createdAt" | "updatedAt">;
+export type ProjectInput = Omit<Project, "id" | "slug" | "createdAt" | "updatedAt">;
 
 export const projectStatuses: ProjectStatus[] = ["Upcoming", "Ongoing", "Completed"];

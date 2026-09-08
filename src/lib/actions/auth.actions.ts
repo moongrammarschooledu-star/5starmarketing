@@ -1,12 +1,7 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifyAdminCredentials } from "@/lib/auth/credentials";
-import { createSessionToken, SESSION_COOKIE } from "@/lib/auth/session";
-
-const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
-const REMEMBER_ME_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export interface LoginState {
   error?: string;
@@ -16,37 +11,41 @@ export async function loginAction(
   _prevState: LoginState,
   formData: FormData
 ): Promise<LoginState> {
-  const email = String(formData.get("email") ?? "");
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const rememberMe = formData.get("rememberMe") === "on";
   const redirectTo = String(formData.get("redirectTo") ?? "/admin/dashboard");
 
   if (!email || !password) {
     return { error: "Email and password are required." };
   }
 
-  const result = await verifyAdminCredentials(email, password);
-  if (!result.ok) {
-    return { error: result.error };
+  if (!isSupabaseConfigured()) {
+    return {
+      error:
+        "Supabase isn't connected yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then try again.",
+    };
   }
 
-  const maxAge = rememberMe ? REMEMBER_ME_MAX_AGE : SESSION_MAX_AGE;
-  const token = await createSessionToken(result.email, maxAge);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge,
-  });
+  if (error) {
+    // Supabase's own message is safe to show (e.g. "Invalid login
+    // credentials") — it never leaks anything about the database itself.
+    return { error: error.message || "Invalid email or password." };
+  }
 
   redirect(redirectTo.startsWith("/admin") ? redirectTo : "/admin/dashboard");
 }
 
 export async function logoutAction() {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("logoutAction: signOut failed:", e);
+    }
+  }
   redirect("/admin/login");
 }

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { PropertyForm } from "@/components/admin/PropertyForm";
 import { updatePropertyAction } from "@/lib/actions/properties.actions";
-import { propertiesRepository } from "@/lib/repositories/properties.repository";
+import { propertyService } from "@/services/propertyService";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export default async function EditPropertyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const property = await propertiesRepository.getById(id);
+  const property = await propertyService.getById(id);
   if (!property) notFound();
 
   const boundAction = updatePropertyAction.bind(null, id);

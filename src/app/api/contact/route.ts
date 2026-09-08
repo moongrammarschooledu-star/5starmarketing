@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
   }
 
-  const { name, phone, email, message } = body as Record<string, unknown>;
+  const { name, phone, email, message, property } = body as Record<string, unknown>;
 
   if (
     typeof name !== "string" ||
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   // TODO: forward this lead to email/CRM/WhatsApp once a provider is chosen.
-  console.log("New 5STAR.M contact-form lead:", body);
+  console.log("New 5STAR.M contact-form lead:", { name, phone, email, message, property });
 
   return NextResponse.json({ ok: true });
 }

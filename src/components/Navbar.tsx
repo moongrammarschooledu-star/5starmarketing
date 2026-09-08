@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Menu, X, Phone, MessageCircle } from "lucide-react";
 import { Logo } from "./Logo";
 import { site, whatsappLink } from "@/lib/site";
 
 const links = [
-  { href: "#home", label: "Home" },
-  { href: "#about", label: "About" },
-  { href: "#properties", label: "Properties" },
-  { href: "#services", label: "Services" },
-  { href: "#projects", label: "Projects" },
-  { href: "#investment", label: "Investment" },
-  { href: "#contact", label: "Contact" },
+  { href: "/", label: "Home" },
+  { href: "/#about", label: "About" },
+  { href: "/properties", label: "Properties" },
+  { href: "/#services", label: "Services" },
+  { href: "/#projects", label: "Projects" },
+  { href: "/#investment", label: "Investment" },
+  { href: "/#contact", label: "Contact" },
 ];
 
 export function Navbar() {
@@ -47,9 +48,9 @@ export function Navbar() {
       </div>
 
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
-        <a href="#home" aria-label="5STAR.M home">
+        <Link href="/" aria-label="5STAR.M home">
           <Logo />
-        </a>
+        </Link>
 
         <ul className="hidden items-center gap-1 lg:flex">
           {links.map((link) => (

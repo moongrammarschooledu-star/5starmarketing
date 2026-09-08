@@ -1,14 +1,21 @@
 import Image from "next/image";
-import { MapPin, Ruler, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { MapPin, Ruler, MessageCircle, Star } from "lucide-react";
 import type { Property } from "@/lib/data/properties";
 import { whatsappLink } from "@/lib/site";
+
+const statusBadgeStyle: Record<string, string> = {
+  Reserved: "bg-ink/80 text-white",
+  Sold: "bg-ink/80 text-white",
+  Rented: "bg-ink/80 text-white",
+};
 
 export function PropertyCard({ property }: { property: Property }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-xl hover:shadow-ink/10">
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
-          src={property.image}
+          src={property.images[0]}
           alt={property.title}
           fill
           sizes="(min-width: 1024px) 380px, 90vw"
@@ -18,8 +25,20 @@ export function PropertyCard({ property }: { property: Property }) {
           {property.type}
         </span>
         <span className="absolute right-3 top-3 rounded-full bg-ink/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
-          For {property.purpose}
+          {property.purpose}
         </span>
+        {property.featured && (
+          <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-primary shadow">
+            <Star className="h-3 w-3 fill-primary text-primary" /> Featured
+          </span>
+        )}
+        {property.status !== "Available" && (
+          <span
+            className={`absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold ${statusBadgeStyle[property.status]}`}
+          >
+            {property.status}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-5">
@@ -48,15 +67,15 @@ export function PropertyCard({ property }: { property: Property }) {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2.5">
-          <a
-            href="#contact"
+          <Link
+            href={`/properties/${property.id}`}
             className="flex items-center justify-center rounded-full border-2 border-ink/15 px-3 py-2.5 text-xs font-bold text-ink transition-colors hover:border-primary hover:text-primary"
           >
             View Details
-          </a>
+          </Link>
           <a
             href={whatsappLink(
-              `Hi 5STAR.M, I'm interested in "${property.title}" (${property.location}). Please share more details.`
+              `Assalam-o-Alaikum, I am interested in ${property.title}. Please share complete details.`
             )}
             target="_blank"
             rel="noopener noreferrer"

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import { site } from "@/lib/site";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { WhatsAppFloatButton } from "@/components/WhatsAppButton";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -65,7 +68,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} ${inter.variable} antialiased`}>
+        <Navbar />
         {children}
+        <Footer />
+        <WhatsAppFloatButton />
       </body>
     </html>
   );

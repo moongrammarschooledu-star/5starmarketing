@@ -1,3 +1,4 @@
+import Image from "next/image";
 import clsx from "clsx";
 
 /**
@@ -30,6 +31,10 @@ export function LogoIcon({ className }: { className?: string }) {
   );
 }
 
+// The real logo file (public/images/logo.png) is a flat RGB export with a
+// near-white background baked in — it only looks right on light surfaces.
+// On dark surfaces (the footer) we fall back to the coded, transparent
+// white version above instead of showing a white box.
 export function Logo({
   className,
   iconClassName,
@@ -39,16 +44,24 @@ export function Logo({
   iconClassName?: string;
   light?: boolean;
 }) {
+  if (!light) {
+    return (
+      <Image
+        src="/images/logo.png"
+        alt="5STAR.M Estate & Builders"
+        width={1774}
+        height={887}
+        priority
+        className={clsx("h-12 w-auto sm:h-14", className)}
+      />
+    );
+  }
+
   return (
     <div className={clsx("flex items-center gap-2.5", className)}>
       <LogoIcon className={clsx("h-10 w-auto shrink-0", iconClassName)} />
       <div className="leading-none">
-        <div
-          className={clsx(
-            "font-heading text-xl font-extrabold tracking-tight",
-            light ? "text-white" : "text-ink"
-          )}
-        >
+        <div className="font-heading text-xl font-extrabold tracking-tight text-white">
           5 STAR.M
         </div>
         <div className="mt-0.5 flex items-center gap-1.5">

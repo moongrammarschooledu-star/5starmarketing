@@ -14,15 +14,16 @@ export function LogoIcon({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* three-gable roofline skyline, ascending left to right */}
-      <polygon points="2,46 20,22 38,46" fill="var(--primary)" opacity="0.85" />
-      <polygon points="24,46 46,13 68,46" fill="var(--primary)" opacity="0.92" />
-      <polygon points="50,46 76,4 98,46" fill="var(--primary)" />
-      <rect x="8" y="35" width="9" height="11" rx="1.5" fill="var(--gray-accent)" />
-      <rect x="30" y="32" width="9" height="11" rx="1.5" fill="var(--gray-accent)" />
-      <g transform="translate(58,2) rotate(42)">
-        <rect x="-3.5" y="6" width="7" height="32" rx="2.5" fill="var(--ink)" />
-        <rect x="-11" y="-3" width="22" height="12" rx="3" fill="var(--ink)" />
+      {/* two-house roofline: smaller house (with chimney) behind a larger one */}
+      <polygon points="2,46 24,16 46,46" fill="var(--primary)" opacity="0.88" />
+      <rect x="7" y="24" width="6" height="14" fill="var(--primary)" opacity="0.88" />
+      <rect x="16" y="34" width="8" height="10" rx="1" fill="var(--gray-accent)" />
+      <polygon points="30,46 64,4 98,46" fill="var(--primary)" />
+      <rect x="80" y="32" width="9" height="12" rx="1" fill="var(--gray-accent)" />
+      {/* hammer laid diagonally across the join, white so it reads against the red roof */}
+      <line x1="32" y1="36" x2="60" y2="22" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" />
+      <g transform="translate(60,22) rotate(65)">
+        <rect x="-7" y="-3.5" width="14" height="7" rx="2" fill="#ffffff" />
       </g>
       <rect x="2" y="48" width="96" height="4" rx="2" fill="var(--ink)" />
     </svg>

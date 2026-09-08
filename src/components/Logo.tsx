@@ -14,15 +14,17 @@ export function LogoIcon({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <polygon points="6,46 34,10 62,46" fill="var(--primary)" />
-      <polygon points="30,46 60,6 90,46" fill="var(--primary)" opacity="0.92" />
-      <rect x="14" y="34" width="10" height="10" rx="1.5" fill="var(--gray-accent)" />
-      <rect x="68" y="30" width="10" height="10" rx="1.5" fill="var(--gray-accent)" />
-      <g transform="translate(52,4) rotate(45)">
-        <rect x="-3.5" y="0" width="7" height="34" rx="2.5" fill="var(--ink)" />
-        <rect x="-10" y="-9" width="20" height="13" rx="3" fill="var(--ink)" />
+      {/* three-gable roofline skyline, ascending left to right */}
+      <polygon points="2,46 20,22 38,46" fill="var(--primary)" opacity="0.85" />
+      <polygon points="24,46 46,13 68,46" fill="var(--primary)" opacity="0.92" />
+      <polygon points="50,46 76,4 98,46" fill="var(--primary)" />
+      <rect x="8" y="35" width="9" height="11" rx="1.5" fill="var(--gray-accent)" />
+      <rect x="30" y="32" width="9" height="11" rx="1.5" fill="var(--gray-accent)" />
+      <g transform="translate(58,2) rotate(42)">
+        <rect x="-3.5" y="6" width="7" height="32" rx="2.5" fill="var(--ink)" />
+        <rect x="-11" y="-3" width="22" height="12" rx="3" fill="var(--ink)" />
       </g>
-      <rect x="2" y="48" width="92" height="4" rx="2" fill="var(--ink)" />
+      <rect x="2" y="48" width="96" height="4" rx="2" fill="var(--ink)" />
     </svg>
   );
 }

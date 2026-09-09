@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FolderKanban, Phone } from "lucide-react";
+import { ArrowLeft, FolderKanban, Phone, CalendarClock } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { settingsService } from "@/services/settingsService";
@@ -202,9 +202,22 @@ export default async function PropertyDetailsPage({
                   whatsappNumber={settings?.whatsapp}
                 />
               </div>
+
+              <Link
+                href={`/book-visit/${property.slug}`}
+                className="mt-3 flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:bg-primary-hover"
+              >
+                <CalendarClock className="h-4 w-4" /> Schedule a Site Visit
+              </Link>
             </div>
 
             <div id="inquiry-form" className="mt-5 scroll-mt-24">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-heading text-sm font-bold text-ink">Have Questions?</h3>
+                <Link href={`/book-visit/${property.slug}`} className="text-xs font-bold text-primary hover:underline">
+                  Request a Visit →
+                </Link>
+              </div>
               <PropertyInquiryForm propertyId={property.id} propertyTitle={property.title} />
             </div>
           </div>
@@ -216,6 +229,7 @@ export default async function PropertyDetailsPage({
               settings?.whatsapp ? whatsappUrlFor(settings.whatsapp, whatsappMessage) : whatsappUrlFor(site.whatsappNumber, whatsappMessage)
             }
             callHref={`tel:${site.phoneHref}`}
+            bookVisitHref={`/book-visit/${property.slug}`}
             propertyId={property.id}
           />
         </div>

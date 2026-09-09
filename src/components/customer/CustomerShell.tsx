@@ -4,11 +4,13 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Menu, X, ExternalLink, UserCircle } from "lucide-react";
 import { CustomerSidebar } from "./CustomerSidebar";
+import { ToastProvider } from "@/components/admin/ToastProvider";
 
 export function CustomerShell({ customerName, children }: { customerName: string; children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-surface-muted lg:flex">
       <aside className="hidden w-64 shrink-0 lg:block">
         <div className="fixed h-screen w-64">
@@ -64,5 +66,6 @@ export function CustomerShell({ customerName, children }: { customerName: string
         <main className="flex-1 p-4 lg:p-8">{children}</main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

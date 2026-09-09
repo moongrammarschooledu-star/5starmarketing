@@ -43,6 +43,14 @@ export async function updateSettingsAction(
       longitude: numberOrUndefined(formData.get("longitude")),
       websiteUrl: String(formData.get("websiteUrl") ?? "").trim() || undefined,
       businessDescription: String(formData.get("businessDescription") ?? "").trim() || undefined,
+      appointmentWorkingDays: formData.getAll("appointmentWorkingDays").map((v) => String(v)),
+      appointmentOpeningTime: String(formData.get("appointmentOpeningTime") ?? "").trim() || undefined,
+      appointmentClosingTime: String(formData.get("appointmentClosingTime") ?? "").trim() || undefined,
+      appointmentSlotDurationMinutes: numberOrUndefined(formData.get("appointmentSlotDurationMinutes")),
+      appointmentBreakStart: String(formData.get("appointmentBreakStart") ?? "").trim() || undefined,
+      appointmentBreakEnd: String(formData.get("appointmentBreakEnd") ?? "").trim() || undefined,
+      appointmentMaxVisitors: numberOrUndefined(formData.get("appointmentMaxVisitors")),
+      appointmentBookingNoticeHours: numberOrUndefined(formData.get("appointmentBookingNoticeHours")),
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not save settings." };

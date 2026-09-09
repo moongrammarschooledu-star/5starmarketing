@@ -53,7 +53,12 @@ export type NotificationType =
   | "inquiry_received"
   | "status_updated"
   | "follow_up_scheduled"
-  | "property_status_changed";
+  | "property_status_changed"
+  | "appointment_created"
+  | "appointment_confirmed"
+  | "appointment_rescheduled"
+  | "appointment_cancelled"
+  | "appointment_completed";
 
 export interface CustomerNotification {
   id: string;

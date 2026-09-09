@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import type { WebsiteSettings } from "@/lib/models/settings";
+import { weekdays } from "@/lib/models/appointment";
 import { updateSettingsAction, type SettingsFormState } from "@/lib/actions/settings.actions";
 import { ImageUploader } from "./ImageUploader";
 
@@ -84,6 +85,52 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
             name="businessDescription"
             defaultValue={settings.businessDescription}
             textarea
+          />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Appointment Settings</h2>
+        <p className="mt-1 text-xs text-muted">
+          Configures the site-visit booking form and calendar. These are only used once you set them
+          here — nothing is claimed as real business hours by default.
+        </p>
+
+        <div className="mt-4">
+          <span className="mb-1.5 block text-sm font-semibold text-ink">Working Days</span>
+          <div className="flex flex-wrap gap-3">
+            {weekdays.map((day) => (
+              <label key={day} className="flex items-center gap-1.5 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  name="appointmentWorkingDays"
+                  value={day}
+                  defaultChecked={settings.appointmentWorkingDays.includes(day)}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                {day}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Opening Time" name="appointmentOpeningTime" type="time" defaultValue={settings.appointmentOpeningTime} />
+          <Field label="Closing Time" name="appointmentClosingTime" type="time" defaultValue={settings.appointmentClosingTime} />
+          <Field
+            label="Slot Duration (minutes)"
+            name="appointmentSlotDurationMinutes"
+            type="number"
+            defaultValue={settings.appointmentSlotDurationMinutes}
+          />
+          <Field label="Break Start (optional)" name="appointmentBreakStart" type="time" defaultValue={settings.appointmentBreakStart} />
+          <Field label="Break End (optional)" name="appointmentBreakEnd" type="time" defaultValue={settings.appointmentBreakEnd} />
+          <Field label="Maximum Visitors" name="appointmentMaxVisitors" type="number" defaultValue={settings.appointmentMaxVisitors} />
+          <Field
+            label="Minimum Booking Notice (hours)"
+            name="appointmentBookingNoticeHours"
+            type="number"
+            defaultValue={settings.appointmentBookingNoticeHours}
           />
         </div>
       </section>

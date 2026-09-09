@@ -9,7 +9,8 @@ export type LeadSource =
   | "TikTok"
   | "YouTube"
   | "Direct"
-  | "Other";
+  | "Other"
+  | "Site Visit";
 
 export interface Lead {
   id: string;
@@ -78,6 +79,7 @@ export const leadSources: LeadSource[] = [
   "YouTube",
   "Direct",
   "Other",
+  "Site Visit",
 ];
 
 export interface LeadStats {

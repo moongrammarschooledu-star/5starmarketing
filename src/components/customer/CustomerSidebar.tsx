@@ -9,6 +9,7 @@ import {
   Heart,
   Scale,
   MessageSquare,
+  CalendarClock,
   BookmarkCheck,
   UserCircle,
   LogOut,
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/customer/favorites", label: "Favorites", icon: Heart },
   { href: "/compare", label: "Compare", icon: Scale },
   { href: "/customer/inquiries", label: "My Inquiries", icon: MessageSquare },
+  { href: "/customer/appointments", label: "My Appointments", icon: CalendarClock },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

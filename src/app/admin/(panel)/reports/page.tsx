@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Download, Printer, Building2, Users, FolderKanban, Megaphone } from "lucide-react";
+import { Download, Printer, Building2, Users, FolderKanban, Megaphone, CalendarClock } from "lucide-react";
 import { reportService } from "@/services/reportService";
 import { resolveDateRange } from "@/services/analyticsService";
+import { appointmentService } from "@/services/appointmentService";
 import type { DateRangeKey } from "@/lib/models/analytics";
 import { AnalyticsTimeFilter } from "@/components/admin/AnalyticsTimeFilter";
 import { CountBucketChart } from "@/components/admin/charts/CountBucketChart";
@@ -26,13 +27,15 @@ export default async function AdminReportsPage({
   let lead: Awaited<ReturnType<typeof reportService.leadReport>> | null = null;
   let project: Awaited<ReturnType<typeof reportService.projectReport>> | null = null;
   let marketing: Awaited<ReturnType<typeof reportService.marketingReport>> = [];
+  let appointments: Awaited<ReturnType<typeof appointmentService.stats>> | null = null;
 
   try {
-    [property, lead, project, marketing] = await Promise.all([
+    [property, lead, project, marketing, appointments] = await Promise.all([
       reportService.propertyReport(),
       reportService.leadReport(range),
       reportService.projectReport(),
       reportService.marketingReport(range),
+      appointmentService.stats(),
     ]);
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load reports.";
@@ -156,6 +159,43 @@ export default async function AdminReportsPage({
           </>
         )}
       </ReportSection>
+
+      {/* APPOINTMENT REPORT */}
+      <ReportSection title="Appointment Report" icon={CalendarClock}>
+        {appointments && (
+          <>
+            <StatRow
+              items={[
+                { label: "Total Visits", value: appointments.total },
+                { label: "Pending", value: appointments.pending },
+                { label: "Confirmed", value: appointments.confirmed },
+                { label: "Completed", value: appointments.completed },
+                { label: "Cancelled", value: appointments.cancelled },
+                { label: "No Show", value: appointments.noShow },
+              ]}
+            />
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <CountBucketChart title="Visits by Property" data={appointments.byProperty} />
+              <CountBucketChart title="Visits by Status" data={appointments.byStatus} />
+              <div className="rounded-2xl border border-border bg-surface p-5">
+                <h3 className="font-heading text-sm font-bold text-ink">Visits by Date</h3>
+                {appointments.byDate.length === 0 ? (
+                  <p className="mt-8 pb-8 text-center text-sm text-muted">No data available yet.</p>
+                ) : (
+                  <div className="mt-3 max-h-64 space-y-1.5 overflow-y-auto text-sm">
+                    {appointments.byDate.map((d) => (
+                      <div key={d.date} className="flex items-center justify-between border-b border-border py-1">
+                        <span className="text-muted">{d.date}</span>
+                        <span className="font-bold text-ink">{d.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </ReportSection>
     </div>
   );
 }
@@ -169,8 +209,8 @@ function ReportSection({
 }: {
   title: string;
   icon: typeof Building2;
-  exportHref: string;
-  printHref: string;
+  exportHref?: string;
+  printHref?: string;
   children: ReactNode;
 }) {
   return (
@@ -179,21 +219,27 @@ function ReportSection({
         <h2 className="flex items-center gap-2 font-heading text-base font-bold text-ink">
           <Icon className="h-4.5 w-4.5 text-primary" /> {title}
         </h2>
-        <div className="flex gap-2">
-          <a
-            href={exportHref}
-            className="flex items-center gap-1.5 rounded-full border-2 border-ink/15 px-3.5 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
-          >
-            <Download className="h-3.5 w-3.5" /> CSV
-          </a>
-          <Link
-            href={printHref}
-            target="_blank"
-            className="flex items-center gap-1.5 rounded-full border-2 border-ink/15 px-3.5 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
-          >
-            <Printer className="h-3.5 w-3.5" /> PDF
-          </Link>
-        </div>
+        {(exportHref || printHref) && (
+          <div className="flex gap-2">
+            {exportHref && (
+              <a
+                href={exportHref}
+                className="flex items-center gap-1.5 rounded-full border-2 border-ink/15 px-3.5 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+              >
+                <Download className="h-3.5 w-3.5" /> CSV
+              </a>
+            )}
+            {printHref && (
+              <Link
+                href={printHref}
+                target="_blank"
+                className="flex items-center gap-1.5 rounded-full border-2 border-ink/15 px-3.5 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+              >
+                <Printer className="h-3.5 w-3.5" /> PDF
+              </Link>
+            )}
+          </div>
+        )}
       </div>
       <div className="mt-4">{children}</div>
     </section>

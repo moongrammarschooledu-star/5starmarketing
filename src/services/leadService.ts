@@ -38,6 +38,7 @@ const SOURCE_TO_DB: Record<LeadSource, string> = {
   YouTube: "youtube",
   Direct: "direct",
   Other: "other",
+  "Site Visit": "site_visit",
 };
 const SOURCE_FROM_DB: Record<string, LeadSource> = {
   website: "Website",
@@ -50,6 +51,7 @@ const SOURCE_FROM_DB: Record<string, LeadSource> = {
   direct: "Direct",
   contact_form: "Website",
   other: "Other",
+  site_visit: "Site Visit",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -143,6 +145,24 @@ export const leadService = {
       return [];
     }
     return (data ?? []).map(mapRowToLead);
+  },
+
+  /** Used when creating an appointment (STEP 11 section 15): finds the
+   *  most recent existing lead for this customer/phone so a site visit
+   *  attaches to it rather than always creating a new one. */
+  async findExistingForContact(customerId?: string, phone?: string): Promise<Lead | undefined> {
+    const supabase = await createClient();
+    let query = supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(1);
+    if (customerId) {
+      query = query.eq("customer_id", customerId);
+    } else if (phone) {
+      query = query.eq("phone", phone);
+    } else {
+      return undefined;
+    }
+    const { data, error } = await query.maybeSingle();
+    if (error || !data) return undefined;
+    return mapRowToLead(data);
   },
 
   async getById(id: string): Promise<Lead | undefined> {

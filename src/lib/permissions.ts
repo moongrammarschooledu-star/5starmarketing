@@ -14,7 +14,8 @@ export type AdminSection =
   | "profile"
   | "reports"
   | "activity"
-  | "customers";
+  | "customers"
+  | "appointments";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -31,9 +32,10 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "reports",
     "activity",
     "customers",
+    "appointments",
   ],
   editor: ["dashboard", "properties", "projects", "services", "profile"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments"],
 };
 
 export function canAccess(role: AdminRole, section: AdminSection): boolean {

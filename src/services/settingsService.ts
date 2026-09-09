@@ -39,6 +39,14 @@ function mapRowToSettings(row: any): WebsiteSettings {
     seoSiteTitle: row.seo_site_title ?? undefined,
     seoSiteDescription: row.seo_site_description ?? undefined,
     seoDefaultOgImage: row.seo_default_og_image ?? undefined,
+    appointmentWorkingDays: row.appointment_working_days ?? ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    appointmentOpeningTime: (row.appointment_opening_time ?? "10:00").slice(0, 5),
+    appointmentClosingTime: (row.appointment_closing_time ?? "18:00").slice(0, 5),
+    appointmentSlotDurationMinutes: row.appointment_slot_duration_minutes ?? 60,
+    appointmentBreakStart: row.appointment_break_start ? String(row.appointment_break_start).slice(0, 5) : undefined,
+    appointmentBreakEnd: row.appointment_break_end ? String(row.appointment_break_end).slice(0, 5) : undefined,
+    appointmentMaxVisitors: row.appointment_max_visitors ?? 10,
+    appointmentBookingNoticeHours: row.appointment_booking_notice_hours ?? 2,
     updatedAt: row.updated_at,
   };
 }
@@ -88,6 +96,16 @@ export const settingsService = {
     if (input.seoSiteDescription !== undefined) row.seo_site_description = input.seoSiteDescription || null;
     if (input.seoDefaultOgImage !== undefined)
       row.seo_default_og_image = (await resolveSingleImage(input.seoDefaultOgImage)) || null;
+    if (input.appointmentWorkingDays !== undefined) row.appointment_working_days = input.appointmentWorkingDays;
+    if (input.appointmentOpeningTime !== undefined) row.appointment_opening_time = input.appointmentOpeningTime;
+    if (input.appointmentClosingTime !== undefined) row.appointment_closing_time = input.appointmentClosingTime;
+    if (input.appointmentSlotDurationMinutes !== undefined)
+      row.appointment_slot_duration_minutes = input.appointmentSlotDurationMinutes;
+    if (input.appointmentBreakStart !== undefined) row.appointment_break_start = input.appointmentBreakStart || null;
+    if (input.appointmentBreakEnd !== undefined) row.appointment_break_end = input.appointmentBreakEnd || null;
+    if (input.appointmentMaxVisitors !== undefined) row.appointment_max_visitors = input.appointmentMaxVisitors;
+    if (input.appointmentBookingNoticeHours !== undefined)
+      row.appointment_booking_notice_hours = input.appointmentBookingNoticeHours;
 
     const { data, error } = await supabase
       .from("website_settings")

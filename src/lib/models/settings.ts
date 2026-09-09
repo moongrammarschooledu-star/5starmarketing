@@ -27,6 +27,17 @@ export interface WebsiteSettings {
   seoSiteTitle?: string;
   seoSiteDescription?: string;
   seoDefaultOgImage?: string;
+  // Appointment Settings (STEP 11) — configurable working days/hours for
+  // site-visit booking. Never claimed as real hours unless the admin
+  // actually sets them.
+  appointmentWorkingDays: string[];
+  appointmentOpeningTime: string;
+  appointmentClosingTime: string;
+  appointmentSlotDurationMinutes: number;
+  appointmentBreakStart?: string;
+  appointmentBreakEnd?: string;
+  appointmentMaxVisitors: number;
+  appointmentBookingNoticeHours: number;
   updatedAt: string;
 }
 

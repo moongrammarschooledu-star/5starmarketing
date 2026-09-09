@@ -22,8 +22,10 @@ import { projectService } from "@/services/projectService";
 import { leadService } from "@/services/leadService";
 import { analyticsService, resolveDateRange } from "@/services/analyticsService";
 import { activityService } from "@/services/activityService";
+import { appointmentService } from "@/services/appointmentService";
 import type { DateRangeKey, AttentionItem } from "@/lib/models/analytics";
 import { StatCard } from "@/components/admin/StatCard";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import { FollowUpWhatsAppButton } from "@/components/admin/FollowUpWhatsAppButton";
 import { AnalyticsTimeFilter } from "@/components/admin/AnalyticsTimeFilter";
 import { AttentionCenter } from "@/components/admin/AttentionCenter";
@@ -66,20 +68,35 @@ export default async function AdminDashboardPage({
   let todaysFollowUps: Awaited<ReturnType<typeof leadService.todaysFollowUps>> = [];
   let dataQuality: Awaited<ReturnType<typeof propertyService.dataQualityIssues>> = [];
   let missingCoverProjects: Awaited<ReturnType<typeof projectService.missingCoverImage>> = [];
+  let todaysAppointments: Awaited<ReturnType<typeof appointmentService.todaysAppointments>> = [];
+  let upcomingAppointments: Awaited<ReturnType<typeof appointmentService.upcomingAppointments>> = [];
 
   try {
-    [overview, propertyAnalytics, leadAnalytics, conversion, performance, recentActivity, todaysFollowUps, dataQuality, missingCoverProjects] =
-      await Promise.all([
-        analyticsService.overview(),
-        analyticsService.propertyAnalytics(),
-        leadService.analyticsInRange(range),
-        analyticsService.conversionMetrics(range),
-        analyticsService.propertyPerformance(range),
-        activityService.recentFeed(8),
-        leadService.todaysFollowUps(),
-        propertyService.dataQualityIssues(),
-        projectService.missingCoverImage(),
-      ]);
+    [
+      overview,
+      propertyAnalytics,
+      leadAnalytics,
+      conversion,
+      performance,
+      recentActivity,
+      todaysFollowUps,
+      dataQuality,
+      missingCoverProjects,
+      todaysAppointments,
+      upcomingAppointments,
+    ] = await Promise.all([
+      analyticsService.overview(),
+      analyticsService.propertyAnalytics(),
+      leadService.analyticsInRange(range),
+      analyticsService.conversionMetrics(range),
+      analyticsService.propertyPerformance(range),
+      activityService.recentFeed(8),
+      leadService.todaysFollowUps(),
+      propertyService.dataQualityIssues(),
+      projectService.missingCoverImage(),
+      appointmentService.todaysAppointments(),
+      appointmentService.upcomingAppointments(6),
+    ]);
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load dashboard data.";
   }
@@ -164,6 +181,62 @@ export default async function AdminDashboardPage({
           </div>
         </div>
       )}
+
+      {/* Today's Site Visits */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between">
+          <h3 className="flex items-center gap-2 font-heading text-sm font-bold text-ink">
+            <CalendarClock className="h-4.5 w-4.5 text-primary" /> Today&apos;s Site Visits ({todaysAppointments.length})
+          </h3>
+          <Link href="/admin/appointments" className="flex items-center gap-1 text-xs font-bold text-primary">
+            View All <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        {todaysAppointments.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">No site visits scheduled for today.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {todaysAppointments.map((a) => (
+              <Link
+                key={a.id}
+                href={`/admin/appointments/${a.id}`}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3 hover:border-primary/30"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="font-bold text-primary">{a.appointmentTime}</span>
+                  <span className="truncate text-sm text-ink">{a.name} — {a.propertyTitle}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{a.assignedAgent || "Unassigned"}</span>
+                  <StatusBadge status={a.status} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Upcoming Site Visits */}
+      <div className="mt-8">
+        <h3 className="flex items-center gap-2 font-heading text-sm font-bold text-ink">
+          <CalendarClock className="h-4.5 w-4.5 text-primary" /> Upcoming Site Visits
+        </h3>
+        {upcomingAppointments.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">No upcoming site visits.</p>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {upcomingAppointments.map((a) => (
+              <Link
+                key={a.id}
+                href={`/admin/appointments/${a.id}`}
+                className="flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-3.5 pr-3 text-xs font-bold text-ink hover:border-primary/30"
+              >
+                {a.appointmentDate} {a.appointmentTime} · {a.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Alerts & Attention Center */}
       <div className="mt-8">

@@ -14,6 +14,11 @@ const palette: Record<string, string> = {
   "Follow-Up": "bg-amber-500/10 text-amber-600",
   Closed: "bg-success/15 text-success",
   Lost: "bg-muted/20 text-muted",
+  Pending: "bg-primary/10 text-primary",
+  Confirmed: "bg-success/10 text-success",
+  Rescheduled: "bg-amber-500/10 text-amber-600",
+  Cancelled: "bg-muted/20 text-muted",
+  "No Show": "bg-muted/20 text-muted",
 };
 
 export function StatusBadge({ status }: { status: string }) {

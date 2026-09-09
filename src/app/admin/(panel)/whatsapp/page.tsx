@@ -16,10 +16,12 @@ import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { LeadCharts } from "@/components/admin/LeadCharts";
 import { whatsappUrlFor } from "@/lib/site";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminWhatsAppPage() {
+  await requireSection("whatsapp");
   let settings: Awaited<ReturnType<typeof settingsService.get>> | null = null;
   let allLeads: Awaited<ReturnType<typeof leadService.list>> = [];
   let totalActions = 0;

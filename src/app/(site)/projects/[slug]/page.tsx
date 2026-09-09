@@ -17,6 +17,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PhoneLink } from "@/components/PhoneLink";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { ProjectViewTracker } from "@/components/ProjectViewTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,7 @@ export default async function ProjectDetailsPage({
 
   return (
     <main className="bg-surface">
+      <ProjectViewTracker projectId={project.id} />
       <div className="relative h-[42vh] min-h-[320px] w-full overflow-hidden sm:h-[52vh]">
         <Image
           src={heroImage}
@@ -215,6 +217,7 @@ export default async function ProjectDetailsPage({
                 <WhatsAppLink
                   href={whatsappUrlFor(whatsappNumber, whatsappMessage)}
                   context="project_detail_sidebar"
+                  projectId={project.id}
                   className="flex items-center justify-center gap-2 rounded-full bg-success px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
                 >
                   <MessageCircle className="h-4 w-4" /> WhatsApp Inquiry
@@ -222,6 +225,7 @@ export default async function ProjectDetailsPage({
                 <PhoneLink
                   phoneHref={site.phoneHref}
                   context="project_detail_sidebar"
+                  projectId={project.id}
                   className="flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
                 >
                   <Phone className="h-4 w-4" /> Call Now

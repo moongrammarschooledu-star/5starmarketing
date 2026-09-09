@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { leadService } from "@/services/leadService";
 import { profileService } from "@/services/profileService";
+import { activityService } from "@/services/activityService";
 import type { LeadStatus } from "@/lib/models/lead";
 
 /** Fired from the property WhatsApp-inquiry buttons so the click shows up
@@ -34,7 +35,8 @@ function revalidateAll() {
 
 export async function updateLeadStatusAction(id: string, status: LeadStatus) {
   try {
-    await leadService.updateStatus(id, status);
+    const updated = await leadService.updateStatus(id, status);
+    if (updated) await activityService.log("Updated Lead", `${updated.name} → ${status}`, "lead", id);
     revalidateAll();
     revalidatePath(`/admin/leads/${id}`);
   } catch (e) {

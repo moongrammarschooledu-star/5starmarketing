@@ -346,4 +346,33 @@ export const propertyService = {
       featured: rows.filter((r) => r.featured).length,
     };
   },
+
+  /** Data Quality Check (STEP 9, section 17) — flags real listings that
+   *  are missing fields a professional public listing needs. Nothing here
+   *  is invented; a property only appears if a required field is
+   *  genuinely empty. */
+  async dataQualityIssues(): Promise<{ propertyId: string; title: string; missing: string[] }[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("properties")
+      .select("id, title, description, price, location, images, property_type, status")
+      .neq("status", "inactive");
+    if (error) {
+      console.error("propertyService.dataQualityIssues failed:", error);
+      return [];
+    }
+    const issues: { propertyId: string; title: string; missing: string[] }[] = [];
+    for (const r of data ?? []) {
+      const missing: string[] = [];
+      if (!r.title?.trim()) missing.push("Title");
+      if (!r.description?.trim()) missing.push("Description");
+      if (!r.price?.trim()) missing.push("Price");
+      if (!r.location?.trim()) missing.push("Location");
+      if (!r.images || r.images.length === 0) missing.push("Image");
+      if (!r.property_type) missing.push("Property Type");
+      if (!r.status) missing.push("Status");
+      if (missing.length > 0) issues.push({ propertyId: r.id, title: r.title || "Untitled property", missing });
+    }
+    return issues;
+  },
 };

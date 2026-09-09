@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { propertyService } from "@/services/propertyService";
+import { activityService } from "@/services/activityService";
 import type {
   PaymentOption,
   Property,
@@ -112,6 +113,7 @@ export async function createPropertyAction(
     return { error: errorMessage(e, "Could not create this property. Please try again.") };
   }
 
+  await activityService.log("Added Property", property.title, "property", property.id);
   revalidateAll(property.slug);
   redirect("/admin/properties");
 }
@@ -132,13 +134,16 @@ export async function updatePropertyAction(
   }
   if (!updated) return { error: "Property not found." };
 
+  await activityService.log("Updated Property", updated.title, "property", updated.id);
   revalidateAll(updated.slug);
   redirect("/admin/properties");
 }
 
 export async function deletePropertyAction(id: string) {
   try {
+    const existing = await propertyService.getById(id);
     await propertyService.remove(id);
+    if (existing) await activityService.log("Deleted Property", existing.title, "property", id);
     revalidateAll();
   } catch (e) {
     console.error("deletePropertyAction failed:", e);

@@ -204,4 +204,15 @@ export const projectService = {
     }
     return true;
   },
+
+  /** Attention Center helper (STEP 9) — projects missing a cover image. */
+  async missingCoverImage(): Promise<{ id: string; name: string }[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("projects").select("id, name, cover_image");
+    if (error) {
+      console.error("projectService.missingCoverImage failed:", error);
+      return [];
+    }
+    return (data ?? []).filter((r) => !r.cover_image).map((r) => ({ id: r.id, name: r.name }));
+  },
 };

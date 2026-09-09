@@ -216,6 +216,7 @@ export default async function PropertyDetailsPage({
               settings?.whatsapp ? whatsappUrlFor(settings.whatsapp, whatsappMessage) : whatsappUrlFor(site.whatsappNumber, whatsappMessage)
             }
             callHref={`tel:${site.phoneHref}`}
+            propertyId={property.id}
           />
         </div>
 

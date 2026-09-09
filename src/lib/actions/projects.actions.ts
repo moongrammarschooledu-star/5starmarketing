@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { projectService } from "@/services/projectService";
+import { activityService } from "@/services/activityService";
 import type { ProjectStatus } from "@/lib/models/project";
 
 function revalidateAll(slug?: string) {
@@ -85,6 +86,7 @@ export async function createProjectAction(
     return { error: errorMessage(e, "Could not create this project. Please try again.") };
   }
 
+  await activityService.log("Added Project", project.name, "project", project.id);
   revalidateAll(project.slug);
   redirect("/admin/projects");
 }
@@ -111,13 +113,16 @@ export async function updateProjectAction(
   }
   if (!updated) return { error: "Project not found." };
 
+  await activityService.log("Updated Project", updated.name, "project", updated.id);
   revalidateAll(updated.slug);
   redirect("/admin/projects");
 }
 
 export async function deleteProjectAction(id: string) {
   try {
+    const existing = await projectService.getById(id);
     await projectService.remove(id);
+    if (existing) await activityService.log("Deleted Project", existing.name, "project", id);
     revalidateAll();
   } catch (e) {
     console.error("deleteProjectAction failed:", e);

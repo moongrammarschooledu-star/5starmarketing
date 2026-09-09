@@ -6,7 +6,9 @@ import { MapPin, Ruler, MessageCircle, Star } from "lucide-react";
 import type { Property } from "@/lib/models/property";
 import { whatsappLink } from "@/lib/site";
 import { trackWhatsAppLeadAction } from "@/lib/actions/leads.actions";
+import { recordWebsiteEventAction } from "@/lib/actions/analytics.actions";
 import { trackEvent } from "@/lib/analytics";
+import { getOrCreateSessionId } from "@/lib/session";
 
 const statusBadgeStyle: Record<string, string> = {
   Reserved: "bg-ink/80 text-white",
@@ -86,6 +88,7 @@ export function PropertyCard({ property }: { property: Property }) {
             onClick={() => {
               trackWhatsAppLeadAction(property.title, property.id);
               trackEvent("whatsapp_click", { context: "property_card", property_id: property.id });
+              recordWebsiteEventAction("whatsapp_click", { propertyId: property.id, sessionId: getOrCreateSessionId() });
             }}
             className="flex items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >

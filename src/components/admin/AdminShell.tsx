@@ -6,13 +6,16 @@ import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopbar } from "./AdminTopbar";
 import { ToastProvider } from "./ToastProvider";
 import { NewLeadNotifier } from "./NewLeadNotifier";
+import type { AdminRole } from "@/lib/models/user";
 
 export function AdminShell({
   adminName,
+  role,
   newLeadsCount = 0,
   children,
 }: {
   adminName: string;
+  role: AdminRole;
   newLeadsCount?: number;
   children: ReactNode;
 }) {
@@ -24,7 +27,7 @@ export function AdminShell({
       <div className="min-h-screen bg-surface-muted lg:flex">
         <aside className="hidden w-64 shrink-0 lg:block">
           <div className="fixed h-screen w-64">
-            <AdminSidebar newLeadsCount={newLeadsCount} />
+            <AdminSidebar newLeadsCount={newLeadsCount} role={role} />
           </div>
         </aside>
 
@@ -44,7 +47,7 @@ export function AdminShell({
               >
                 <X className="h-5 w-5" />
               </button>
-              <AdminSidebar onNavigate={() => setDrawerOpen(false)} newLeadsCount={newLeadsCount} />
+              <AdminSidebar onNavigate={() => setDrawerOpen(false)} newLeadsCount={newLeadsCount} role={role} />
             </div>
           </div>
         )}

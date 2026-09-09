@@ -20,6 +20,10 @@ create table if not exists public.admin_profiles (
   name text not null default 'Admin',
   title text not null default 'Administrator',
   profile_image text,
+  -- Role architecture (STEP 9) — see the RLS/permissions notes below.
+  role text not null default 'admin' check (
+    role in ('super_admin', 'admin', 'editor', 'sales_agent')
+  ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -290,6 +294,59 @@ create table if not exists public.whatsapp_activity (
 create index if not exists whatsapp_activity_lead_idx on public.whatsapp_activity (lead_id);
 
 -- ---------------------------------------------------------------------
+-- property_views (STEP 9) — one row per property-page view. No personal
+-- data: session_id is a random id generated in the visitor's browser.
+-- ---------------------------------------------------------------------
+create table if not exists public.property_views (
+  id uuid primary key default gen_random_uuid(),
+  property_id uuid not null references public.properties (id) on delete cascade,
+  session_id text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists property_views_property_idx on public.property_views (property_id);
+create index if not exists property_views_created_idx on public.property_views (created_at);
+
+-- ---------------------------------------------------------------------
+-- website_events (STEP 9) — whatsapp_click / phone_click /
+-- contact_form_submit / project_view. property_view has its own table
+-- above; property_inquiry is already captured as a row in `leads`.
+-- ---------------------------------------------------------------------
+create table if not exists public.website_events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null check (
+    event_type in ('whatsapp_click', 'phone_click', 'contact_form_submit', 'project_view')
+  ),
+  property_id uuid references public.properties (id) on delete cascade,
+  project_id uuid references public.projects (id) on delete cascade,
+  session_id text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists website_events_type_idx on public.website_events (event_type);
+create index if not exists website_events_property_idx on public.website_events (property_id);
+create index if not exists website_events_project_idx on public.website_events (project_id);
+create index if not exists website_events_created_idx on public.website_events (created_at);
+
+-- ---------------------------------------------------------------------
+-- activity_logs (STEP 9) — admin action history. Written only by
+-- authenticated admin actions, never by public visitors.
+-- ---------------------------------------------------------------------
+create table if not exists public.activity_logs (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid references public.admin_profiles (id) on delete set null,
+  admin_name text,
+  action text not null,
+  entity_type text,
+  entity_id uuid,
+  description text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists activity_logs_created_idx on public.activity_logs (created_at);
+create index if not exists activity_logs_entity_idx on public.activity_logs (entity_type, entity_id);
+
+-- ---------------------------------------------------------------------
 -- updated_at auto-touch trigger, shared by every table above
 -- ---------------------------------------------------------------------
 create or replace function public.set_updated_at()
@@ -334,8 +391,8 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.admin_profiles (id, name, title)
-  values (new.id, coalesce(new.raw_user_meta_data ->> 'name', 'Admin'), 'Director')
+  insert into public.admin_profiles (id, name, title, role)
+  values (new.id, coalesce(new.raw_user_meta_data ->> 'name', 'Admin'), 'Director', 'admin')
   on conflict (id) do nothing;
   return new;
 end;
@@ -490,6 +547,44 @@ create policy "profile_self_update"
   to authenticated
   using (id = auth.uid())
   with check (id = auth.uid());
+
+-- property_views / website_events (STEP 9): public insert-only (so an
+-- anonymous visitor's page view / click can be logged), admin read-only.
+alter table public.property_views enable row level security;
+alter table public.website_events enable row level security;
+alter table public.activity_logs enable row level security;
+
+drop policy if exists "property_views_public_insert" on public.property_views;
+create policy "property_views_public_insert"
+  on public.property_views for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "property_views_admin_read" on public.property_views;
+create policy "property_views_admin_read"
+  on public.property_views for select
+  to authenticated
+  using (true);
+
+drop policy if exists "website_events_public_insert" on public.website_events;
+create policy "website_events_public_insert"
+  on public.website_events for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "website_events_admin_read" on public.website_events;
+create policy "website_events_admin_read"
+  on public.website_events for select
+  to authenticated
+  using (true);
+
+-- activity_logs (STEP 9): admin-only end to end — no anonymous access.
+drop policy if exists "activity_logs_admin_all" on public.activity_logs;
+create policy "activity_logs_admin_all"
+  on public.activity_logs for all
+  to authenticated
+  using (true)
+  with check (true);
 
 -- =====================================================================
 -- Storage: property-images bucket

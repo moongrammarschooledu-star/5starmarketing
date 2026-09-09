@@ -15,31 +15,40 @@ import {
   Search,
   UserCircle,
   LogOut,
+  ClipboardList,
+  History,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
+import { canAccess, type AdminSection } from "@/lib/permissions";
+import type { AdminRole } from "@/lib/models/user";
 
-const navItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/properties", label: "Properties", icon: Building2 },
-  { href: "/admin/properties/new", label: "Add Property", icon: PlusCircle },
-  { href: "/admin/leads", label: "Leads", icon: Users },
-  { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle },
-  { href: "/admin/projects", label: "Projects", icon: FolderKanban },
-  { href: "/admin/services", label: "Services", icon: Wrench },
-  { href: "/admin/seo", label: "SEO", icon: Search },
-  { href: "/admin/settings", label: "Website Settings", icon: Settings },
-  { href: "/admin/profile", label: "Admin Profile", icon: UserCircle },
+const navItems: { href: string; label: string; icon: typeof LayoutDashboard; section: AdminSection }[] = [
+  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "dashboard" },
+  { href: "/admin/properties", label: "Properties", icon: Building2, section: "properties" },
+  { href: "/admin/properties/new", label: "Add Property", icon: PlusCircle, section: "properties" },
+  { href: "/admin/leads", label: "Leads", icon: Users, section: "leads" },
+  { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle, section: "whatsapp" },
+  { href: "/admin/projects", label: "Projects", icon: FolderKanban, section: "projects" },
+  { href: "/admin/services", label: "Services", icon: Wrench, section: "services" },
+  { href: "/admin/reports", label: "Reports", icon: ClipboardList, section: "reports" },
+  { href: "/admin/activity", label: "Activity Log", icon: History, section: "activity" },
+  { href: "/admin/seo", label: "SEO", icon: Search, section: "seo" },
+  { href: "/admin/settings", label: "Website Settings", icon: Settings, section: "settings" },
+  { href: "/admin/profile", label: "Admin Profile", icon: UserCircle, section: "profile" },
 ];
 
 export function AdminSidebar({
   onNavigate,
   newLeadsCount = 0,
+  role,
 }: {
   onNavigate?: () => void;
   newLeadsCount?: number;
+  role: AdminRole;
 }) {
   const pathname = usePathname();
+  const visibleItems = navItems.filter((item) => canAccess(role, item.section));
 
   return (
     <div className="flex h-full flex-col bg-ink text-white">
@@ -49,7 +58,7 @@ export function AdminSidebar({
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const active =
               item.href === "/admin/properties"
                 ? pathname === "/admin/properties"

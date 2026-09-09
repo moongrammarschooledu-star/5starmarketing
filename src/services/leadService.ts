@@ -9,6 +9,7 @@ import type {
   LeadStats,
   LeadPropertyInfo,
 } from "@/lib/models/lead";
+import type { DateRange, LeadAnalytics } from "@/lib/models/analytics";
 
 const STATUS_TO_DB: Record<LeadStatus, string> = {
   New: "new",
@@ -374,5 +375,49 @@ export const leadService = {
     ).slice(0, 5);
 
     return { bySource, byStatus, topProperties };
+  },
+
+  /** Full Lead Analytics section (STEP 9) — counts, breakdowns and a
+   *  day-by-day trend, all scoped to the selected date range. */
+  async analyticsInRange(range: DateRange): Promise<LeadAnalytics> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("leads")
+      .select("status, source, property_title, created_at")
+      .gte("created_at", range.from)
+      .lt("created_at", range.to);
+    if (error) {
+      console.error("leadService.analyticsInRange failed:", error);
+      throw new Error("Could not load lead analytics.");
+    }
+    const rows = data ?? [];
+    const count = (s: string) => rows.filter((r) => r.status === s).length;
+
+    const tally = (values: string[]) => {
+      const map = new Map<string, number>();
+      for (const v of values) map.set(v, (map.get(v) ?? 0) + 1);
+      return [...map.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
+    };
+
+    const byDay = new Map<string, number>();
+    for (const r of rows) {
+      const day = new Date(r.created_at).toISOString().slice(0, 10);
+      byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    }
+    const overTime = [...byDay.entries()].map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date));
+
+    return {
+      total: rows.length,
+      new: count("new"),
+      contacted: count("contacted"),
+      interested: count("interested"),
+      followUp: count("follow_up"),
+      closed: count("closed"),
+      lost: count("lost"),
+      bySource: tally(rows.map((r) => SOURCE_FROM_DB[r.source] ?? "Other")),
+      byStatus: tally(rows.map((r) => STATUS_FROM_DB[r.status] ?? "New")),
+      overTime,
+      topProperties: tally(rows.filter((r) => r.property_title).map((r) => r.property_title as string)).slice(0, 5),
+    };
   },
 };

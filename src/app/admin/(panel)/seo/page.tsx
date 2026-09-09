@@ -13,6 +13,7 @@ import { settingsService } from "@/services/settingsService";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { SeoSettingsForm } from "@/components/admin/SeoSettingsForm";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ function StatusRow({ ok, label, detail }: { ok: boolean; label: string; detail: 
 }
 
 export default async function AdminSeoPage() {
+  await requireSection("seo");
   const [settings, properties, projects] = await Promise.all([
     settingsService.get(),
     propertyService.list().catch(() => []),

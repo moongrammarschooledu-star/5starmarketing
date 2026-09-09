@@ -28,6 +28,7 @@ export const profileService = {
       email: user.email ?? "",
       name: profile?.name ?? "Admin",
       title: profile?.title ?? "Administrator",
+      role: (profile?.role as AdminUser["role"]) ?? "admin",
       profileImage: profile?.profile_image ?? undefined,
       createdAt: profile?.created_at ?? user.created_at,
       updatedAt: profile?.updated_at ?? user.created_at,

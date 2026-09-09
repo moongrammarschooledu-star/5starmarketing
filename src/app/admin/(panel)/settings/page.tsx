@@ -1,9 +1,11 @@
 import { settingsService } from "@/services/settingsService";
 import { SettingsForm } from "@/components/admin/SettingsForm";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
+  await requireSection("settings");
   const settings = await settingsService.get();
 
   return (

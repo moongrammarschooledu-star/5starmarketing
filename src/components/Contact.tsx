@@ -5,6 +5,8 @@ import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2 } from "lucide-r
 import { SectionHeading } from "./SectionHeading";
 import { site, whatsappLink } from "@/lib/site";
 import { trackEvent } from "@/lib/analytics";
+import { getOrCreateSessionId } from "@/lib/session";
+import { recordWebsiteEventAction } from "@/lib/actions/analytics.actions";
 
 const interests = [
   "House",
@@ -59,6 +61,7 @@ export function Contact() {
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");
       setStatus("success");
       trackEvent("contact_form_submit");
+      recordWebsiteEventAction("contact_form_submit", { sessionId: getOrCreateSessionId() });
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : null);

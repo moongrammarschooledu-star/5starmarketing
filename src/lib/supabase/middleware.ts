@@ -1,13 +1,19 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIX = "/admin";
-const LOGIN_PATH = "/admin/login";
+const ADMIN_PREFIX = "/admin";
+const ADMIN_LOGIN_PATH = "/admin/login";
+const CUSTOMER_PREFIX = "/customer";
+const CUSTOMER_LOGIN_PATH = "/login";
 
 /**
  * Refreshes the Supabase auth session on every request (required so it
- * doesn't silently expire) and redirects unauthenticated visitors away
- * from protected /admin/* routes. Runs in the Edge runtime.
+ * doesn't silently expire) and redirects visitors away from routes their
+ * session doesn't grant access to. Runs in the Edge runtime.
+ *
+ * Since customers can now also sign in via Supabase Auth (STEP 10), being
+ * "authenticated" no longer implies "is an admin" — so /admin/* also
+ * checks for a real admin_profiles row, not just any logged-in session.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -16,14 +22,20 @@ export async function updateSession(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const { pathname } = request.nextUrl;
-  const isProtected = pathname.startsWith(PROTECTED_PREFIX) && pathname !== LOGIN_PATH;
+  const isAdminRoute = pathname.startsWith(ADMIN_PREFIX) && pathname !== ADMIN_LOGIN_PATH;
+  const isCustomerRoute = pathname.startsWith(CUSTOMER_PREFIX);
 
   if (!url || !anonKey) {
     // Supabase isn't configured yet. Let public pages render (they'll show
-    // their own "not configured" empty state), but don't pretend admin
-    // routes are safe to enter without a real auth check.
-    if (isProtected) {
-      const loginUrl = new URL(LOGIN_PATH, request.url);
+    // their own "not configured" empty state), but don't pretend
+    // protected routes are safe to enter without a real auth check.
+    if (isAdminRoute) {
+      const loginUrl = new URL(ADMIN_LOGIN_PATH, request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (isCustomerRoute) {
+      const loginUrl = new URL(CUSTOMER_LOGIN_PATH, request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -49,8 +61,28 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (isProtected && !user) {
-    const loginUrl = new URL(LOGIN_PATH, request.url);
+  if (isAdminRoute) {
+    if (!user) {
+      const loginUrl = new URL(ADMIN_LOGIN_PATH, request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    // A logged-in customer has no admin_profiles row — block them from
+    // every /admin/* route rather than letting a page partially render.
+    const { data: adminProfile } = await supabase
+      .from("admin_profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!adminProfile) {
+      const loginUrl = new URL(ADMIN_LOGIN_PATH, request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  if (isCustomerRoute && !user) {
+    const loginUrl = new URL(CUSTOMER_LOGIN_PATH, request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }

@@ -9,6 +9,8 @@ import { trackWhatsAppLeadAction } from "@/lib/actions/leads.actions";
 import { recordWebsiteEventAction } from "@/lib/actions/analytics.actions";
 import { trackEvent } from "@/lib/analytics";
 import { getOrCreateSessionId } from "@/lib/session";
+import { FavoriteButton } from "@/components/customer/FavoriteButton";
+import { CompareCheckbox } from "@/components/customer/CompareCheckbox";
 
 const statusBadgeStyle: Record<string, string> = {
   Reserved: "bg-ink/80 text-white",
@@ -27,12 +29,15 @@ export function PropertyCard({ property }: { property: Property }) {
           sizes="(min-width: 1024px) 380px, 90vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-primary-foreground">
-          {property.type}
-        </span>
-        <span className="absolute right-3 top-3 rounded-full bg-ink/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
-          {property.purpose}
-        </span>
+        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-primary-foreground">
+            {property.type}
+          </span>
+          <span className="rounded-full bg-ink/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
+            {property.purpose}
+          </span>
+        </div>
+        <FavoriteButton propertyId={property.id} className="absolute right-3 top-3" />
         {property.featured && (
           <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-primary shadow">
             <Star className="h-3 w-3 fill-primary text-primary" /> Featured
@@ -72,10 +77,11 @@ export function PropertyCard({ property }: { property: Property }) {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2.5">
+        <div className="mt-4 flex items-center gap-2.5">
+          <CompareCheckbox propertyId={property.id} iconOnly />
           <Link
             href={`/properties/${property.slug}`}
-            className="flex items-center justify-center rounded-full border-2 border-ink/15 px-3 py-2.5 text-xs font-bold text-ink transition-colors hover:border-primary hover:text-primary"
+            className="flex flex-1 items-center justify-center rounded-full border-2 border-ink/15 px-3 py-2.5 text-xs font-bold text-ink transition-colors hover:border-primary hover:text-primary"
           >
             View Details
           </Link>
@@ -90,7 +96,7 @@ export function PropertyCard({ property }: { property: Property }) {
               trackEvent("whatsapp_click", { context: "property_card", property_id: property.id });
               recordWebsiteEventAction("whatsapp_click", { propertyId: property.id, sessionId: getOrCreateSessionId() });
             }}
-            className="flex items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >
             <MessageCircle className="h-3.5 w-3.5" /> Inquiry
           </a>

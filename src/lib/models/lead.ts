@@ -19,6 +19,7 @@ export interface Lead {
   email?: string;
   propertyId?: string;
   propertyTitle?: string;
+  customerId?: string;
   message: string;
   source: LeadSource;
   status: LeadStatus;

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { leadService } from "@/services/leadService";
+import { notificationService } from "@/services/notificationService";
+import { createClient } from "@/lib/supabase/server";
 import type { LeadSource } from "@/lib/models/lead";
 
 const ALLOWED_SOURCES: LeadSource[] = ["Website", "Property Page"];
@@ -84,6 +86,22 @@ export async function POST(request: Request) {
     ? (source as LeadSource)
     : "Website";
 
+  // If the visitor is a logged-in customer, tag the lead with their id
+  // (STEP 10) so it shows up under "My Inquiries" — anonymous visitors
+  // simply get no customer_id, exactly as before.
+  let customerId: string | undefined;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    customerId = user?.id;
+  } catch {
+    customerId = undefined;
+  }
+
+  const trimmedProperty = typeof property === "string" && property.trim() ? property.trim() : undefined;
+
   try {
     await leadService.create({
       name: name.trim(),
@@ -91,11 +109,21 @@ export async function POST(request: Request) {
       whatsapp: typeof whatsapp === "string" && whatsapp.trim() ? whatsapp.trim() : undefined,
       email: typeof email === "string" && email.trim() ? email.trim() : undefined,
       propertyId: typeof propertyId === "string" && propertyId.trim() ? propertyId.trim() : undefined,
-      propertyTitle: typeof property === "string" && property.trim() ? property.trim() : undefined,
+      propertyTitle: trimmedProperty,
+      customerId,
       message: message.trim(),
       source: resolvedSource,
       consent: consent === true || consent === "on" || consent === "true",
     });
+    if (customerId) {
+      await notificationService.notify(
+        customerId,
+        "inquiry_received",
+        "Inquiry received",
+        trimmedProperty ? `We've received your inquiry about ${trimmedProperty}.` : "We've received your inquiry.",
+        "lead"
+      );
+    }
   } catch (error) {
     // The service already logs the real error server-side — never forward
     // raw database error details to the client.

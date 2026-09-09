@@ -17,6 +17,7 @@ import {
   LogOut,
   ClipboardList,
   History,
+  Users2,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -28,6 +29,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/properties", label: "Properties", icon: Building2, section: "properties" },
   { href: "/admin/properties/new", label: "Add Property", icon: PlusCircle, section: "properties" },
   { href: "/admin/leads", label: "Leads", icon: Users, section: "leads" },
+  { href: "/admin/customers", label: "Customers", icon: Users2, section: "customers" },
   { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle, section: "whatsapp" },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban, section: "projects" },
   { href: "/admin/services", label: "Services", icon: Wrench, section: "services" },

@@ -62,6 +62,7 @@ function mapRowToLead(row: any): Lead {
     email: row.email ?? undefined,
     propertyId: row.property_id ?? undefined,
     propertyTitle: row.property_title ?? undefined,
+    customerId: row.customer_id ?? undefined,
     message: row.message ?? "",
     source: SOURCE_FROM_DB[row.source] ?? "Website",
     status: STATUS_FROM_DB[row.status] ?? "New",
@@ -123,6 +124,23 @@ export const leadService = {
     if (error) {
       console.error("leadService.listRecent failed:", error);
       throw new Error("Could not load leads.");
+    }
+    return (data ?? []).map(mapRowToLead);
+  },
+
+  /** "My Inquiries" (STEP 10) — RLS already restricts a customer session
+   *  to their own rows, but filtering explicitly here keeps the query
+   *  itself honest about what it's asking for. */
+  async listByCustomer(customerId: string): Promise<Lead[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("leads")
+      .select("*")
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("leadService.listByCustomer failed:", error);
+      return [];
     }
     return (data ?? []).map(mapRowToLead);
   },
@@ -201,6 +219,7 @@ export const leadService = {
       email: input.email || null,
       property_id: input.propertyId || null,
       property_title: input.propertyTitle || null,
+      customer_id: input.customerId || null,
       message: input.message,
       source: SOURCE_TO_DB[input.source],
       status: STATUS_TO_DB[input.status ?? "New"],

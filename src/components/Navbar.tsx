@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X, Phone, MessageCircle } from "lucide-react";
+import { Menu, X, Phone, MessageCircle, User } from "lucide-react";
 import { Logo } from "./Logo";
 import { site, whatsappLink } from "@/lib/site";
 import { trackEvent } from "@/lib/analytics";
@@ -17,7 +17,7 @@ const links = [
   { href: "/#contact", label: "Contact" },
 ];
 
-export function Navbar() {
+export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -71,6 +71,13 @@ export function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <Link
+            href={isLoggedIn ? "/customer/dashboard" : "/login"}
+            className="flex items-center gap-1.5 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
+          >
+            <User className="h-4 w-4" />
+            {isLoggedIn ? "My Account" : "Login"}
+          </Link>
           <a
             href={whatsappLink("Hi 5STAR.M, I'd like to know more about your properties.")}
             target="_blank"
@@ -109,12 +116,20 @@ export function Navbar() {
               </li>
             ))}
           </ul>
+          <Link
+            href={isLoggedIn ? "/customer/dashboard" : "/login"}
+            onClick={() => setOpen(false)}
+            className="mt-3 flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-5 py-3 text-sm font-bold text-ink"
+          >
+            <User className="h-4 w-4" />
+            {isLoggedIn ? "My Account" : "Login"}
+          </Link>
           <a
             href={whatsappLink("Hi 5STAR.M, I'd like to know more about your properties.")}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackEvent("whatsapp_click", { context: "navbar_mobile" })}
-            className="mt-3 flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
+            className="mt-2.5 flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           >
             <MessageCircle className="h-4 w-4" />
             WhatsApp Us

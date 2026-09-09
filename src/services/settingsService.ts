@@ -27,6 +27,9 @@ function mapRowToSettings(row: any): WebsiteSettings {
     youtubeUrl: row.youtube_url ?? "",
     logoUrl: row.logo_url ?? undefined,
     faviconUrl: row.favicon_url ?? undefined,
+    whatsappDisplayName: row.whatsapp_display_name ?? "5STAR.M Estate & Builders",
+    whatsappDefaultGreeting: row.whatsapp_default_greeting ?? "",
+    whatsappDefaultInquiryMessage: row.whatsapp_default_inquiry_message ?? "",
     updatedAt: row.updated_at,
   };
 }
@@ -62,6 +65,10 @@ export const settingsService = {
     if (input.logoUrl !== undefined) row.logo_url = (await resolveSingleImage(input.logoUrl)) || null;
     if (input.faviconUrl !== undefined)
       row.favicon_url = (await resolveSingleImage(input.faviconUrl)) || null;
+    if (input.whatsappDisplayName !== undefined) row.whatsapp_display_name = input.whatsappDisplayName;
+    if (input.whatsappDefaultGreeting !== undefined) row.whatsapp_default_greeting = input.whatsappDefaultGreeting;
+    if (input.whatsappDefaultInquiryMessage !== undefined)
+      row.whatsapp_default_inquiry_message = input.whatsappDefaultInquiryMessage;
 
     const { data, error } = await supabase
       .from("website_settings")

@@ -55,6 +55,7 @@ export interface LeadPropertyInfo {
   type: string;
   location: string;
   price: string;
+  size: string;
 }
 
 export const leadStatuses: LeadStatus[] = [

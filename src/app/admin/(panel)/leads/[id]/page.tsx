@@ -2,8 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, User, Building2, Info, MessageSquareText, AlertTriangle } from "lucide-react";
 import { leadService } from "@/services/leadService";
+import { whatsappService } from "@/services/whatsappService";
+import { settingsService } from "@/services/settingsService";
+import { profileService } from "@/services/profileService";
 import { LeadActionsPanel } from "@/components/admin/LeadActionsPanel";
 import { LeadNotes } from "@/components/admin/LeadNotes";
+import { WhatsAppActivityLog } from "@/components/admin/WhatsAppActivityLog";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatDateOnly } from "@/lib/date";
 
@@ -18,10 +22,14 @@ export default async function AdminLeadDetailPage({
   const lead = await leadService.getById(id);
   if (!lead) notFound();
 
-  const [property, notes, duplicates] = await Promise.all([
+  const [property, notes, duplicates, templates, settings, admin, activity] = await Promise.all([
     lead.propertyId ? leadService.getLeadProperty(lead.propertyId) : Promise.resolve(undefined),
     leadService.listNotes(lead.id),
     leadService.findPossibleDuplicates(lead.id, lead.phone, lead.whatsapp),
+    whatsappService.listTemplates(),
+    settingsService.get(),
+    profileService.getCurrentAdmin(),
+    whatsappService.listActivity(lead.id),
   ]);
 
   return (
@@ -87,6 +95,7 @@ export default async function AdminLeadDetailPage({
                   <>
                     <Row label="Type" value={property.type} />
                     <Row label="Location" value={property.location} />
+                    <Row label="Size" value={property.size} />
                     <Row label="Price" value={property.price} />
                   </>
                 )}
@@ -139,10 +148,18 @@ export default async function AdminLeadDetailPage({
           </div>
 
           <LeadNotes leadId={lead.id} notes={notes} />
+
+          <WhatsAppActivityLog leadId={lead.id} activity={activity} />
         </div>
 
         <div>
-          <LeadActionsPanel lead={lead} />
+          <LeadActionsPanel
+            lead={lead}
+            property={property}
+            templates={templates}
+            whatsappNumber={settings.whatsapp}
+            agentName={admin?.name ?? "5STAR.M Team"}
+          />
         </div>
       </div>
     </div>

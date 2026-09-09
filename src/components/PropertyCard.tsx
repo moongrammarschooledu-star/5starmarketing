@@ -78,7 +78,7 @@ export function PropertyCard({ property }: { property: Property }) {
           </Link>
           <a
             href={whatsappLink(
-              `Assalam-o-Alaikum,\nI am interested in ${property.title}.\n\nPlease share the complete details, price and payment plan.\n\nThank you.`
+              `Assalam-o-Alaikum 5STAR.M Estate & Builders,\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`
             )}
             target="_blank"
             rel="noopener noreferrer"

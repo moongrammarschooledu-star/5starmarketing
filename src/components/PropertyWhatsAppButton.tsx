@@ -1,21 +1,23 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
-import { whatsappLink } from "@/lib/site";
+import { whatsappLink, whatsappUrlFor } from "@/lib/site";
 import { trackWhatsAppLeadAction } from "@/lib/actions/leads.actions";
 
 export function PropertyWhatsAppButton({
   propertyId,
   propertyTitle,
   message,
+  whatsappNumber,
 }: {
   propertyId: string;
   propertyTitle: string;
   message: string;
+  whatsappNumber?: string;
 }) {
   return (
     <a
-      href={whatsappLink(message)}
+      href={whatsappNumber ? whatsappUrlFor(whatsappNumber, message) : whatsappLink(message)}
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => trackWhatsAppLeadAction(propertyTitle, propertyId)}

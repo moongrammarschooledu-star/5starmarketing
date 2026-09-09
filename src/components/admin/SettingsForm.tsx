@@ -11,12 +11,6 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
 
   return (
     <form action={formAction} className="space-y-6">
-      <div className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-primary">
-        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-        These settings aren&apos;t wired to the live public site yet — the site still reads from
-        its static config. This page manages the record that STEP 4 (Supabase) will connect.
-      </div>
-
       {state?.error && (
         <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
           <AlertCircle className="h-4.5 w-4.5 shrink-0" /> {state.error}
@@ -37,6 +31,34 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
           <Field label="WhatsApp" name="whatsapp" defaultValue={settings.whatsapp} />
           <Field label="Email" name="email" type="email" defaultValue={settings.email} />
           <Field label="Address" name="address" defaultValue={settings.address} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">WhatsApp Business Settings</h2>
+        <p className="mt-1 text-xs text-muted">
+          The WhatsApp number itself is set under Business Information above. These control how
+          WhatsApp messages are drafted across the site and admin CRM.
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field
+            label="WhatsApp Display Name"
+            name="whatsappDisplayName"
+            defaultValue={settings.whatsappDisplayName}
+          />
+          <Field
+            label="Default Greeting"
+            name="whatsappDefaultGreeting"
+            defaultValue={settings.whatsappDefaultGreeting}
+            textarea
+          />
+          <Field
+            label="Default Inquiry Message"
+            name="whatsappDefaultInquiryMessage"
+            defaultValue={settings.whatsappDefaultInquiryMessage}
+            textarea
+            className="sm:col-span-2"
+          />
         </div>
       </section>
 
@@ -81,25 +103,39 @@ function Field({
   defaultValue,
   required,
   type = "text",
+  textarea,
+  className,
 }: {
   label: string;
   name: string;
   defaultValue?: string;
   required?: boolean;
   type?: string;
+  textarea?: boolean;
+  className?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
+    <label className={`flex flex-col gap-1.5 text-sm ${className ?? ""}`}>
       <span className="font-semibold text-ink">
         {label} {required && <span className="text-primary">*</span>}
       </span>
-      <input
-        type={type}
-        name={name}
-        defaultValue={defaultValue}
-        required={required}
-        className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
-      />
+      {textarea ? (
+        <textarea
+          name={name}
+          defaultValue={defaultValue}
+          required={required}
+          rows={2}
+          className="w-full resize-none rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
+        />
+      ) : (
+        <input
+          type={type}
+          name={name}
+          defaultValue={defaultValue}
+          required={required}
+          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
+        />
+      )}
     </label>
   );
 }

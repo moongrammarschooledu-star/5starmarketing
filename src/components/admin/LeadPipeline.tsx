@@ -7,7 +7,7 @@ import { Phone, MessageCircle } from "lucide-react";
 import type { Lead, LeadStatus } from "@/lib/models/lead";
 import { leadStatuses } from "@/lib/models/lead";
 import { updateLeadStatusAction } from "@/lib/actions/leads.actions";
-import { whatsappLink } from "@/lib/site";
+import { whatsappUrlFor } from "@/lib/site";
 import { useToast } from "./ToastProvider";
 
 const COLUMN_TONE: Record<LeadStatus, string> = {
@@ -71,7 +71,8 @@ export function LeadPipeline({ leads }: { leads: Lead[] }) {
 
                   <div className="mt-2.5 flex items-center gap-1.5">
                     <a
-                      href={whatsappLink(
+                      href={whatsappUrlFor(
+                        lead.whatsapp || lead.phone,
                         `Assalam-o-Alaikum ${lead.name}, this is 5STAR.M Estate & Builders — following up on your inquiry.`
                       )}
                       target="_blank"

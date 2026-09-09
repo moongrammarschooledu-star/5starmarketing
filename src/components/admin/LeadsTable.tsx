@@ -7,7 +7,7 @@ import { Search, Trash2, Phone, Mail, MessageCircle, Eye, Pencil, SlidersHorizon
 import type { Lead, LeadStatus } from "@/lib/models/lead";
 import { leadStatuses, leadSources } from "@/lib/models/lead";
 import { updateLeadStatusAction, deleteLeadAction } from "@/lib/actions/leads.actions";
-import { whatsappLink } from "@/lib/site";
+import { whatsappUrlFor } from "@/lib/site";
 import { StatusBadge } from "./StatusBadge";
 import { ConfirmDialog, useConfirmDelete } from "./ConfirmDialog";
 import { useToast } from "./ToastProvider";
@@ -275,7 +275,7 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
                       <Pencil className="h-4 w-4" />
                     </Link>
                     <a
-                      href={whatsappLink(inquiryMessage(l))}
+                      href={whatsappUrlFor(whatsappNumberFor(l) || l.phone, inquiryMessage(l))}
                       target="_blank"
                       rel="noopener noreferrer"
                       title="WhatsApp"
@@ -339,7 +339,7 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <a
-                href={whatsappLink(inquiryMessage(l))}
+                href={whatsappUrlFor(whatsappNumberFor(l) || l.phone, inquiryMessage(l))}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2 text-xs font-bold text-white"

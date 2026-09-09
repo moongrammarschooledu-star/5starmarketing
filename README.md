@@ -44,6 +44,12 @@ once, the same way — it upgrades your existing `inquiries` table into the
 new `leads` CRM table (keeping every row) and adds `lead_notes`. A brand
 new project only needs `schema.sql`, which already includes both tables.
 
+**Already on STEP 5?** Also run
+[`supabase/migrations/2026-09-09-step6-whatsapp.sql`](supabase/migrations/2026-09-09-step6-whatsapp.sql)
+once — it adds the WhatsApp settings fields, `whatsapp_templates` (with 8
+starter templates) and `whatsapp_activity` tables. Fresh installs already
+get these from `schema.sql`.
+
 ### Step 3 — Get your API keys
 
 In your Supabase project: **Settings → API**. Copy:
@@ -129,6 +135,13 @@ Everything is managed from the admin dashboard — no code edits needed:
   it to a staff member, add notes, or contact the customer via WhatsApp /
   Call / Email. Switch between the Table and Pipeline (kanban) views from
   the toggle at the top.
+- **WhatsApp Center**: `/admin/whatsapp` — WhatsApp-sourced lead stats and
+  recent activity. Manage reusable message templates at
+  `/admin/whatsapp/templates` (supports `{{customer_name}}`,
+  `{{property_name}}`, `{{location}}`, `{{price}}`, `{{size}}`,
+  `{{agent_name}}`). From a lead's page, "WhatsApp Customer" opens a
+  preview you can edit before sending. All of this uses normal WhatsApp
+  click-to-chat links — no Meta API credentials required.
 
 ## 7. Testing checklist
 

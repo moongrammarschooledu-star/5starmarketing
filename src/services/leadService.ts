@@ -143,7 +143,7 @@ export const leadService = {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("properties")
-      .select("title, slug, property_type, location, price")
+      .select("title, slug, property_type, location, price, size")
       .eq("id", propertyId)
       .maybeSingle();
     if (error || !data) return undefined;
@@ -153,6 +153,7 @@ export const leadService = {
       type: data.property_type,
       location: data.location,
       price: data.price,
+      size: data.size,
     };
   },
 

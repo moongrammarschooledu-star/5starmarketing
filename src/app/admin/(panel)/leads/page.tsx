@@ -13,6 +13,7 @@ import { leadService } from "@/services/leadService";
 import { StatCard } from "@/components/admin/StatCard";
 import { LeadsViewSwitcher } from "@/components/admin/LeadsViewSwitcher";
 import { LeadCharts } from "@/components/admin/LeadCharts";
+import { FollowUpWhatsAppButton } from "@/components/admin/FollowUpWhatsAppButton";
 import { formatDateOnlyShort } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
@@ -78,14 +79,22 @@ export default async function AdminLeadsPage() {
             <div className="mt-3 space-y-2">
               {todaysFollowUps.length === 0 && <p className="text-sm text-muted">None due today.</p>}
               {todaysFollowUps.map((l) => (
-                <Link
+                <div
                   key={l.id}
-                  href={`/admin/leads/${l.id}`}
-                  className="flex items-center justify-between rounded-lg border border-primary/20 bg-surface px-3.5 py-2 text-sm hover:border-primary"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-surface px-3.5 py-2 text-sm"
                 >
-                  <span className="font-semibold text-ink">{l.name}</span>
+                  <Link href={`/admin/leads/${l.id}`} className="flex-1 font-semibold text-ink hover:text-primary">
+                    {l.name}
+                  </Link>
                   <span className="text-xs text-primary">{l.nextFollowUpTime?.slice(0, 5) ?? "Any time"}</span>
-                </Link>
+                  <FollowUpWhatsAppButton
+                    leadId={l.id}
+                    name={l.name}
+                    phone={l.phone}
+                    whatsapp={l.whatsapp}
+                    propertyTitle={l.propertyTitle}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -97,16 +106,24 @@ export default async function AdminLeadsPage() {
             <div className="mt-3 space-y-2">
               {upcomingFollowUps.length === 0 && <p className="text-sm text-muted">Nothing scheduled.</p>}
               {upcomingFollowUps.map((l) => (
-                <Link
+                <div
                   key={l.id}
-                  href={`/admin/leads/${l.id}`}
-                  className="flex items-center justify-between rounded-lg border border-border px-3.5 py-2 text-sm hover:border-primary/40"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border px-3.5 py-2 text-sm"
                 >
-                  <span className="font-semibold text-ink">{l.name}</span>
+                  <Link href={`/admin/leads/${l.id}`} className="flex-1 font-semibold text-ink hover:text-primary">
+                    {l.name}
+                  </Link>
                   <span className="text-xs text-muted">
                     {l.nextFollowUpDate && formatDateOnlyShort(l.nextFollowUpDate)}
                   </span>
-                </Link>
+                  <FollowUpWhatsAppButton
+                    leadId={l.id}
+                    name={l.name}
+                    phone={l.phone}
+                    whatsapp={l.whatsapp}
+                    propertyTitle={l.propertyTitle}
+                  />
+                </div>
               ))}
             </div>
           </div>

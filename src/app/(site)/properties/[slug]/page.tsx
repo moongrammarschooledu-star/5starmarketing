@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Ruler, Phone, CheckCircle2, Tag } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
+import { settingsService } from "@/services/settingsService";
 import { site } from "@/lib/site";
 import { PropertyGallery } from "@/components/PropertyGallery";
 import { PropertyInquiryForm } from "@/components/PropertyInquiryForm";
@@ -38,10 +39,14 @@ export default async function PropertyDetailsPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const property = await propertyService.getBySlug(slug);
+  const [property, settings] = await Promise.all([
+    propertyService.getBySlug(slug),
+    settingsService.get().catch(() => null),
+  ]);
   if (!property) notFound();
 
-  const whatsappMessage = `Assalam-o-Alaikum,\nI am interested in ${property.title}.\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
+  const whatsappDisplayName = settings?.whatsappDisplayName || site.fullName;
+  const whatsappMessage = `Assalam-o-Alaikum ${whatsappDisplayName},\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
 
   return (
     <main className="bg-surface">
@@ -144,6 +149,7 @@ export default async function PropertyDetailsPage({
                   propertyId={property.id}
                   propertyTitle={property.title}
                   message={whatsappMessage}
+                  whatsappNumber={settings?.whatsapp}
                 />
               </div>
             </div>

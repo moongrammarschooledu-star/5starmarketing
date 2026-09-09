@@ -11,6 +11,9 @@ export interface WebsiteSettings {
   youtubeUrl: string;
   logoUrl?: string;
   faviconUrl?: string;
+  whatsappDisplayName: string;
+  whatsappDefaultGreeting: string;
+  whatsappDefaultInquiryMessage: string;
   updatedAt: string;
 }
 

@@ -29,6 +29,9 @@ export async function updateSettingsAction(
       youtubeUrl: String(formData.get("youtubeUrl") ?? "").trim(),
       logoUrl: String(formData.get("logoUrl") ?? "").trim() || undefined,
       faviconUrl: String(formData.get("faviconUrl") ?? "").trim() || undefined,
+      whatsappDisplayName: String(formData.get("whatsappDisplayName") ?? "").trim(),
+      whatsappDefaultGreeting: String(formData.get("whatsappDefaultGreeting") ?? "").trim(),
+      whatsappDefaultInquiryMessage: String(formData.get("whatsappDefaultInquiryMessage") ?? "").trim(),
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not save settings." };

@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Phone, MessageCircle, Mail, UserPlus, CalendarClock, Trash2 } from "lucide-react";
-import type { Lead, LeadStatus } from "@/lib/models/lead";
+import { Phone, Mail, UserPlus, CalendarClock, Trash2 } from "lucide-react";
+import type { Lead, LeadStatus, LeadPropertyInfo } from "@/lib/models/lead";
 import { leadStatuses } from "@/lib/models/lead";
+import type { WhatsAppTemplate } from "@/lib/models/whatsapp";
 import {
   updateLeadStatusAction,
   updateLeadFollowUpAction,
@@ -12,11 +13,23 @@ import {
   assignLeadToMeAction,
   deleteLeadAction,
 } from "@/lib/actions/leads.actions";
-import { whatsappLink } from "@/lib/site";
 import { useToast } from "./ToastProvider";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { WhatsAppMessageModal } from "./WhatsAppMessageModal";
 
-export function LeadActionsPanel({ lead }: { lead: Lead }) {
+export function LeadActionsPanel({
+  lead,
+  property,
+  templates,
+  whatsappNumber,
+  agentName,
+}: {
+  lead: Lead;
+  property?: LeadPropertyInfo;
+  templates: WhatsAppTemplate[];
+  whatsappNumber: string;
+  agentName: string;
+}) {
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [followUpDate, setFollowUpDate] = useState(lead.nextFollowUpDate ?? "");
   const [followUpTime, setFollowUpTime] = useState(lead.nextFollowUpTime ?? "");
@@ -25,11 +38,6 @@ export function LeadActionsPanel({ lead }: { lead: Lead }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const toast = useToast();
-
-  const whatsappNumber = (lead.whatsapp || lead.phone || "").replace(/[^0-9+]/g, "");
-  const inquiryMessage = `Assalam-o-Alaikum ${lead.name},\n\nThank you for your interest${
-    lead.propertyTitle ? ` in ${lead.propertyTitle}` : ""
-  }. This is 5STAR.M Estate & Builders — how can we help you today?`;
 
   function saveStatus(next: LeadStatus) {
     setStatus(next);
@@ -76,15 +84,13 @@ export function LeadActionsPanel({ lead }: { lead: Lead }) {
       <div className="rounded-2xl border border-border bg-surface p-5">
         <h3 className="font-heading text-sm font-bold text-ink">Contact Customer</h3>
         <div className="mt-3 grid grid-cols-1 gap-2.5">
-          <a
-            href={whatsappLink(inquiryMessage)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 rounded-full bg-success px-4 py-2.5 text-sm font-bold text-white"
-            style={{ pointerEvents: whatsappNumber ? "auto" : "none", opacity: whatsappNumber ? 1 : 0.5 }}
-          >
-            <MessageCircle className="h-4 w-4" /> WhatsApp
-          </a>
+          <WhatsAppMessageModal
+            lead={lead}
+            property={property}
+            templates={templates}
+            whatsappNumber={whatsappNumber}
+            agentName={agentName}
+          />
           <a
             href={`tel:${lead.phone}`}
             className="flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink"

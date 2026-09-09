@@ -18,6 +18,7 @@ import { propertyService } from "@/services/propertyService";
 import { leadService } from "@/services/leadService";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { FollowUpWhatsAppButton } from "@/components/admin/FollowUpWhatsAppButton";
 
 // Data changes on every admin action, so this page must never be served
 // from a cached static snapshot.
@@ -100,14 +101,22 @@ export default async function AdminDashboardPage() {
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {todaysFollowUps.map((l) => (
-              <Link
+              <div
                 key={l.id}
-                href={`/admin/leads/${l.id}`}
-                className="flex items-center gap-2 rounded-full border border-primary/30 bg-surface px-3.5 py-1.5 text-xs font-bold text-ink hover:border-primary"
+                className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-surface py-1.5 pl-3.5 pr-1.5 text-xs font-bold text-ink"
               >
-                {l.name}
-                {l.nextFollowUpTime && <span className="text-primary">{l.nextFollowUpTime.slice(0, 5)}</span>}
-              </Link>
+                <Link href={`/admin/leads/${l.id}`} className="flex items-center gap-2 hover:text-primary">
+                  {l.name}
+                  {l.nextFollowUpTime && <span className="text-primary">{l.nextFollowUpTime.slice(0, 5)}</span>}
+                </Link>
+                <FollowUpWhatsAppButton
+                  leadId={l.id}
+                  name={l.name}
+                  phone={l.phone}
+                  whatsapp={l.whatsapp}
+                  propertyTitle={l.propertyTitle}
+                />
+              </div>
             ))}
           </div>
         </div>

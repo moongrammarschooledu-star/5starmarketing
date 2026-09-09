@@ -27,7 +27,24 @@ export const site = {
 };
 
 export function whatsappLink(message?: string) {
-  const base = site.whatsappHref;
+  return whatsappUrlFor(site.whatsappNumber, message);
+}
+
+/** wa.me requires the full international number with no leading 0 —
+ *  customers almost always enter Pakistani numbers as "03XXXXXXXXX", so
+ *  that gets rewritten to "92XXXXXXXXX". Already-international numbers
+ *  pass through unchanged. */
+export function toWhatsAppNumber(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (digits.startsWith("0")) return `92${digits.slice(1)}`;
+  return digits;
+}
+
+/** Same as whatsappLink, but for any number — an admin-configurable one
+ *  (e.g. from website_settings) or a customer/lead's own number. */
+export function whatsappUrlFor(number: string, message?: string) {
+  const digits = toWhatsAppNumber(number);
+  const base = `https://wa.me/${digits}`;
   if (!message) return base;
   return `${base}?text=${encodeURIComponent(message)}`;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import type { WebsiteSettings } from "@/lib/models/settings";
 import { updateSettingsAction, type SettingsFormState } from "@/lib/actions/settings.actions";
@@ -63,6 +64,31 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Local Business Information</h2>
+        <p className="mt-1 text-xs text-muted">
+          Used for local search (LocalBusiness) structured data and as prep for a Google Business
+          Profile — see the SEO Dashboard at{" "}
+          <Link href="/admin/seo" className="font-semibold text-primary hover:underline">
+            /admin/seo
+          </Link>{" "}
+          for the verification checklist.
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="City" name="city" defaultValue={settings.city ?? "Lahore"} />
+          <Field label="Country" name="country" defaultValue={settings.country ?? "Pakistan"} />
+          <Field label="Latitude" name="latitude" type="number" defaultValue={settings.latitude} />
+          <Field label="Longitude" name="longitude" type="number" defaultValue={settings.longitude} />
+          <Field label="Website" name="websiteUrl" defaultValue={settings.websiteUrl} placeholder="https://www.5starm.com" />
+          <Field
+            label="Business Description"
+            name="businessDescription"
+            defaultValue={settings.businessDescription}
+            textarea
+          />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="font-heading text-base font-bold text-ink">Social Media</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Facebook URL" name="facebookUrl" defaultValue={settings.facebookUrl} />
@@ -105,14 +131,16 @@ function Field({
   type = "text",
   textarea,
   className,
+  placeholder,
 }: {
   label: string;
   name: string;
-  defaultValue?: string;
+  defaultValue?: string | number;
   required?: boolean;
   type?: string;
   textarea?: boolean;
   className?: string;
+  placeholder?: string;
 }) {
   return (
     <label className={`flex flex-col gap-1.5 text-sm ${className ?? ""}`}>
@@ -124,6 +152,7 @@ function Field({
           name={name}
           defaultValue={defaultValue}
           required={required}
+          placeholder={placeholder}
           rows={2}
           className="w-full resize-none rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
         />
@@ -133,6 +162,8 @@ function Field({
           name={name}
           defaultValue={defaultValue}
           required={required}
+          placeholder={placeholder}
+          step={type === "number" ? "any" : undefined}
           className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
         />
       )}

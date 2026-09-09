@@ -1,4 +1,7 @@
+"use client";
+
 import { Phone, MessageCircle, ClipboardList } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 export function PropertyCTASection({
   whatsappHref,
@@ -22,12 +25,14 @@ export function PropertyCTASection({
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackEvent("whatsapp_click", { context: "cta_section" })}
           className="flex items-center gap-2 rounded-full bg-success px-5 py-3 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
         >
           <MessageCircle className="h-4 w-4" /> WhatsApp
         </a>
         <a
           href={callHref}
+          onClick={() => trackEvent("phone_click", { context: "cta_section" })}
           className="flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
         >
           <Phone className="h-4 w-4" /> Call Now

@@ -14,6 +14,19 @@ export interface WebsiteSettings {
   whatsappDisplayName: string;
   whatsappDefaultGreeting: string;
   whatsappDefaultInquiryMessage: string;
+  // Local Business Information (STEP 8) — used for LocalBusiness JSON-LD
+  // and as prep for a Google Business Profile. All optional: only
+  // populated fields are ever rendered into structured data.
+  city?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
+  websiteUrl?: string;
+  businessDescription?: string;
+  // SEO defaults (STEP 8) — used as fallbacks for page metadata.
+  seoSiteTitle?: string;
+  seoSiteDescription?: string;
+  seoDefaultOgImage?: string;
   updatedAt: string;
 }
 

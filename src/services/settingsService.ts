@@ -30,6 +30,15 @@ function mapRowToSettings(row: any): WebsiteSettings {
     whatsappDisplayName: row.whatsapp_display_name ?? "5STAR.M Estate & Builders",
     whatsappDefaultGreeting: row.whatsapp_default_greeting ?? "",
     whatsappDefaultInquiryMessage: row.whatsapp_default_inquiry_message ?? "",
+    city: row.city ?? undefined,
+    country: row.country ?? undefined,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
+    websiteUrl: row.website_url ?? undefined,
+    businessDescription: row.business_description ?? undefined,
+    seoSiteTitle: row.seo_site_title ?? undefined,
+    seoSiteDescription: row.seo_site_description ?? undefined,
+    seoDefaultOgImage: row.seo_default_og_image ?? undefined,
     updatedAt: row.updated_at,
   };
 }
@@ -69,6 +78,16 @@ export const settingsService = {
     if (input.whatsappDefaultGreeting !== undefined) row.whatsapp_default_greeting = input.whatsappDefaultGreeting;
     if (input.whatsappDefaultInquiryMessage !== undefined)
       row.whatsapp_default_inquiry_message = input.whatsappDefaultInquiryMessage;
+    if (input.city !== undefined) row.city = input.city || null;
+    if (input.country !== undefined) row.country = input.country || null;
+    if (input.latitude !== undefined) row.latitude = input.latitude ?? null;
+    if (input.longitude !== undefined) row.longitude = input.longitude ?? null;
+    if (input.websiteUrl !== undefined) row.website_url = input.websiteUrl || null;
+    if (input.businessDescription !== undefined) row.business_description = input.businessDescription || null;
+    if (input.seoSiteTitle !== undefined) row.seo_site_title = input.seoSiteTitle || null;
+    if (input.seoSiteDescription !== undefined) row.seo_site_description = input.seoSiteDescription || null;
+    if (input.seoDefaultOgImage !== undefined)
+      row.seo_default_og_image = (await resolveSingleImage(input.seoDefaultOgImage)) || null;
 
     const { data, error } = await supabase
       .from("website_settings")

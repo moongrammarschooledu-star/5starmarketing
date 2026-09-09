@@ -6,6 +6,7 @@ import { MapPin, Ruler, MessageCircle, Star } from "lucide-react";
 import type { Property } from "@/lib/models/property";
 import { whatsappLink } from "@/lib/site";
 import { trackWhatsAppLeadAction } from "@/lib/actions/leads.actions";
+import { trackEvent } from "@/lib/analytics";
 
 const statusBadgeStyle: Record<string, string> = {
   Reserved: "bg-ink/80 text-white",
@@ -19,7 +20,7 @@ export function PropertyCard({ property }: { property: Property }) {
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
           src={property.images[0]}
-          alt={property.title}
+          alt={`${property.title} — ${property.size} ${property.type} in ${property.location}`}
           fill
           sizes="(min-width: 1024px) 380px, 90vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -82,7 +83,10 @@ export function PropertyCard({ property }: { property: Property }) {
             )}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => trackWhatsAppLeadAction(property.title, property.id)}
+            onClick={() => {
+              trackWhatsAppLeadAction(property.title, property.id);
+              trackEvent("whatsapp_click", { context: "property_card", property_id: property.id });
+            }}
             className="flex items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >
             <MessageCircle className="h-3.5 w-3.5" /> Inquiry

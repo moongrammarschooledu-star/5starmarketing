@@ -12,6 +12,7 @@ import {
   FolderKanban,
   Wrench,
   Settings,
+  Search,
   UserCircle,
   LogOut,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/services", label: "Services", icon: Wrench },
+  { href: "/admin/seo", label: "SEO", icon: Search },
   { href: "/admin/settings", label: "Website Settings", icon: Settings },
   { href: "/admin/profile", label: "Admin Profile", icon: UserCircle },
 ];

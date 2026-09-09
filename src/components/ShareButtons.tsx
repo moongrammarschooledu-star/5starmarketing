@@ -21,7 +21,7 @@ export function ShareButtons({ url, text }: { url: string; text: string }) {
     <div className="flex items-center gap-2">
       <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Share:</span>
       <a
-        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}`}
+        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${text}\n\n${url}`)}`}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Share on WhatsApp"

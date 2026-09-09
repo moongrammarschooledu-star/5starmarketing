@@ -45,6 +45,18 @@ create table if not exists public.website_settings (
   whatsapp_display_name text not null default '5STAR.M Estate & Builders',
   whatsapp_default_greeting text not null default 'Assalam-o-Alaikum! How can we help you today?',
   whatsapp_default_inquiry_message text not null default 'Hi 5STAR.M, I''d like to know more about your properties.',
+  -- Local Business Information (STEP 8) — used for LocalBusiness JSON-LD
+  -- and as prep for a Google Business Profile.
+  city text default 'Lahore',
+  country text default 'Pakistan',
+  latitude numeric,
+  longitude numeric,
+  website_url text,
+  business_description text,
+  -- SEO defaults (STEP 8) — fallbacks for page metadata.
+  seo_site_title text,
+  seo_site_description text,
+  seo_default_og_image text,
   updated_at timestamptz not null default now(),
   constraint website_settings_single_row check (id = 1)
 );

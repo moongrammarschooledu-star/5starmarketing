@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Send, CheckCircle2 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -68,6 +69,7 @@ export function PropertyInquiryForm({
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");
       setStatus("success");
+      trackEvent("property_inquiry", { property_id: propertyId });
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : null);

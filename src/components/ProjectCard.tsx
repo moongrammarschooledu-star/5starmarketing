@@ -6,6 +6,7 @@ import { MapPin, Building2, MessageCircle } from "lucide-react";
 import type { Project } from "@/lib/models/project";
 import { whatsappLink } from "@/lib/site";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { trackEvent } from "@/lib/analytics";
 
 export function ProjectCard({ project }: { project: Project }) {
   const cover = project.coverImage || project.images[0];
@@ -15,7 +16,7 @@ export function ProjectCard({ project }: { project: Project }) {
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
           src={cover}
-          alt={project.name}
+          alt={`${project.name} — ${project.type} project in ${project.location}`}
           fill
           sizes="(min-width: 1024px) 380px, 90vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -55,6 +56,7 @@ export function ProjectCard({ project }: { project: Project }) {
             )}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("whatsapp_click", { context: "project_card", project_id: project.id })}
             className="flex items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >
             <MessageCircle className="h-3.5 w-3.5" /> Inquiry

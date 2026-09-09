@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2 } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
 import { site, whatsappLink } from "@/lib/site";
+import { trackEvent } from "@/lib/analytics";
 
 const interests = [
   "House",
@@ -57,6 +58,7 @@ export function Contact() {
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");
       setStatus("success");
+      trackEvent("contact_form_submit");
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : null);
@@ -82,7 +84,11 @@ export function Contact() {
               <div className="text-sm font-semibold text-primary">{site.directorTitle}</div>
 
               <div className="mt-5 space-y-4 text-sm">
-                <a href={`tel:${site.phoneHref}`} className="flex items-center gap-3 text-ink/85 hover:text-primary">
+                <a
+                  href={`tel:${site.phoneHref}`}
+                  onClick={() => trackEvent("phone_click", { context: "contact_section" })}
+                  className="flex items-center gap-3 text-ink/85 hover:text-primary"
+                >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Phone className="h-4 w-4" />
                   </span>
@@ -92,6 +98,7 @@ export function Contact() {
                   href={whatsappLink("Hi 5STAR.M, I'd like to get in touch.")}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackEvent("whatsapp_click", { context: "contact_section" })}
                   className="flex items-center gap-3 text-ink/85 hover:text-primary"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
@@ -117,6 +124,7 @@ export function Contact() {
                 href={whatsappLink("Hi 5STAR.M, I'm interested in your properties.")}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackEvent("whatsapp_click", { context: "contact_section_button" })}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-success px-5 py-3 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
               >
                 <MessageCircle className="h-4 w-4" /> Chat on WhatsApp
@@ -134,6 +142,14 @@ export function Contact() {
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.mapsQuery)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-primary hover:underline"
+            >
+              Get Directions
+            </a>
           </div>
 
           <form

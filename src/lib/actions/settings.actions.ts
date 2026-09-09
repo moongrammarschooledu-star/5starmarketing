@@ -8,6 +8,11 @@ export interface SettingsFormState {
   success?: boolean;
 }
 
+function numberOrUndefined(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  return raw ? Number(raw) : undefined;
+}
+
 export async function updateSettingsAction(
   _prevState: SettingsFormState,
   formData: FormData
@@ -32,6 +37,12 @@ export async function updateSettingsAction(
       whatsappDisplayName: String(formData.get("whatsappDisplayName") ?? "").trim(),
       whatsappDefaultGreeting: String(formData.get("whatsappDefaultGreeting") ?? "").trim(),
       whatsappDefaultInquiryMessage: String(formData.get("whatsappDefaultInquiryMessage") ?? "").trim(),
+      city: String(formData.get("city") ?? "").trim(),
+      country: String(formData.get("country") ?? "").trim(),
+      latitude: numberOrUndefined(formData.get("latitude")),
+      longitude: numberOrUndefined(formData.get("longitude")),
+      websiteUrl: String(formData.get("websiteUrl") ?? "").trim() || undefined,
+      businessDescription: String(formData.get("businessDescription") ?? "").trim() || undefined,
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not save settings." };

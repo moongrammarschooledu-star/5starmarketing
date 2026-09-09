@@ -17,10 +17,23 @@ import { PropertyCTASection } from "@/components/PropertyCTASection";
 import { PropertyDocuments } from "@/components/PropertyDocuments";
 import { RelatedProperties } from "@/components/RelatedProperties";
 import { ShareButtons } from "@/components/ShareButtons";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { JsonLd } from "@/components/JsonLd";
+import { PropertyViewTracker } from "@/components/PropertyViewTracker";
+import { PhoneLink } from "@/components/PhoneLink";
+import type { Property } from "@/lib/models/property";
 
 // Properties are added/edited/removed live via the admin dashboard, so
 // this route is rendered per-request rather than pre-built at deploy time.
 export const dynamic = "force-dynamic";
+
+/** "5 Marla House for Sale in Lahore" — built from real property fields,
+ *  never invented. */
+function seoTitle(property: Property) {
+  const purpose = property.purpose.replace(/^For /, "");
+  const city = property.locationArea === "Johar Town" ? "Johar Town, Lahore" : "Lahore";
+  return `${property.size} ${property.type} for ${purpose} in ${city}`;
+}
 
 export async function generateMetadata({
   params,
@@ -31,18 +44,26 @@ export async function generateMetadata({
   const property = await propertyService.getBySlug(slug);
   if (!property) return { title: "Property Not Found" };
 
-  const description = property.description || `${property.title} — ${property.location}, ${property.size}.`;
+  const title = seoTitle(property);
+  const description =
+    property.description || `${title}. Contact 5STAR.M Estate & Builders for complete details and payment plans.`;
   const image = property.images[0];
 
   return {
-    title: property.title,
+    title,
     description,
     alternates: { canonical: `/properties/${property.slug}` },
     openGraph: {
-      title: `${property.title} | 5STAR.M Estate & Builders`,
-      description,
+      title: `${title} | 5STAR.M Estate & Builders`,
+      description: `${property.location} · ${description}`,
       url: `/properties/${property.slug}`,
-      images: image ? [{ url: image, width: 1200, height: 630, alt: property.title }] : undefined,
+      images: image ? [{ url: image, width: 1200, height: 630, alt: title }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: image ? [image] : undefined,
     },
   };
 }
@@ -67,13 +88,43 @@ export default async function PropertyDetailsPage({
   const whatsappDisplayName = settings?.whatsappDisplayName || site.fullName;
   const whatsappMessage = `Assalam-o-Alaikum ${whatsappDisplayName},\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
   const pageUrl = `${site.url}/properties/${property.slug}`;
+  const shareText = `Check out this property from 5STAR.M Estate & Builders:\n\n${property.title}\n${property.location}`;
+
+  const productJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: property.title,
+    description: property.description || undefined,
+    image: property.images,
+    url: pageUrl,
+  };
+  if (property.priceValue) {
+    productJsonLd.offers = {
+      "@type": "Offer",
+      price: property.priceValue,
+      priceCurrency: "PKR",
+      availability:
+        property.status === "Available" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: pageUrl,
+    };
+  }
 
   return (
     <main className="bg-surface">
+      <JsonLd data={productJsonLd} />
+      <PropertyViewTracker propertyId={property.id} propertyType={property.type} locationArea={property.locationArea} />
+
       <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
+        <Breadcrumbs
+          items={[
+            { label: "Properties", href: "/properties" },
+            { label: property.title },
+          ]}
+        />
+
         <Link
           href="/properties"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-primary"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Properties
         </Link>
@@ -113,7 +164,7 @@ export default async function PropertyDetailsPage({
               <p className="mt-6 text-base leading-relaxed text-muted">{property.description}</p>
 
               <div className="mt-4">
-                <ShareButtons url={pageUrl} text={`Check out this property from 5STAR.M Estate & Builders — ${property.title}.`} />
+                <ShareButtons url={pageUrl} text={shareText} />
               </div>
             </div>
 
@@ -137,12 +188,13 @@ export default async function PropertyDetailsPage({
               <div className="mt-1 text-sm font-medium text-muted">{property.paymentOption}</div>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <a
-                  href={`tel:${site.phoneHref}`}
+                <PhoneLink
+                  phoneHref={site.phoneHref}
+                  context="property_detail_sidebar"
                   className="flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
                 >
                   <Phone className="h-4 w-4" /> Call
-                </a>
+                </PhoneLink>
                 <PropertyWhatsAppButton
                   propertyId={property.id}
                   propertyTitle={property.title}

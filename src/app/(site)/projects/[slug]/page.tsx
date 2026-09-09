@@ -14,6 +14,9 @@ import { PropertyDocuments } from "@/components/PropertyDocuments";
 import { PropertyCard } from "@/components/PropertyCard";
 import { ShareButtons } from "@/components/ShareButtons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PhoneLink } from "@/components/PhoneLink";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +38,15 @@ export async function generateMetadata({
     alternates: { canonical: `/projects/${project.slug}` },
     openGraph: {
       title: `${project.name} | 5STAR.M Estate & Builders`,
-      description,
+      description: `${project.location} · ${description}`,
       url: `/projects/${project.slug}`,
       images: image ? [{ url: image, width: 1200, height: 630, alt: project.name }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: project.name,
+      description,
+      images: image ? [image] : undefined,
     },
   };
 }
@@ -95,14 +104,24 @@ export default async function ProjectDetailsPage({
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-12">
+        <Breadcrumbs
+          items={[
+            { label: "Projects", href: "/projects" },
+            { label: project.name },
+          ]}
+        />
+
+        <div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-12">
           <div className="space-y-8 lg:col-span-2">
             {project.shortDescription && (
               <p className="text-lg font-medium leading-relaxed text-ink">{project.shortDescription}</p>
             )}
 
             <div>
-              <ShareButtons url={pageUrl} text={`Check out this project from 5STAR.M Estate & Builders — ${project.name}.`} />
+              <ShareButtons
+                url={pageUrl}
+                text={`Check out this project from 5STAR.M Estate & Builders:\n\n${project.name}\n${project.location}`}
+              />
             </div>
 
             {project.description && (
@@ -193,20 +212,20 @@ export default async function ProjectDetailsPage({
               </p>
 
               <div className="mt-5 grid grid-cols-1 gap-3">
-                <a
+                <WhatsAppLink
                   href={whatsappUrlFor(whatsappNumber, whatsappMessage)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  context="project_detail_sidebar"
                   className="flex items-center justify-center gap-2 rounded-full bg-success px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
                 >
                   <MessageCircle className="h-4 w-4" /> WhatsApp Inquiry
-                </a>
-                <a
-                  href={`tel:${site.phoneHref}`}
+                </WhatsAppLink>
+                <PhoneLink
+                  phoneHref={site.phoneHref}
+                  context="project_detail_sidebar"
                   className="flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
                 >
                   <Phone className="h-4 w-4" /> Call Now
-                </a>
+                </PhoneLink>
               </div>
             </div>
           </div>

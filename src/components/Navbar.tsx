@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, X, Phone, MessageCircle } from "lucide-react";
 import { Logo } from "./Logo";
 import { site, whatsappLink } from "@/lib/site";
+import { trackEvent } from "@/lib/analytics";
 
 const links = [
   { href: "/", label: "Home" },
@@ -37,7 +38,11 @@ export function Navbar() {
     >
       <div className="hidden items-center justify-between border-b border-border/70 bg-ink px-4 py-1.5 text-xs text-white/85 sm:flex lg:px-8">
         <div className="flex items-center gap-5">
-          <a href={`tel:${site.phoneHref}`} className="flex items-center gap-1.5 hover:text-white">
+          <a
+            href={`tel:${site.phoneHref}`}
+            onClick={() => trackEvent("phone_click", { context: "navbar_topbar" })}
+            className="flex items-center gap-1.5 hover:text-white"
+          >
             <Phone className="h-3.5 w-3.5" /> {site.phoneDisplay}
           </a>
           <a href={`mailto:${site.email}`} className="hover:text-white">
@@ -70,6 +75,7 @@ export function Navbar() {
             href={whatsappLink("Hi 5STAR.M, I'd like to know more about your properties.")}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("whatsapp_click", { context: "navbar_desktop" })}
             className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/30 transition-colors hover:bg-primary-hover"
           >
             <MessageCircle className="h-4 w-4" />
@@ -107,6 +113,7 @@ export function Navbar() {
             href={whatsappLink("Hi 5STAR.M, I'd like to know more about your properties.")}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("whatsapp_click", { context: "navbar_mobile" })}
             className="mt-3 flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           >
             <MessageCircle className="h-4 w-4" />

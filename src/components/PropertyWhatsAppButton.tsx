@@ -3,6 +3,7 @@
 import { MessageCircle } from "lucide-react";
 import { whatsappLink, whatsappUrlFor } from "@/lib/site";
 import { trackWhatsAppLeadAction } from "@/lib/actions/leads.actions";
+import { trackEvent } from "@/lib/analytics";
 
 export function PropertyWhatsAppButton({
   propertyId,
@@ -20,7 +21,10 @@ export function PropertyWhatsAppButton({
       href={whatsappNumber ? whatsappUrlFor(whatsappNumber, message) : whatsappLink(message)}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => trackWhatsAppLeadAction(propertyTitle, propertyId)}
+      onClick={() => {
+        trackWhatsAppLeadAction(propertyTitle, propertyId);
+        trackEvent("whatsapp_click", { context: "property_detail", property_id: propertyId });
+      }}
       className="flex items-center justify-center gap-2 rounded-full bg-success px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
     >
       <MessageCircle className="h-4 w-4" /> WhatsApp

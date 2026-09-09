@@ -56,6 +56,12 @@ once — it adds the `project-images` and `documents` Storage buckets, the
 project↔property relation, payment-plan fields, and the projects
 draft/publish flag. Fresh installs already get these from `schema.sql`.
 
+**Already on STEP 7?** Also run
+[`supabase/migrations/2026-09-11-step8-seo.sql`](supabase/migrations/2026-09-11-step8-seo.sql)
+once — it adds Local Business Information (city, country, coordinates,
+website, description) and SEO default fields to Website Settings. Fresh
+installs already get these from `schema.sql`.
+
 ### Step 3 — Get your API keys
 
 In your Supabase project: **Settings → API**. Copy:
@@ -90,9 +96,9 @@ To add a second admin later, repeat the same steps with another email.
 
 ## 3. Environment variables required
 
-Exactly two, both safe to expose to the browser (the `NEXT_PUBLIC_` prefix
-is intentional — access control comes from Row Level Security, not from
-keeping these secret):
+Only two are **required** for the site to work at all, both safe to
+expose to the browser (the `NEXT_PUBLIC_` prefix is intentional — access
+control comes from Row Level Security, not from keeping these secret):
 
 | Variable | Where to find it |
 |---|---|
@@ -100,6 +106,20 @@ keeping these secret):
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon/public key |
 
 The `service_role` key is never used anywhere in this codebase.
+
+**Optional** (WhatsApp Cloud API and SEO/analytics — see
+`.env.local.example` for the full comments on each):
+
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console ownership verification |
+| `NEXT_PUBLIC_GA_ID` | Google Analytics 4 Measurement ID (e.g. `G-XXXXXXXXXX`) |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Not currently used — maps use a plain embed URL, no key needed |
+| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_API_VERSION`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Future Meta WhatsApp Cloud API — not used by today's click-to-chat |
+
+Leaving any of these blank does not break the site — each feature they
+gate simply stays off (no analytics script loads, no verification meta
+tag is rendered, etc).
 
 ## 4. Storage buckets
 
@@ -161,8 +181,43 @@ Everything is managed from the admin dashboard — no code edits needed:
   `{{agent_name}}`). From a lead's page, "WhatsApp Customer" opens a
   preview you can edit before sending. All of this uses normal WhatsApp
   click-to-chat links — no Meta API credentials required.
+- **SEO**: `/admin/seo` — indexing readiness, content warnings (missing
+  descriptions/images), site-wide SEO defaults, and a Google Business
+  Profile checklist. Local business fields (city, coordinates, website,
+  description) live under `/admin/settings` → Local Business Information.
 
-## 7. Testing checklist
+## 7. SEO & Analytics
+
+- **Sitemap**: `/sitemap.xml`, generated from published pages, active
+  properties and published projects.
+- **Robots**: `/robots.txt`, allows everything except `/admin` and `/api`.
+- **Structured data**: RealEstateAgent + WebSite JSON-LD on every page;
+  BreadcrumbList on property/project/services pages; Product/Offer
+  JSON-LD on property pages when a numeric price is set.
+- **Google Search Console**: set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`
+  to the value from Search Console → Settings → Ownership verification →
+  HTML tag method (just the `content` value, not the whole tag), then
+  redeploy. Add the site in Search Console using this domain and submit
+  `/sitemap.xml`.
+- **Google Analytics 4**: set `NEXT_PUBLIC_GA_ID` to your GA4 Measurement
+  ID (Admin → Data Streams → your web stream), then redeploy. Tracked
+  events: `property_view`, `property_inquiry`, `contact_form_submit`,
+  `whatsapp_click`, `phone_click` — no personal data (names, numbers,
+  emails, messages) is ever sent as an event parameter.
+- **Google Maps**: the Contact page and property/project location maps
+  use a plain `maps.google.com` embed URL — no API key needed.
+  `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is prepared but unused; only needed
+  if this is later upgraded to the interactive Maps JavaScript API.
+- **Security headers**: set site-wide in `next.config.ts` — a
+  conservative Content-Security-Policy plus X-Content-Type-Options,
+  Referrer-Policy and Permissions-Policy.
+- I have **not** verified Google indexing, Search Console ownership, GA4
+  data, or a Google Business Profile — none of that can be done without
+  your actual Google accounts. The dashboard at `/admin/seo` shows
+  whether each is *configured*, not whether Google has verified/indexed
+  anything.
+
+## 8. Testing checklist
 
 Run through this after connecting your Supabase project:
 
@@ -181,6 +236,12 @@ Run through this after connecting your Supabase project:
 - [ ] Click a WhatsApp button on a property → opens WhatsApp **and** logs a lead in `/admin/inquiries`
 - [ ] Click a phone number → triggers a call on mobile
 - [ ] Submit the homepage contact form with an invalid email → validation error, no submission
+- [ ] View source on `/`, `/properties/<slug>` and `/projects/<slug>` → unique `<title>`, meta description, canonical link, Open Graph and Twitter tags, and a `<script type="application/ld+json">` block
+- [ ] Visit `/sitemap.xml` and `/robots.txt` directly → both return valid XML/text, no errors
+- [ ] Visit a deleted/invalid property or project slug → the "Property/Project Not Found" page, not a generic crash
+- [ ] Visit a nonsense URL like `/this-does-not-exist` → the 404 page with Home/Browse Properties/Contact buttons
+- [ ] With `NEXT_PUBLIC_GA_ID` set, open the Network tab and click a WhatsApp/phone/inquiry button → a `gtag` event request fires
+- [ ] `/admin/seo` loads and reflects real data (missing-description count matches what you'd expect)
 
 I verified the build compiles cleanly and every page renders without
 crashing (including with Supabase deliberately unconfigured, to confirm
@@ -188,7 +249,7 @@ the empty/error states work) — but I could not run this checklist against
 real data myself, since I don't have your Supabase credentials. Please run
 through it once you've connected your project.
 
-## 8. Deploying to Vercel
+## 9. Deploying to Vercel
 
 1. Push this repo to GitHub (already done if you're reading this from the
    repo).

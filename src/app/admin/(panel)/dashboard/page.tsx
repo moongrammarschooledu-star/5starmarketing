@@ -12,9 +12,10 @@ import {
   ExternalLink,
   ArrowRight,
   AlertTriangle,
+  CalendarClock,
 } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
-import { inquiryService } from "@/services/inquiryService";
+import { leadService } from "@/services/leadService";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 
@@ -24,22 +25,25 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   let propertyStats = { total: 0, available: 0, sold: 0, featured: 0 };
-  let inquiryStats = { total: 0, new: 0 };
+  let leadStats = { total: 0, new: 0, contacted: 0, interested: 0, followUp: 0, closed: 0, lost: 0 };
   let recentProperties: Awaited<ReturnType<typeof propertyService.list>> = [];
-  let recentInquiries: Awaited<ReturnType<typeof inquiryService.listRecent>> = [];
+  let recentLeads: Awaited<ReturnType<typeof leadService.listRecent>> = [];
+  let todaysFollowUps: Awaited<ReturnType<typeof leadService.todaysFollowUps>> = [];
   let loadError: string | null = null;
 
   try {
-    const [pStats, iStats, properties, inquiries] = await Promise.all([
+    const [pStats, lStats, properties, leads, followUps] = await Promise.all([
       propertyService.stats(),
-      inquiryService.stats(),
+      leadService.stats(),
       propertyService.list().then((l) => l.slice(0, 5)),
-      inquiryService.listRecent(5),
+      leadService.listRecent(5),
+      leadService.todaysFollowUps(),
     ]);
     propertyStats = pStats;
-    inquiryStats = iStats;
+    leadStats = lStats;
     recentProperties = properties;
-    recentInquiries = inquiries;
+    recentLeads = leads;
+    todaysFollowUps = followUps;
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load dashboard data.";
   }
@@ -85,9 +89,29 @@ export default async function AdminDashboardPage() {
         <StatCard label="Active Properties" value={propertyStats.available} icon={CheckCircle2} tone="success" />
         <StatCard label="Sold Properties" value={propertyStats.sold} icon={DollarSign} />
         <StatCard label="Featured Properties" value={propertyStats.featured} icon={Star} tone="primary" />
-        <StatCard label="Total Inquiries" value={inquiryStats.total} icon={MessageSquare} />
-        <StatCard label="New Leads" value={inquiryStats.new} icon={Sparkles} tone="primary" />
+        <StatCard label="Total Leads" value={leadStats.total} icon={MessageSquare} />
+        <StatCard label="New Leads" value={leadStats.new} icon={Sparkles} tone="primary" />
       </div>
+
+      {todaysFollowUps.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+          <div className="flex items-center gap-2 font-heading text-sm font-bold text-ink">
+            <CalendarClock className="h-4.5 w-4.5 text-primary" /> Today&apos;s Follow-Ups ({todaysFollowUps.length})
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {todaysFollowUps.map((l) => (
+              <Link
+                key={l.id}
+                href={`/admin/leads/${l.id}`}
+                className="flex items-center gap-2 rounded-full border border-primary/30 bg-surface px-3.5 py-1.5 text-xs font-bold text-ink hover:border-primary"
+              >
+                {l.name}
+                {l.nextFollowUpTime && <span className="text-primary">{l.nextFollowUpTime.slice(0, 5)}</span>}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
@@ -123,27 +147,31 @@ export default async function AdminDashboardPage() {
 
         <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-heading text-base font-bold text-ink">Recent Inquiries</h2>
-            <Link href="/admin/inquiries" className="flex items-center gap-1 text-xs font-bold text-primary">
+            <h2 className="font-heading text-base font-bold text-ink">Recent Leads</h2>
+            <Link href="/admin/leads" className="flex items-center gap-1 text-xs font-bold text-primary">
               View all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
           <div className="mt-4 space-y-3">
-            {recentInquiries.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted">No inquiries yet.</p>
+            {recentLeads.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted">No leads yet.</p>
             )}
-            {recentInquiries.map((i) => (
-              <div key={i.id} className="rounded-xl border border-border p-3">
+            {recentLeads.map((l) => (
+              <Link
+                key={l.id}
+                href={`/admin/leads/${l.id}`}
+                className="block rounded-xl border border-border p-3 transition-colors hover:border-primary/30"
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-ink">{i.name}</span>
-                  <StatusBadge status={i.status} />
+                  <span className="text-sm font-bold text-ink">{l.name}</span>
+                  <StatusBadge status={l.status} />
                 </div>
                 <div className="mt-1 text-xs text-muted">
-                  {i.propertyTitle ?? "General inquiry"} · {i.phone}
+                  {l.propertyTitle ?? "General inquiry"} · {l.phone}
                 </div>
-                <p className="mt-1.5 line-clamp-1 text-xs text-muted-foreground">{i.message}</p>
-              </div>
+                <p className="mt-1.5 line-clamp-1 text-xs text-muted-foreground">{l.message}</p>
+              </Link>
             ))}
           </div>
         </div>

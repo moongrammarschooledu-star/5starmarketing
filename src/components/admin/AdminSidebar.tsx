@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   Building2,
   PlusCircle,
-  MessageSquare,
+  Users,
   FolderKanban,
   Wrench,
   Settings,
@@ -21,14 +21,20 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/properties", label: "Properties", icon: Building2 },
   { href: "/admin/properties/new", label: "Add Property", icon: PlusCircle },
-  { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
+  { href: "/admin/leads", label: "Leads", icon: Users },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/services", label: "Services", icon: Wrench },
   { href: "/admin/settings", label: "Website Settings", icon: Settings },
   { href: "/admin/profile", label: "Admin Profile", icon: UserCircle },
 ];
 
-export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function AdminSidebar({
+  onNavigate,
+  newLeadsCount = 0,
+}: {
+  onNavigate?: () => void;
+  newLeadsCount?: number;
+}) {
   const pathname = usePathname();
 
   return (
@@ -57,6 +63,11 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
                 >
                   <Icon className="h-4.5 w-4.5 shrink-0" />
                   {item.label}
+                  {item.href === "/admin/leads" && newLeadsCount > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
+                      {newLeadsCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

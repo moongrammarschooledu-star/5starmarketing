@@ -16,25 +16,50 @@ const interests = [
 
 type Status = "idle" | "submitting" | "success" | "error";
 
+const PHONE_PATTERN = /^[0-9+()\-\s]{7,20}$/;
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+
 export function Contact() {
   const [status, setStatus] = useState<Status>("idle");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
+    setError(null);
+
+    // Honeypot: real visitors never fill this hidden field.
+    if (typeof data.company === "string" && data.company.trim()) {
+      setStatus("success");
+      form.reset();
+      return;
+    }
+
+    const phone = String(data.phone ?? "").trim();
+    const email = String(data.email ?? "").trim();
+    if (!PHONE_PATTERN.test(phone)) {
+      setError("Please enter a valid phone number.");
+      return;
+    }
+    if (email && !EMAIL_PATTERN.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
 
     setStatus("submitting");
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, source: "Website" }),
       });
-      if (!res.ok) throw new Error("Request failed");
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");
       setStatus("success");
       form.reset();
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : null);
       setStatus("error");
     }
   }
@@ -115,6 +140,15 @@ export function Contact() {
             onSubmit={handleSubmit}
             className="rounded-2xl border border-border bg-surface p-6 shadow-sm lg:col-span-3"
           >
+            {/* Honeypot — hidden from real visitors via CSS. */}
+            <input
+              type="text"
+              name="company"
+              tabIndex={-1}
+              autoComplete="off"
+              className="absolute -left-[9999px] h-0 w-0 opacity-0"
+              aria-hidden="true"
+            />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Full Name" name="name" required placeholder="Your name" />
               <Field label="Phone Number" name="phone" required placeholder="03XX-XXXXXXX" type="tel" />
@@ -160,13 +194,14 @@ export function Contact() {
               )}
             </button>
 
+            {error && <p className="mt-3 text-sm font-semibold text-primary">{error}</p>}
             {status === "success" && (
               <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-success">
                 <CheckCircle2 className="h-4 w-4" /> Thank you! Your inquiry has been received.
                 Our team will contact you soon.
               </p>
             )}
-            {status === "error" && (
+            {status === "error" && !error && (
               <p className="mt-3 text-sm font-semibold text-primary">
                 Something went wrong. Please try WhatsApp instead.
               </p>

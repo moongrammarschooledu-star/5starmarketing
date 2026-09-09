@@ -129,28 +129,53 @@ create table if not exists public.services (
 create index if not exists services_enabled_idx on public.services (enabled);
 
 -- ---------------------------------------------------------------------
--- inquiries
+-- leads
+-- Every property inquiry / WhatsApp click / contact-form submission
+-- becomes one row here — the Lead Management CRM's main table.
 -- ---------------------------------------------------------------------
-create table if not exists public.inquiries (
+create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   phone text not null default '',
+  whatsapp text,
   email text,
   property_id uuid references public.properties (id) on delete set null,
   property_title text,
-  message text not null,
+  message text not null default '',
   source text not null default 'website' check (
-    source in ('website', 'whatsapp', 'contact_form')
+    source in ('website', 'property_page', 'whatsapp', 'facebook', 'instagram', 'tiktok', 'youtube', 'direct', 'other')
   ),
   status text not null default 'new' check (
-    status in ('new', 'contacted', 'follow_up', 'closed')
+    status in ('new', 'contacted', 'interested', 'follow_up', 'closed', 'lost')
   ),
+  consent boolean not null default false,
+  next_follow_up_date date,
+  next_follow_up_time time,
+  assigned_to text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create index if not exists inquiries_status_idx on public.inquiries (status);
-create index if not exists inquiries_property_idx on public.inquiries (property_id);
+create index if not exists leads_status_idx on public.leads (status);
+create index if not exists leads_property_idx on public.leads (property_id);
+create index if not exists leads_source_idx on public.leads (source);
+create index if not exists leads_follow_up_idx on public.leads (next_follow_up_date);
+create index if not exists leads_phone_idx on public.leads (phone);
+create index if not exists leads_whatsapp_idx on public.leads (whatsapp);
+
+-- ---------------------------------------------------------------------
+-- lead_notes
+-- Follow-up notes/history against a lead — one row per note.
+-- ---------------------------------------------------------------------
+create table if not exists public.lead_notes (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references public.leads (id) on delete cascade,
+  note text not null,
+  created_by text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists lead_notes_lead_idx on public.lead_notes (lead_id);
 
 -- ---------------------------------------------------------------------
 -- updated_at auto-touch trigger, shared by every table above
@@ -177,8 +202,8 @@ drop trigger if exists set_updated_at on public.services;
 create trigger set_updated_at before update on public.services
   for each row execute function public.set_updated_at();
 
-drop trigger if exists set_updated_at on public.inquiries;
-create trigger set_updated_at before update on public.inquiries
+drop trigger if exists set_updated_at on public.leads;
+create trigger set_updated_at before update on public.leads
   for each row execute function public.set_updated_at();
 
 drop trigger if exists set_updated_at on public.website_settings;
@@ -219,7 +244,8 @@ create trigger on_auth_user_created
 alter table public.properties enable row level security;
 alter table public.projects enable row level security;
 alter table public.services enable row level security;
-alter table public.inquiries enable row level security;
+alter table public.leads enable row level security;
+alter table public.lead_notes enable row level security;
 alter table public.website_settings enable row level security;
 alter table public.admin_profiles enable row level security;
 
@@ -266,33 +292,43 @@ create policy "services_admin_all"
   using (true)
   with check (true);
 
--- inquiries: anyone (including anonymous website visitors) can submit an
--- inquiry, but only admins can read, update or delete them — a visitor
--- must never be able to read other people's leads.
-drop policy if exists "inquiries_public_insert" on public.inquiries;
-create policy "inquiries_public_insert"
-  on public.inquiries for insert
+-- leads: anyone (including anonymous website visitors) can submit a lead
+-- (property inquiry / contact form / WhatsApp click), but only admins can
+-- read, update or delete them — a visitor must never be able to read
+-- other people's leads.
+drop policy if exists "leads_public_insert" on public.leads;
+create policy "leads_public_insert"
+  on public.leads for insert
   to anon, authenticated
   with check (true);
 
-drop policy if exists "inquiries_admin_read" on public.inquiries;
-create policy "inquiries_admin_read"
-  on public.inquiries for select
+drop policy if exists "leads_admin_read" on public.leads;
+create policy "leads_admin_read"
+  on public.leads for select
   to authenticated
   using (true);
 
-drop policy if exists "inquiries_admin_update" on public.inquiries;
-create policy "inquiries_admin_update"
-  on public.inquiries for update
+drop policy if exists "leads_admin_update" on public.leads;
+create policy "leads_admin_update"
+  on public.leads for update
   to authenticated
   using (true)
   with check (true);
 
-drop policy if exists "inquiries_admin_delete" on public.inquiries;
-create policy "inquiries_admin_delete"
-  on public.inquiries for delete
+drop policy if exists "leads_admin_delete" on public.leads;
+create policy "leads_admin_delete"
+  on public.leads for delete
   to authenticated
   using (true);
+
+-- lead_notes: no public policy at all (RLS defaults to deny) — only
+-- authenticated admins can read or add follow-up notes.
+drop policy if exists "lead_notes_admin_all" on public.lead_notes;
+create policy "lead_notes_admin_all"
+  on public.lead_notes for all
+  to authenticated
+  using (true)
+  with check (true);
 
 -- website_settings: public can read; only admins can write.
 drop policy if exists "settings_public_read" on public.website_settings;

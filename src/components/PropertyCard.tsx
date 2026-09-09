@@ -5,7 +5,7 @@ import Link from "next/link";
 import { MapPin, Ruler, MessageCircle, Star } from "lucide-react";
 import type { Property } from "@/lib/models/property";
 import { whatsappLink } from "@/lib/site";
-import { trackWhatsAppInquiryAction } from "@/lib/actions/inquiries.actions";
+import { trackWhatsAppLeadAction } from "@/lib/actions/leads.actions";
 
 const statusBadgeStyle: Record<string, string> = {
   Reserved: "bg-ink/80 text-white",
@@ -78,11 +78,11 @@ export function PropertyCard({ property }: { property: Property }) {
           </Link>
           <a
             href={whatsappLink(
-              `Assalam-o-Alaikum, I am interested in ${property.title}. Please share complete details.`
+              `Assalam-o-Alaikum,\nI am interested in ${property.title}.\n\nPlease share the complete details, price and payment plan.\n\nThank you.`
             )}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => trackWhatsAppInquiryAction(property.title, property.id)}
+            onClick={() => trackWhatsAppLeadAction(property.title, property.id)}
             className="flex items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >
             <MessageCircle className="h-3.5 w-3.5" /> Inquiry

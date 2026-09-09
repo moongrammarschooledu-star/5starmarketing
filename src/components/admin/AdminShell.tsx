@@ -5,22 +5,26 @@ import { X } from "lucide-react";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopbar } from "./AdminTopbar";
 import { ToastProvider } from "./ToastProvider";
+import { NewLeadNotifier } from "./NewLeadNotifier";
 
 export function AdminShell({
   adminName,
+  newLeadsCount = 0,
   children,
 }: {
   adminName: string;
+  newLeadsCount?: number;
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <ToastProvider>
+      <NewLeadNotifier initialCount={newLeadsCount} />
       <div className="min-h-screen bg-surface-muted lg:flex">
         <aside className="hidden w-64 shrink-0 lg:block">
           <div className="fixed h-screen w-64">
-            <AdminSidebar />
+            <AdminSidebar newLeadsCount={newLeadsCount} />
           </div>
         </aside>
 
@@ -40,7 +44,7 @@ export function AdminShell({
               >
                 <X className="h-5 w-5" />
               </button>
-              <AdminSidebar onNavigate={() => setDrawerOpen(false)} />
+              <AdminSidebar onNavigate={() => setDrawerOpen(false)} newLeadsCount={newLeadsCount} />
             </div>
           </div>
         )}

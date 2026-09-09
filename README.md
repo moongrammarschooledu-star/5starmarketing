@@ -38,6 +38,12 @@ Optionally, also run [`supabase/seed.sql`](supabase/seed.sql) the same way
 to add demo listings/projects/services for testing — every row is clearly
 titled `DEMO — ...` so it's obvious what to delete once you add real data.
 
+**Already ran `schema.sql` before STEP 5?** Run
+[`supabase/migrations/2026-09-08-step5-leads-crm.sql`](supabase/migrations/2026-09-08-step5-leads-crm.sql)
+once, the same way — it upgrades your existing `inquiries` table into the
+new `leads` CRM table (keeping every row) and adds `lead_notes`. A brand
+new project only needs `schema.sql`, which already includes both tables.
+
 ### Step 3 — Get your API keys
 
 In your Supabase project: **Settings → API**. Copy:
@@ -117,6 +123,12 @@ Everything is managed from the admin dashboard — no code edits needed:
   to control what shows on the homepage.
 - **Website Settings**: `/admin/settings` (business info, socials,
   logo/favicon).
+- **Leads (CRM)**: `/admin/leads` — every property inquiry, WhatsApp click
+  and contact-form submission lands here automatically. Open a lead
+  (`/admin/leads/[id]`) to change its status, schedule a follow-up, assign
+  it to a staff member, add notes, or contact the customer via WhatsApp /
+  Call / Email. Switch between the Table and Pipeline (kanban) views from
+  the toggle at the top.
 
 ## 7. Testing checklist
 

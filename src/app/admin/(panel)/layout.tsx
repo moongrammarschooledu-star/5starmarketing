@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { profileService } from "@/services/profileService";
+import { leadService } from "@/services/leadService";
 
 export const metadata: Metadata = {
   title: {
@@ -21,12 +22,22 @@ export default async function AdminPanelLayout({ children }: { children: ReactNo
   // so a missing profile here just falls back to a generic label rather
   // than blocking the page.
   let adminName = "Admin";
+  let newLeadsCount = 0;
   try {
     const admin = await profileService.getCurrentAdmin();
     if (admin?.name) adminName = admin.name;
   } catch (e) {
     console.error("AdminPanelLayout: failed to load current admin:", e);
   }
+  try {
+    newLeadsCount = (await leadService.stats()).new;
+  } catch (e) {
+    console.error("AdminPanelLayout: failed to load lead stats:", e);
+  }
 
-  return <AdminShell adminName={adminName}>{children}</AdminShell>;
+  return (
+    <AdminShell adminName={adminName} newLeadsCount={newLeadsCount}>
+      {children}
+    </AdminShell>
+  );
 }

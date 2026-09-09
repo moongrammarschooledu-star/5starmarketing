@@ -41,7 +41,7 @@ export default async function PropertyDetailsPage({
   const property = await propertyService.getBySlug(slug);
   if (!property) notFound();
 
-  const whatsappMessage = `Assalam-o-Alaikum, I am interested in ${property.title}. Please share complete details.`;
+  const whatsappMessage = `Assalam-o-Alaikum,\nI am interested in ${property.title}.\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
 
   return (
     <main className="bg-surface">

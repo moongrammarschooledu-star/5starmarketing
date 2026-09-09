@@ -10,8 +10,10 @@ const palette: Record<string, string> = {
   Completed: "bg-success/10 text-success",
   New: "bg-primary/10 text-primary",
   Contacted: "bg-ink/10 text-ink",
-  "Follow-up": "bg-success/10 text-success",
-  Closed: "bg-muted/20 text-muted",
+  Interested: "bg-success/10 text-success",
+  "Follow-Up": "bg-amber-500/10 text-amber-600",
+  Closed: "bg-success/15 text-success",
+  Lost: "bg-muted/20 text-muted",
 };
 
 export function StatusBadge({ status }: { status: string }) {

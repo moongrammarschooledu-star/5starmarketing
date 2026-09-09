@@ -50,6 +50,12 @@ once — it adds the WhatsApp settings fields, `whatsapp_templates` (with 8
 starter templates) and `whatsapp_activity` tables. Fresh installs already
 get these from `schema.sql`.
 
+**Already on STEP 6?** Also run
+[`supabase/migrations/2026-09-10-step7-projects-properties.sql`](supabase/migrations/2026-09-10-step7-projects-properties.sql)
+once — it adds the `project-images` and `documents` Storage buckets, the
+project↔property relation, payment-plan fields, and the projects
+draft/publish flag. Fresh installs already get these from `schema.sql`.
+
 ### Step 3 — Get your API keys
 
 In your Supabase project: **Settings → API**. Copy:
@@ -95,15 +101,22 @@ keeping these secret):
 
 The `service_role` key is never used anywhere in this codebase.
 
-## 4. Storage bucket
+## 4. Storage buckets
 
-`supabase/schema.sql` creates a bucket named **`property-images`**
-(public read, authenticated write) and its policies automatically — no
-manual setup needed in the Storage UI. Property/project images and the
-Settings page's logo/favicon uploads all go through this one bucket.
+`supabase/schema.sql` creates three buckets automatically (public read,
+authenticated write) — no manual setup needed in the Storage UI:
+
+- **`property-images`** — property photos and the Settings page's
+  logo/favicon.
+- **`project-images`** — project photos, kept separate so project media
+  stays organized on its own.
+- **`documents`** — optional brochures, floor plans and payment-plan
+  PDFs for properties/projects; only shown publicly if an admin actually
+  uploads one.
+
 Admins upload from the dashboard (file picker with instant preview, or a
-pasted hosted URL); files are validated server-side (JPEG/PNG/WEBP/GIF
-only, 5MB max) before upload.
+pasted hosted URL); files are validated server-side (images: JPEG/PNG/
+WEBP/GIF, 5MB max; documents: PDF, 15MB max) before upload.
 
 ## 5. Authentication
 
@@ -123,8 +136,14 @@ Everything is managed from the admin dashboard — no code edits needed:
 - **Properties**: `/admin/properties/new`, or edit/delete from
   `/admin/properties`. New properties get a unique slug generated from the
   title automatically and immediately appear on the public `/properties`
-  page and (if marked Featured) on the homepage.
-- **Projects**: `/admin/projects` → Add Project.
+  page and (if marked Featured) on the homepage. Optionally link a
+  property to a project, set a payment plan (all fields optional — only
+  filled-in values show publicly), and attach brochure/floor-plan PDFs.
+- **Projects**: `/admin/projects/new`, or edit from `/admin/projects`.
+  Fill in highlights, available property types and payment options (free
+  text, one per line), then **Save Project** (draft, not public yet) or
+  **Save & Publish** (goes live at `/projects/[slug]` immediately). The
+  eye icon on each project card toggles published/draft afterward.
 - **Services**: `/admin/services` → Add Service, or toggle Enable/Disable
   to control what shows on the homepage.
 - **Website Settings**: `/admin/settings` (business info, socials,

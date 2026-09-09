@@ -11,6 +11,21 @@ export type PaymentOption = "Cash" | "Installments" | "Cash / Installments";
 export type SizeCategory = "3 Marla" | "5 Marla" | "10 Marla" | "1 Kanal" | "Custom";
 export type LocationArea = "Lahore" | "Johar Town" | "Other Locations";
 
+export interface PropertyDocument {
+  name: string;
+  url: string;
+}
+
+/** All fields optional — a payment plan is only ever shown on the public
+ *  site for the values an admin actually entered (see PropertyPaymentPlan). */
+export interface PropertyPaymentPlan {
+  totalPrice?: number;
+  downPayment?: number;
+  monthlyInstallment?: number;
+  durationMonths?: number;
+  installmentsCount?: number;
+}
+
 export interface Property {
   id: string;
   slug: string;
@@ -31,6 +46,9 @@ export interface Property {
   features: string[];
   amenities: string[];
   mapsQuery?: string;
+  projectId?: string;
+  paymentPlan: PropertyPaymentPlan;
+  documents: PropertyDocument[];
   createdAt: string;
   updatedAt: string;
 }

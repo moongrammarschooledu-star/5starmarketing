@@ -11,17 +11,21 @@ import {
   sizeCategories,
   type Property,
 } from "@/lib/models/property";
+import type { Project } from "@/lib/models/project";
 import type { PropertyFormState } from "@/lib/actions/properties.actions";
 import { ImageUploader } from "./ImageUploader";
+import { DocumentUploader } from "./DocumentUploader";
 
 export function PropertyForm({
   action,
   initialValues,
   submitLabel,
+  projects,
 }: {
   action: (state: PropertyFormState, formData: FormData) => Promise<PropertyFormState>;
   initialValues?: Property;
   submitLabel: string;
+  projects: Project[];
 }) {
   const [state, formAction, pending] = useActionState(action, {});
 
@@ -43,6 +47,21 @@ export function PropertyForm({
           <Select label="Location Area (filter)" name="locationArea" options={locationAreas} defaultValue={initialValues?.locationArea} />
           <Field label="Size (display)" name="size" required defaultValue={initialValues?.size} placeholder="e.g. 10 Marla" />
           <Select label="Size Category (filter)" name="sizeCategory" options={sizeCategories} defaultValue={initialValues?.sizeCategory} />
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-semibold text-ink">Project</span>
+            <select
+              name="projectId"
+              defaultValue={initialValues?.projectId ?? ""}
+              className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-primary"
+            >
+              <option value="">No Project</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
@@ -88,6 +107,56 @@ export function PropertyForm({
             rows={4}
             placeholder={"24/7 Security\nMosque Nearby\nPark Nearby"}
           />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Payment Plan</h2>
+        <p className="mt-1 text-xs text-muted">
+          All optional — only fill in what applies. Leave blank to hide the payment plan section on
+          the public page entirely.
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field
+            label="Total Price (PKR)"
+            name="paymentTotalPrice"
+            type="number"
+            defaultValue={initialValues?.paymentPlan?.totalPrice}
+          />
+          <Field
+            label="Down Payment (PKR)"
+            name="paymentDownPayment"
+            type="number"
+            defaultValue={initialValues?.paymentPlan?.downPayment}
+          />
+          <Field
+            label="Monthly Installment (PKR)"
+            name="paymentMonthlyInstallment"
+            type="number"
+            defaultValue={initialValues?.paymentPlan?.monthlyInstallment}
+          />
+          <Field
+            label="Duration (months)"
+            name="paymentDurationMonths"
+            type="number"
+            defaultValue={initialValues?.paymentPlan?.durationMonths}
+          />
+          <Field
+            label="Number of Installments"
+            name="paymentInstallmentsCount"
+            type="number"
+            defaultValue={initialValues?.paymentPlan?.installmentsCount}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Documents</h2>
+        <p className="mt-1 text-xs text-muted">
+          Optional — brochure, floor plan or payment plan PDF. Only shown publicly if you add one.
+        </p>
+        <div className="mt-4">
+          <DocumentUploader name="documents" initialDocuments={initialValues?.documents} />
         </div>
       </section>
 

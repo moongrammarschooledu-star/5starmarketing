@@ -1,3 +1,5 @@
+import type { PropertyDocument } from "./property";
+
 export type ProjectStatus = "Upcoming" | "Ongoing" | "Completed";
 
 export interface Project {
@@ -7,8 +9,17 @@ export interface Project {
   location: string;
   type: string;
   status: ProjectStatus;
+  shortDescription: string;
   description: string;
+  highlights: string[];
+  propertyTypes: string[];
+  paymentOptions: string[];
+  mapsUrl?: string;
+  coverImage?: string;
+  whatsappNumber?: string;
+  documents: PropertyDocument[];
   images: string[];
+  published: boolean;
   createdAt: string;
   updatedAt: string;
 }

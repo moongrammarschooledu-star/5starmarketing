@@ -1,18 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { PlusCircle, Pencil, Trash2, MapPin } from "lucide-react";
+import Link from "next/link";
+import { PlusCircle, Pencil, Trash2, MapPin, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Project } from "@/lib/models/project";
-import { deleteProjectAction } from "@/lib/actions/projects.actions";
+import { deleteProjectAction, toggleProjectPublishedAction } from "@/lib/actions/projects.actions";
 import { StatusBadge } from "./StatusBadge";
 import { ConfirmDialog, useConfirmDelete } from "./ConfirmDialog";
 import { useToast } from "./ToastProvider";
-import { ProjectFormModal } from "./ProjectFormModal";
 
 export function ProjectsManager({ projects }: { projects: Project[] }) {
-  const [editing, setEditing] = useState<Project | null | "new">(null);
   const router = useRouter();
   const toast = useToast();
 
@@ -22,6 +20,12 @@ export function ProjectsManager({ projects }: { projects: Project[] }) {
     router.refresh();
   });
 
+  async function togglePublished(id: string) {
+    await toggleProjectPublishedAction(id);
+    toast.show("Project updated.");
+    router.refresh();
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -29,13 +33,12 @@ export function ProjectsManager({ projects }: { projects: Project[] }) {
           <h1 className="font-heading text-2xl font-extrabold text-ink">Projects</h1>
           <p className="mt-1 text-sm text-muted">Manage your project portfolio.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setEditing("new")}
+        <Link
+          href="/admin/projects/new"
           className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover"
         >
           <PlusCircle className="h-4 w-4" /> Add Project
-        </button>
+        </Link>
       </div>
 
       {projects.length === 0 ? (
@@ -47,9 +50,19 @@ export function ProjectsManager({ projects }: { projects: Project[] }) {
           {projects.map((p) => (
             <div key={p.id} className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
               <div className="relative aspect-[16/10] w-full">
-                <Image src={p.images[0]} alt={p.name} fill sizes="360px" className="object-cover" unoptimized={p.images[0]?.startsWith("data:")} />
-                <span className="absolute left-3 top-3">
+                <Image
+                  src={p.coverImage || p.images[0]}
+                  alt={p.name}
+                  fill
+                  sizes="360px"
+                  className="object-cover"
+                  unoptimized={(p.coverImage || p.images[0])?.startsWith("data:")}
+                />
+                <span className="absolute left-3 top-3 flex gap-1.5">
                   <StatusBadge status={p.status} />
+                  {!p.published && (
+                    <span className="rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-bold text-white">Draft</span>
+                  )}
                 </span>
               </div>
               <div className="p-4">
@@ -58,12 +71,19 @@ export function ProjectsManager({ projects }: { projects: Project[] }) {
                   <MapPin className="h-3.5 w-3.5 text-primary" /> {p.location} · {p.type}
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditing(p)}
+                  <Link
+                    href={`/admin/projects/${p.id}/edit`}
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-full border-2 border-ink/15 px-3 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
                   >
                     <Pencil className="h-3.5 w-3.5" /> Edit
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => togglePublished(p.id)}
+                    title={p.published ? "Unpublish" : "Publish"}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink/15 text-ink hover:border-primary hover:text-primary"
+                  >
+                    {p.published ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                   </button>
                   <button
                     type="button"
@@ -79,8 +99,6 @@ export function ProjectsManager({ projects }: { projects: Project[] }) {
           ))}
         </div>
       )}
-
-      <ProjectFormModal project={editing} onClose={() => setEditing(null)} />
 
       <ConfirmDialog
         open={!!del.target}

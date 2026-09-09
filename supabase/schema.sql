@@ -86,6 +86,13 @@ create table if not exists public.properties (
   amenities text[] not null default '{}',
   images text[] not null default '{}',
   maps_url text,
+  project_id uuid,
+  payment_total_price numeric,
+  payment_down_payment numeric,
+  payment_monthly_installment numeric,
+  payment_duration_months integer,
+  payment_installments_count integer,
+  documents jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -94,6 +101,7 @@ create index if not exists properties_status_idx on public.properties (status);
 create index if not exists properties_featured_idx on public.properties (featured);
 create index if not exists properties_type_idx on public.properties (property_type);
 create index if not exists properties_slug_idx on public.properties (slug);
+create index if not exists properties_project_idx on public.properties (project_id);
 
 -- ---------------------------------------------------------------------
 -- projects
@@ -107,13 +115,37 @@ create table if not exists public.projects (
   status text not null default 'upcoming' check (
     status in ('upcoming', 'ongoing', 'completed')
   ),
+  short_description text not null default '',
   description text not null default '',
+  highlights text[] not null default '{}',
+  property_types text[] not null default '{}',
+  payment_options text[] not null default '{}',
+  maps_url text,
+  cover_image text,
+  whatsapp_number text,
+  documents jsonb not null default '[]'::jsonb,
   images text[] not null default '{}',
+  published boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index if not exists projects_status_idx on public.projects (status);
+create index if not exists projects_published_idx on public.projects (published);
+
+-- properties.project_id references projects, added here (not inline above)
+-- since the properties table is created before the projects table exists.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where constraint_name = 'properties_project_id_fkey' and table_name = 'properties'
+  ) then
+    alter table public.properties
+      add constraint properties_project_id_fkey
+      foreign key (project_id) references public.projects (id) on delete set null;
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- services
@@ -334,12 +366,14 @@ create policy "properties_admin_write"
   using (true)
   with check (true);
 
--- projects: public can read all; admins can write.
+-- projects: public can read only published projects; admins (via the
+-- "for all" write policy below, which also grants select) see everything
+-- including drafts.
 drop policy if exists "projects_public_read" on public.projects;
 create policy "projects_public_read"
   on public.projects for select
   to anon, authenticated
-  using (true);
+  using (published = true);
 
 drop policy if exists "projects_admin_write" on public.projects;
 create policy "projects_admin_write"
@@ -478,3 +512,73 @@ create policy "property_images_admin_delete"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'property-images');
+
+-- =====================================================================
+-- Storage: project-images bucket (STEP 7) — same public-read /
+-- authenticated-write shape as property-images, kept as its own bucket
+-- so project media stays organized separately.
+-- =====================================================================
+
+insert into storage.buckets (id, name, public)
+values ('project-images', 'project-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "project_images_public_read" on storage.objects;
+create policy "project_images_public_read"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'project-images');
+
+drop policy if exists "project_images_admin_write" on storage.objects;
+create policy "project_images_admin_write"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'project-images');
+
+drop policy if exists "project_images_admin_update" on storage.objects;
+create policy "project_images_admin_update"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'project-images');
+
+drop policy if exists "project_images_admin_delete" on storage.objects;
+create policy "project_images_admin_delete"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'project-images');
+
+-- =====================================================================
+-- Storage: documents bucket (STEP 7) — brochures, floor plans and
+-- payment-plan PDFs for properties/projects. Public read so a shared
+-- link works once an admin actually uploads one; pages only render a
+-- link when a document row exists, so nothing is exposed unless an
+-- admin explicitly added it.
+-- =====================================================================
+
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', true)
+on conflict (id) do nothing;
+
+drop policy if exists "documents_public_read" on storage.objects;
+create policy "documents_public_read"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'documents');
+
+drop policy if exists "documents_admin_write" on storage.objects;
+create policy "documents_admin_write"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'documents');
+
+drop policy if exists "documents_admin_update" on storage.objects;
+create policy "documents_admin_update"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'documents');
+
+drop policy if exists "documents_admin_delete" on storage.objects;
+create policy "documents_admin_delete"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'documents');

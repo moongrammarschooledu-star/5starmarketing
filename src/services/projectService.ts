@@ -1,7 +1,15 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Project, ProjectInput, ProjectStatus } from "@/lib/models/project";
-import { resolvePropertyImages } from "./propertyService";
+import {
+  resolveStorageImages,
+  deleteStorageImages,
+  resolveStorageDocuments,
+  deleteStorageDocuments,
+  type StoredDocument,
+} from "./storage";
+
+const BUCKET = "project-images";
 
 const STATUS_TO_DB: Record<ProjectStatus, string> = {
   Upcoming: "upcoming",
@@ -23,8 +31,17 @@ function mapRowToProject(row: any): Project {
     location: row.location,
     type: row.property_type,
     status: STATUS_FROM_DB[row.status] ?? "Upcoming",
+    shortDescription: row.short_description ?? "",
     description: row.description ?? "",
+    highlights: row.highlights ?? [],
+    propertyTypes: row.property_types ?? [],
+    paymentOptions: row.payment_options ?? [],
+    mapsUrl: row.maps_url ?? undefined,
+    coverImage: row.cover_image ?? undefined,
+    whatsappNumber: row.whatsapp_number ?? undefined,
+    documents: (row.documents ?? []) as StoredDocument[],
     images: row.images ?? [],
+    published: row.published ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -36,8 +53,15 @@ function mapProjectToRow(input: Partial<ProjectInput>) {
   if (input.location !== undefined) row.location = input.location;
   if (input.type !== undefined) row.property_type = input.type;
   if (input.status !== undefined) row.status = STATUS_TO_DB[input.status];
+  if (input.shortDescription !== undefined) row.short_description = input.shortDescription;
   if (input.description !== undefined) row.description = input.description;
+  if (input.highlights !== undefined) row.highlights = input.highlights;
+  if (input.propertyTypes !== undefined) row.property_types = input.propertyTypes;
+  if (input.paymentOptions !== undefined) row.payment_options = input.paymentOptions;
+  if (input.mapsUrl !== undefined) row.maps_url = input.mapsUrl || null;
+  if (input.whatsappNumber !== undefined) row.whatsapp_number = input.whatsappNumber || null;
   if (input.images !== undefined) row.images = input.images;
+  if (input.published !== undefined) row.published = input.published;
   return row;
 }
 
@@ -65,6 +89,20 @@ export const projectService = {
     return (data ?? []).map(mapRowToProject);
   },
 
+  async listPublished(): Promise<Project[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("published", true)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("projectService.listPublished failed:", error);
+      throw new Error("Could not load projects.");
+    }
+    return (data ?? []).map(mapRowToProject);
+  },
+
   async getById(id: string): Promise<Project | undefined> {
     const supabase = await createClient();
     const { data, error } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
@@ -75,9 +113,27 @@ export const projectService = {
     return data ? mapRowToProject(data) : undefined;
   },
 
+  async getBySlug(slug: string): Promise<Project | undefined> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) {
+      console.error("projectService.getBySlug failed:", error);
+      throw new Error("Could not load this project.");
+    }
+    return data ? mapRowToProject(data) : undefined;
+  },
+
   async create(input: ProjectInput): Promise<Project> {
     const supabase = await createClient();
-    const images = await resolvePropertyImages(input.images);
+    const images = await resolveStorageImages(input.images, BUCKET);
+    const coverImageResolved = input.coverImage
+      ? (await resolveStorageImages([input.coverImage], BUCKET))[0]
+      : images[0];
+    const documents = await resolveStorageDocuments(input.documents ?? []);
 
     const base = slugify(input.name);
     let slug = base;
@@ -88,7 +144,13 @@ export const projectService = {
       slug = `${base}-${++n}`;
     }
 
-    const row = { ...mapProjectToRow(input), images, slug };
+    const row = {
+      ...mapProjectToRow(input),
+      images,
+      cover_image: coverImageResolved || null,
+      documents,
+      slug,
+    };
     const { data, error } = await supabase.from("projects").insert(row).select("*").single();
     if (error) {
       console.error("projectService.create failed:", error);
@@ -101,7 +163,15 @@ export const projectService = {
     const supabase = await createClient();
     const patch = mapProjectToRow(input);
     if (input.images !== undefined) {
-      patch.images = await resolvePropertyImages(input.images);
+      patch.images = await resolveStorageImages(input.images, BUCKET);
+    }
+    if (input.coverImage !== undefined) {
+      patch.cover_image = input.coverImage
+        ? (await resolveStorageImages([input.coverImage], BUCKET))[0]
+        : null;
+    }
+    if (input.documents !== undefined) {
+      patch.documents = await resolveStorageDocuments(input.documents);
     }
 
     const { data, error } = await supabase
@@ -119,10 +189,18 @@ export const projectService = {
 
   async remove(id: string): Promise<boolean> {
     const supabase = await createClient();
+    const existing = await this.getById(id);
+
     const { error } = await supabase.from("projects").delete().eq("id", id);
     if (error) {
       console.error("projectService.remove failed:", error);
       throw new Error("Could not delete this project.");
+    }
+
+    if (existing) {
+      await deleteStorageImages(existing.images, BUCKET);
+      if (existing.coverImage) await deleteStorageImages([existing.coverImage], BUCKET);
+      await deleteStorageDocuments(existing.documents);
     }
     return true;
   },

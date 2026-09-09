@@ -1,5 +1,6 @@
 // Central place for all business info. Edit here to update it site-wide.
 export const site = {
+  url: "https://www.5starm.com",
   name: "5STAR.M",
   fullName: "5STAR.M Estate & Builders",
   tagline: "NOW YOU WILL DREAM",

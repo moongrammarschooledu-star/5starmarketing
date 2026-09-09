@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Ruler, Phone, CheckCircle2, Tag } from "lucide-react";
+import { ArrowLeft, FolderKanban, Phone } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
+import { projectService } from "@/services/projectService";
 import { settingsService } from "@/services/settingsService";
-import { site } from "@/lib/site";
-import { PropertyGallery } from "@/components/PropertyGallery";
+import { site, whatsappUrlFor } from "@/lib/site";
+import { MediaGallery } from "@/components/MediaGallery";
 import { PropertyInquiryForm } from "@/components/PropertyInquiryForm";
 import { PropertyWhatsAppButton } from "@/components/PropertyWhatsAppButton";
+import { PropertyInfoPanel } from "@/components/PropertyInfoPanel";
+import { PropertyFeaturesGrid } from "@/components/PropertyFeaturesGrid";
+import { PropertyPaymentPlan } from "@/components/PropertyPaymentPlan";
+import { PropertyLocationSection } from "@/components/PropertyLocationSection";
+import { PropertyCTASection } from "@/components/PropertyCTASection";
+import { PropertyDocuments } from "@/components/PropertyDocuments";
+import { RelatedProperties } from "@/components/RelatedProperties";
+import { ShareButtons } from "@/components/ShareButtons";
 
 // Properties are added/edited/removed live via the admin dashboard, so
 // this route is rendered per-request rather than pre-built at deploy time.
@@ -22,13 +31,18 @@ export async function generateMetadata({
   const property = await propertyService.getBySlug(slug);
   if (!property) return { title: "Property Not Found" };
 
+  const description = property.description || `${property.title} — ${property.location}, ${property.size}.`;
+  const image = property.images[0];
+
   return {
     title: property.title,
-    description: property.description,
+    description,
+    alternates: { canonical: `/properties/${property.slug}` },
     openGraph: {
       title: `${property.title} | 5STAR.M Estate & Builders`,
-      description: property.description,
-      images: [{ url: property.images[0] }],
+      description,
+      url: `/properties/${property.slug}`,
+      images: image ? [{ url: image, width: 1200, height: 630, alt: property.title }] : undefined,
     },
   };
 }
@@ -45,8 +59,14 @@ export default async function PropertyDetailsPage({
   ]);
   if (!property) notFound();
 
+  const [project, related] = await Promise.all([
+    property.projectId ? projectService.getById(property.projectId) : Promise.resolve(undefined),
+    propertyService.listRelated(property, 4),
+  ]);
+
   const whatsappDisplayName = settings?.whatsappDisplayName || site.fullName;
   const whatsappMessage = `Assalam-o-Alaikum ${whatsappDisplayName},\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
+  const pageUrl = `${site.url}/properties/${property.slug}`;
 
   return (
     <main className="bg-surface">
@@ -59,78 +79,56 @@ export default async function PropertyDetailsPage({
         </Link>
 
         <div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-12">
-          <div className="lg:col-span-2">
-            <PropertyGallery images={property.images} title={property.title} />
+          <div className="space-y-8 lg:col-span-2">
+            <div>
+              <MediaGallery images={property.images} title={property.title} />
 
-            <div className="mt-8 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground">
-                {property.type}
-              </span>
-              <span className="rounded-full bg-ink/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                {property.purpose}
-              </span>
-              {property.status !== "Available" && (
-                <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                  {property.status}
+              <div className="mt-8 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground">
+                  {property.type}
                 </span>
+                <span className="rounded-full bg-ink/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                  {property.purpose}
+                </span>
+                {property.status !== "Available" && (
+                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                    {property.status}
+                  </span>
+                )}
+              </div>
+
+              <h1 className="mt-4 font-heading text-2xl font-extrabold text-ink sm:text-3xl">
+                {property.title}
+              </h1>
+
+              {project && (
+                <Link
+                  href={`/projects/${project.slug}`}
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                >
+                  <FolderKanban className="h-4 w-4" /> Part of {project.name}
+                </Link>
               )}
-            </div>
 
-            <h1 className="mt-4 font-heading text-2xl font-extrabold text-ink sm:text-3xl">
-              {property.title}
-            </h1>
+              <p className="mt-6 text-base leading-relaxed text-muted">{property.description}</p>
 
-            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
-              <span className="flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-primary" /> {property.location}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Ruler className="h-4 w-4 text-primary" /> {property.size}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Tag className="h-4 w-4 text-primary" /> {property.paymentOption}
-              </span>
-            </div>
-
-            <p className="mt-6 text-base leading-relaxed text-muted">{property.description}</p>
-
-            <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2">
-              <div>
-                <h2 className="font-heading text-base font-bold text-ink">Features</h2>
-                <ul className="mt-3 space-y-2">
-                  {property.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-muted">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h2 className="font-heading text-base font-bold text-ink">Amenities</h2>
-                <ul className="mt-3 space-y-2">
-                  {property.amenities.map((a) => (
-                    <li key={a} className="flex items-start gap-2 text-sm text-muted">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {a}
-                    </li>
-                  ))}
-                </ul>
+              <div className="mt-4">
+                <ShareButtons url={pageUrl} text={`Check out this property from 5STAR.M Estate & Builders — ${property.title}.`} />
               </div>
             </div>
 
-            <div className="mt-10">
-              <h2 className="font-heading text-base font-bold text-ink">Location</h2>
-              <div className="mt-3 overflow-hidden rounded-2xl border border-border">
-                <iframe
-                  title={`${property.title} location`}
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(
-                    property.mapsQuery || property.location
-                  )}&z=14&output=embed`}
-                  className="h-64 w-full"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
+            <PropertyInfoPanel property={property} />
+
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+              <PropertyFeaturesGrid features={property.features} title="Features" />
+              <PropertyFeaturesGrid features={property.amenities} title="Amenities" />
             </div>
+
+            <PropertyPaymentPlan paymentOption={property.paymentOption} plan={property.paymentPlan} />
+
+            <PropertyDocuments documents={property.documents} />
+
+            <PropertyLocationSection location={property.location} mapsQuery={property.mapsQuery} />
           </div>
 
           <div className="lg:sticky lg:top-24 lg:h-fit">
@@ -154,11 +152,26 @@ export default async function PropertyDetailsPage({
               </div>
             </div>
 
-            <div className="mt-5">
+            <div id="inquiry-form" className="mt-5 scroll-mt-24">
               <PropertyInquiryForm propertyId={property.id} propertyTitle={property.title} />
             </div>
           </div>
         </div>
+
+        <div className="mt-14">
+          <PropertyCTASection
+            whatsappHref={
+              settings?.whatsapp ? whatsappUrlFor(settings.whatsapp, whatsappMessage) : whatsappUrlFor(site.whatsappNumber, whatsappMessage)
+            }
+            callHref={`tel:${site.phoneHref}`}
+          />
+        </div>
+
+        {related.length > 0 && (
+          <div className="mt-14">
+            <RelatedProperties properties={related} />
+          </div>
+        )}
       </div>
     </main>
   );

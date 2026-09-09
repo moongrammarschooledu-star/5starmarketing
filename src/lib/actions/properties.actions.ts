@@ -43,7 +43,35 @@ function buildInputFromForm(formData: FormData) {
 
   const priceValueRaw = String(formData.get("priceValue") ?? "").trim();
 
+  const numOrUndefined = (name: string) => {
+    const raw = String(formData.get(name) ?? "").trim();
+    return raw ? Number(raw) : undefined;
+  };
+
+  const documents = formData
+    .getAll("documents")
+    .map((v) => {
+      try {
+        const parsed = JSON.parse(String(v));
+        return { name: String(parsed.name ?? ""), url: String(parsed.url ?? "") };
+      } catch {
+        return null;
+      }
+    })
+    .filter((d): d is { name: string; url: string } => !!d && !!d.name && !!d.url);
+
+  const projectId = String(formData.get("projectId") ?? "").trim();
+
   return {
+    projectId: projectId || undefined,
+    paymentPlan: {
+      totalPrice: numOrUndefined("paymentTotalPrice"),
+      downPayment: numOrUndefined("paymentDownPayment"),
+      monthlyInstallment: numOrUndefined("paymentMonthlyInstallment"),
+      durationMonths: numOrUndefined("paymentDurationMonths"),
+      installmentsCount: numOrUndefined("paymentInstallmentsCount"),
+    },
+    documents,
     title: String(formData.get("title") ?? "").trim(),
     type: String(formData.get("type")) as PropertyType,
     purpose: String(formData.get("purpose")) as Purpose,

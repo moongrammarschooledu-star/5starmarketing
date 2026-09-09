@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Upload, Link as LinkIcon, X } from "lucide-react";
+import { Upload, Link as LinkIcon, X, Star, ChevronLeft, ChevronRight } from "lucide-react";
 
-// No file-storage backend is connected yet (that's a STEP 4 / Supabase
-// Storage task), so uploaded files are read as data URLs for an in-session
-// preview and submitted as-is — fine for the in-memory demo repository,
-// but large or many images will bloat memory. Admins can also just paste a
-// hosted image URL instead, which is what the seed data uses.
+// Uploaded files are read as data: URLs for instant preview and submitted
+// as-is; the server action resolves each data: URI to real Supabase
+// Storage on save (see src/services/storage.ts). Admins can also paste a
+// hosted image URL directly instead of uploading a file. The first image
+// in the list is used as the cover/main photo — use "Set as Cover" to
+// reorder without deleting and re-adding.
 export function ImageUploader({
   name,
   initialImages = [],
@@ -43,6 +44,25 @@ export function ImageUploader({
     setImages((imgs) => imgs.filter((_, i) => i !== index));
   }
 
+  function setAsCover(index: number) {
+    setImages((imgs) => {
+      const next = [...imgs];
+      const [moved] = next.splice(index, 1);
+      next.unshift(moved);
+      return next;
+    });
+  }
+
+  function move(index: number, dir: -1 | 1) {
+    setImages((imgs) => {
+      const target = index + dir;
+      if (target < 0 || target >= imgs.length) return imgs;
+      const next = [...imgs];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
   return (
     <div>
       {images.map((src) => (
@@ -52,8 +72,13 @@ export function ImageUploader({
       {images.length > 0 && (
         <div className="mb-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
           {images.map((src, i) => (
-            <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-border">
+            <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
               <Image src={src} alt={`Image ${i + 1}`} fill sizes="140px" className="object-cover" unoptimized={src.startsWith("data:")} />
+              {i === 0 && (
+                <span className="absolute left-1 top-1 flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                  <Star className="h-2.5 w-2.5 fill-current" /> Cover
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => removeAt(i)}
@@ -62,6 +87,35 @@ export function ImageUploader({
               >
                 <X className="h-3.5 w-3.5" />
               </button>
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-ink/70 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  className="flex h-5 w-5 items-center justify-center rounded text-white disabled:opacity-30"
+                  aria-label="Move left"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                {i !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAsCover(i)}
+                    className="rounded px-1.5 text-[10px] font-bold text-white hover:text-primary"
+                  >
+                    Set Cover
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => move(i, 1)}
+                  disabled={i === images.length - 1}
+                  className="flex h-5 w-5 items-center justify-center rounded text-white disabled:opacity-30"
+                  aria-label="Move right"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

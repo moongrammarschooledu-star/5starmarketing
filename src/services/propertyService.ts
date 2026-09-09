@@ -1,6 +1,15 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Property, PropertyInput, PropertyType, Purpose, PaymentOption, PropertyStatus } from "@/lib/models/property";
+import {
+  resolveStorageImages,
+  deleteStorageImages,
+  resolveStorageDocuments,
+  deleteStorageDocuments,
+  type StoredDocument,
+} from "./storage";
+
+const BUCKET = "property-images";
 
 // This file is the one place that knows the database's snake_case /
 // lowercase enum shape. Every UI component keeps working with the
@@ -76,6 +85,15 @@ function mapRowToProperty(row: any): Property {
     features: row.features ?? [],
     amenities: row.amenities ?? [],
     mapsQuery: row.maps_url ?? undefined,
+    projectId: row.project_id ?? undefined,
+    paymentPlan: {
+      totalPrice: row.payment_total_price ?? undefined,
+      downPayment: row.payment_down_payment ?? undefined,
+      monthlyInstallment: row.payment_monthly_installment ?? undefined,
+      durationMonths: row.payment_duration_months ?? undefined,
+      installmentsCount: row.payment_installments_count ?? undefined,
+    },
+    documents: (row.documents ?? []) as StoredDocument[],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -100,6 +118,15 @@ function mapPropertyToRow(input: Partial<PropertyInput>) {
   if (input.amenities !== undefined) row.amenities = input.amenities;
   if (input.images !== undefined) row.images = input.images;
   if (input.mapsQuery !== undefined) row.maps_url = input.mapsQuery || null;
+  if (input.projectId !== undefined) row.project_id = input.projectId || null;
+  if (input.paymentPlan !== undefined) {
+    row.payment_total_price = input.paymentPlan.totalPrice ?? null;
+    row.payment_down_payment = input.paymentPlan.downPayment ?? null;
+    row.payment_monthly_installment = input.paymentPlan.monthlyInstallment ?? null;
+    row.payment_duration_months = input.paymentPlan.durationMonths ?? null;
+    row.payment_installments_count = input.paymentPlan.installmentsCount ?? null;
+  }
+  if (input.documents !== undefined) row.documents = input.documents;
   return row;
 }
 
@@ -113,69 +140,14 @@ function slugify(title: string) {
   );
 }
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-
-/**
- * Property images arrive from the form either as hosted https:// URLs
- * (pasted by the admin) or as data: URIs (the browser-side preview from a
- * file upload). This uploads the data: URIs to the property-images bucket
- * and returns the final list of URLs to store, validating type/size along
- * the way so we never store or serve something unexpected.
- */
+/** Kept as a named export for settingsService.ts (logo/favicon reuse the
+ *  same bucket) and for backward compatibility with existing imports. */
 export async function resolvePropertyImages(images: string[]): Promise<string[]> {
-  const supabase = await createClient();
-  const resolved: string[] = [];
-
-  for (const image of images) {
-    if (!image.startsWith("data:")) {
-      resolved.push(image);
-      continue;
-    }
-
-    const match = image.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) continue;
-    const [, mimeType, base64] = match;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(mimeType)) {
-      throw new Error(`Unsupported image type: ${mimeType}. Use JPEG, PNG, WEBP or GIF.`);
-    }
-
-    const bytes = Buffer.from(base64, "base64");
-    if (bytes.byteLength > MAX_IMAGE_BYTES) {
-      throw new Error("One of the uploaded images is larger than 5MB.");
-    }
-
-    const ext = mimeType.split("/")[1] === "jpeg" ? "jpg" : mimeType.split("/")[1];
-    const path = `${crypto.randomUUID()}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from("property-images")
-      .upload(path, bytes, { contentType: mimeType, upsert: false });
-
-    if (error) {
-      console.error("Supabase storage upload failed:", error);
-      throw new Error("Could not upload one of the images. Please try again.");
-    }
-
-    const { data } = supabase.storage.from("property-images").getPublicUrl(path);
-    resolved.push(data.publicUrl);
-  }
-
-  return resolved;
+  return resolveStorageImages(images, BUCKET);
 }
 
-/** Deletes a property's images from Storage. Best-effort — a failure here
- *  shouldn't block the record deletion the caller is doing. */
 async function deletePropertyImages(images: string[]) {
-  const paths = images
-    .map((url) => url.split("/property-images/")[1])
-    .filter((p): p is string => Boolean(p));
-  if (paths.length === 0) return;
-
-  const supabase = await createClient();
-  const { error } = await supabase.storage.from("property-images").remove(paths);
-  if (error) console.error("Failed to delete property images from storage:", error);
+  return deleteStorageImages(images, BUCKET);
 }
 
 export const propertyService = {
@@ -237,6 +209,7 @@ export const propertyService = {
   async create(input: PropertyInput): Promise<Property> {
     const supabase = await createClient();
     const images = await resolvePropertyImages(input.images);
+    const documents = await resolveStorageDocuments(input.documents ?? []);
 
     // Ensure a unique slug.
     const base = slugify(input.title);
@@ -248,7 +221,7 @@ export const propertyService = {
       slug = `${base}-${++n}`;
     }
 
-    const row = { ...mapPropertyToRow(input), images, slug };
+    const row = { ...mapPropertyToRow(input), images, documents, slug };
     const { data, error } = await supabase.from("properties").insert(row).select("*").single();
 
     if (error) {
@@ -264,6 +237,9 @@ export const propertyService = {
 
     if (input.images !== undefined) {
       patch.images = await resolvePropertyImages(input.images);
+    }
+    if (input.documents !== undefined) {
+      patch.documents = await resolveStorageDocuments(input.documents);
     }
 
     const { data, error } = await supabase
@@ -290,8 +266,69 @@ export const propertyService = {
       throw new Error("Could not delete this property.");
     }
 
-    if (existing) await deletePropertyImages(existing.images);
+    if (existing) {
+      await deletePropertyImages(existing.images);
+      await deleteStorageDocuments(existing.documents);
+    }
     return true;
+  },
+
+  /** Properties belonging to a project — shown as "Available Properties"
+   *  on that project's detail page. */
+  async listByProject(projectId: string): Promise<Property[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("properties")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("propertyService.listByProject failed:", error);
+      return [];
+    }
+    return (data ?? []).map(mapRowToProperty);
+  },
+
+  /** Up to `limit` other active properties similar to `property` — same
+   *  type, location or purpose, and a comparable size. Never includes the
+   *  property itself. */
+  async listRelated(property: Property, limit = 4): Promise<Property[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("properties")
+      .select("*")
+      .neq("id", property.id)
+      .neq("status", "inactive")
+      .or(
+        [
+          `property_type.eq.${TYPE_TO_DB[property.type]}`,
+          `location_area.eq.${property.locationArea}`,
+          `purpose.eq.${PURPOSE_TO_DB[property.purpose]}`,
+          `size_category.eq.${property.sizeCategory}`,
+        ].join(",")
+      )
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error("propertyService.listRelated failed:", error);
+      return [];
+    }
+
+    const candidates = (data ?? []).map(mapRowToProperty);
+
+    // Score by how many attributes match, most-similar first.
+    const scored = candidates.map((p) => {
+      let score = 0;
+      if (p.type === property.type) score += 3;
+      if (p.locationArea === property.locationArea) score += 2;
+      if (p.purpose === property.purpose) score += 2;
+      if (p.sizeCategory === property.sizeCategory) score += 1;
+      return { p, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+
+    return scored.slice(0, limit).map((s) => s.p);
   },
 
   async stats() {

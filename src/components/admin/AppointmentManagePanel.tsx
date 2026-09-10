@@ -8,13 +8,21 @@ import { appointmentStatuses } from "@/lib/models/appointment";
 import {
   updateAppointmentStatusAction,
   rescheduleAppointmentAction,
-  assignAgentAction,
+  assignAppointmentAgentAction,
   updateAppointmentNotesAction,
 } from "@/lib/actions/appointments.actions";
 import { getAvailabilityAction } from "@/lib/actions/appointment.actions";
 import { useToast } from "./ToastProvider";
 
-export function AppointmentManagePanel({ appointment }: { appointment: Appointment }) {
+export function AppointmentManagePanel({
+  appointment,
+  assignableAgents = [],
+  canAssign = true,
+}: {
+  appointment: Appointment;
+  assignableAgents?: { id: string; name: string }[];
+  canAssign?: boolean;
+}) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const toast = useToast();
@@ -22,7 +30,7 @@ export function AppointmentManagePanel({ appointment }: { appointment: Appointme
   const [newDate, setNewDate] = useState(appointment.appointmentDate);
   const [newTime, setNewTime] = useState(appointment.appointmentTime);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [agent, setAgent] = useState(appointment.assignedAgent ?? "");
+  const [agentId, setAgentId] = useState(appointment.assignedAgentId ?? "");
   const [notes, setNotes] = useState(appointment.adminNotes ?? "");
 
   useEffect(() => {
@@ -59,9 +67,10 @@ export function AppointmentManagePanel({ appointment }: { appointment: Appointme
   }
 
   function runAgent() {
+    const agent = assignableAgents.find((a) => a.id === agentId);
     startTransition(async () => {
-      await assignAgentAction(appointment.id, agent);
-      toast.show("Agent assigned.");
+      await assignAppointmentAgentAction(appointment.id, agent?.id ?? null, agent?.name ?? null);
+      toast.show(agent ? `Assigned to ${agent.name}.` : "Appointment unassigned.");
       router.refresh();
     });
   }
@@ -144,23 +153,32 @@ export function AppointmentManagePanel({ appointment }: { appointment: Appointme
         <h2 className="flex items-center gap-2 font-heading text-sm font-bold text-ink">
           <UserCog className="h-4.5 w-4.5 text-primary" /> Assigned Agent
         </h2>
-        <div className="mt-3 flex gap-2">
-          <input
-            type="text"
-            value={agent}
-            onChange={(e) => setAgent(e.target.value)}
-            placeholder="Agent name"
-            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
-          />
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={runAgent}
-            className="rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-60"
-          >
-            Save
-          </button>
-        </div>
+        {canAssign ? (
+          <div className="mt-3 flex gap-2">
+            <select
+              value={agentId}
+              onChange={(e) => setAgentId(e.target.value)}
+              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            >
+              <option value="">Unassigned</option>
+              {assignableAgents.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={runAgent}
+              className="rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-60"
+            >
+              Save
+            </button>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm font-semibold text-ink">{appointment.assignedAgent || "Unassigned"}</p>
+        )}
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5">

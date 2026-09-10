@@ -60,6 +60,7 @@ function mapRow(row: any): Appointment {
     message: row.message ?? "",
     status: row.status,
     assignedAgent: row.assigned_agent ?? undefined,
+    assignedAgentId: row.assigned_agent_id ?? undefined,
     adminNotes: row.admin_notes ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -498,10 +499,33 @@ export const appointmentService = {
     return updated;
   },
 
-  async assignAgent(id: string, agent: string | null): Promise<void> {
+  /** STEP 14 — assigns by the real admin_profiles FK, keeping the older
+   *  assigned_agent text field in sync for anything still reading it. */
+  async assignAgentById(id: string, agentId: string | null, agentName: string | null): Promise<void> {
     const supabase = await createClient();
-    const { error } = await supabase.from("appointments").update({ assigned_agent: agent }).eq("id", id);
+    const { error } = await supabase
+      .from("appointments")
+      .update({ assigned_agent_id: agentId, assigned_agent: agentName })
+      .eq("id", id);
     if (error) throw new Error("Could not assign an agent.");
+    await activityService.log("Appointment Assigned", agentName ? `Assigned to ${agentName}` : "Unassigned", "appointment", id);
+  },
+
+  /** Appointments visible to one agent in the /agent/* portal — RLS
+   *  already scopes this, filtering explicitly keeps intent clear. */
+  async listByAgent(agentId: string): Promise<Appointment[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select(SELECT_WITH_PROPERTY)
+      .eq("assigned_agent_id", agentId)
+      .order("appointment_date", { ascending: false })
+      .order("appointment_time", { ascending: false });
+    if (error) {
+      console.error("appointmentService.listByAgent failed:", error);
+      return [];
+    }
+    return (data ?? []).map(mapRow);
   },
 
   async updateAdminNotes(id: string, notes: string): Promise<void> {

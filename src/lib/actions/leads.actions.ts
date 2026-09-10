@@ -5,6 +5,7 @@ import { leadService } from "@/services/leadService";
 import { profileService } from "@/services/profileService";
 import { activityService } from "@/services/activityService";
 import { notificationService } from "@/services/notificationService";
+import { staffNotificationService } from "@/services/staffNotificationService";
 import type { LeadStatus } from "@/lib/models/lead";
 
 /** Fired from the property WhatsApp-inquiry buttons so the click shows up
@@ -69,23 +70,11 @@ export async function updateLeadFollowUpAction(id: string, date: string | null, 
   }
 }
 
-export async function assignLeadAction(id: string, assignedTo: string | null) {
-  try {
-    await leadService.assign(id, assignedTo);
-    revalidatePath(`/admin/leads/${id}`);
-    revalidatePath("/admin/leads");
-  } catch (e) {
-    console.error("assignLeadAction failed:", e);
-    throw e;
-  }
-}
-
 export async function assignLeadToMeAction(id: string) {
   try {
     const admin = await profileService.getCurrentAdmin();
-    await leadService.assign(id, admin?.name ?? "Admin");
-    revalidatePath(`/admin/leads/${id}`);
-    revalidatePath("/admin/leads");
+    if (!admin) throw new Error("Not signed in.");
+    await assignLeadToAgentAction(id, admin.id, admin.name);
   } catch (e) {
     console.error("assignLeadToMeAction failed:", e);
     throw e;
@@ -97,10 +86,48 @@ export async function addLeadNoteAction(leadId: string, note: string) {
   if (!trimmed) return;
   try {
     const admin = await profileService.getCurrentAdmin();
-    await leadService.addNote(leadId, trimmed, admin?.name ?? "Admin");
+    await leadService.addNote(leadId, trimmed, admin?.name ?? "Admin", admin?.id);
     revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath(`/agent/leads/${leadId}`);
   } catch (e) {
     console.error("addLeadNoteAction failed:", e);
+    throw e;
+  }
+}
+
+/** The one path that actually connects a lead to an agent — used by both
+ *  the admin "Assign Agent" action and (once wired) automatic assignment.
+ *  Logs "Lead Assigned" vs "Lead Reassigned" depending on whether the
+ *  lead already had an agent, and notifies the newly-assigned agent. */
+export async function assignLeadToAgentAction(leadId: string, agentId: string | null, agentName: string | null) {
+  try {
+    const existing = await leadService.getById(leadId);
+    const wasAssigned = Boolean(existing?.assignedAgentId);
+    const updated = await leadService.assignAgent(leadId, agentId, agentName);
+    if (updated) {
+      await activityService.log(
+        wasAssigned ? "Lead Reassigned" : "Lead Assigned",
+        agentName ? `${updated.name} → ${agentName}` : `${updated.name} unassigned`,
+        "lead",
+        leadId
+      );
+      if (agentId) {
+        await staffNotificationService.notify(
+          agentId,
+          wasAssigned ? "lead_reassigned" : "lead_assigned",
+          wasAssigned ? "Lead reassigned to you" : "New lead assigned to you",
+          `${updated.name}${updated.propertyTitle ? ` — ${updated.propertyTitle}` : ""}`,
+          "lead",
+          leadId
+        );
+      }
+    }
+    revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath("/admin/leads");
+    revalidatePath("/agent/leads");
+    revalidatePath("/agent/dashboard");
+  } catch (e) {
+    console.error("assignLeadToAgentAction failed:", e);
     throw e;
   }
 }

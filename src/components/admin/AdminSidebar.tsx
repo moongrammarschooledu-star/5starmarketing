@@ -21,6 +21,8 @@ import {
   CalendarClock,
   CalendarDays,
   FileText,
+  UserCog,
+  ListTodo,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -35,6 +37,8 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/customers", label: "Customers", icon: Users2, section: "customers" },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarClock, section: "appointments" },
   { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, section: "appointments" },
+  { href: "/admin/follow-ups", label: "Follow-Ups", icon: ListTodo, section: "followUps" },
+  { href: "/admin/team", label: "Sales Team", icon: UserCog, section: "team" },
   { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle, section: "whatsapp" },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban, section: "projects" },
   { href: "/admin/brochures", label: "Brochures", icon: FileText, section: "brochures" },

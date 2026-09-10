@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import type { WebsiteSettings } from "@/lib/models/settings";
 import { weekdays } from "@/lib/models/appointment";
+import { leadAssignmentMethods } from "@/lib/models/team";
 import { updateSettingsAction, type SettingsFormState } from "@/lib/actions/settings.actions";
 import { ImageUploader } from "./ImageUploader";
 
@@ -132,6 +133,30 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
             type="number"
             defaultValue={settings.appointmentBookingNoticeHours}
           />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Sales Team Settings</h2>
+        <p className="mt-1 text-xs text-muted">
+          Controls how a brand-new lead gets its first agent. Leave this on Manual to assign every lead
+          yourself from the Sales Team or Follow-Up Center — nothing is auto-assigned unless you change it.
+        </p>
+        <div className="mt-4 max-w-sm">
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-semibold text-ink">Lead Assignment Method</span>
+            <select
+              name="leadAssignmentMethod"
+              defaultValue={settings.leadAssignmentMethod}
+              className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary"
+            >
+              {leadAssignmentMethods.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 

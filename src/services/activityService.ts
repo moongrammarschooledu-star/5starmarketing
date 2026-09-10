@@ -51,6 +51,25 @@ export const activityService = {
     return (data ?? []).map(mapRow);
   },
 
+  /** Activity scoped to one entity — used by /admin/team/[id]'s Activity
+   *  tab (entityType "team") to show only that member's own account
+   *  history, not the whole company's activity log. */
+  async listByEntity(entityType: string, entityId: string, limit = 50): Promise<ActivityLogEntry[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("activity_logs")
+      .select("*")
+      .eq("entity_type", entityType)
+      .eq("entity_id", entityId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) {
+      console.error("activityService.listByEntity failed:", error);
+      return [];
+    }
+    return (data ?? []).map(mapRow);
+  },
+
   async list(limit = 100, offset = 0): Promise<ActivityLogEntry[]> {
     const supabase = await createClient();
     const { data, error } = await supabase

@@ -39,12 +39,13 @@ export async function rescheduleAppointmentAction(id: string, newDate: string, n
   }
 }
 
-export async function assignAgentAction(id: string, agent: string) {
+export async function assignAppointmentAgentAction(id: string, agentId: string | null, agentName: string | null) {
   try {
-    await appointmentService.assignAgent(id, agent || null);
+    await appointmentService.assignAgentById(id, agentId, agentName);
     revalidateAll(id);
+    revalidatePath("/agent/dashboard");
   } catch (e) {
-    console.error("assignAgentAction failed:", e);
+    console.error("assignAppointmentAgentAction failed:", e);
     throw e;
   }
 }

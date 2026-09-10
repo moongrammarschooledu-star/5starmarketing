@@ -28,6 +28,7 @@ export interface Appointment {
   message: string;
   status: AppointmentStatus;
   assignedAgent?: string;
+  assignedAgentId?: string;
   adminNotes?: string;
   createdAt: string;
   updatedAt: string;

@@ -9,11 +9,13 @@ import { NewLeadNotifier } from "./NewLeadNotifier";
 import type { AdminRole } from "@/lib/models/user";
 
 export function AdminShell({
+  adminId,
   adminName,
   role,
   newLeadsCount = 0,
   children,
 }: {
+  adminId: string;
   adminName: string;
   role: AdminRole;
   newLeadsCount?: number;
@@ -53,7 +55,7 @@ export function AdminShell({
         )}
 
         <div className="flex min-h-screen flex-1 flex-col lg:pl-0">
-          <AdminTopbar adminName={adminName} onMenuClick={() => setDrawerOpen(true)} />
+          <AdminTopbar adminId={adminId} adminName={adminName} onMenuClick={() => setDrawerOpen(true)} />
           <main className="flex-1 p-4 lg:p-8">{children}</main>
         </div>
       </div>

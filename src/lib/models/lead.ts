@@ -1,4 +1,12 @@
-export type LeadStatus = "New" | "Contacted" | "Interested" | "Follow-Up" | "Closed" | "Lost";
+export type LeadStatus =
+  | "New"
+  | "Contacted"
+  | "Interested"
+  | "Follow-Up"
+  | "Site Visit"
+  | "Negotiation"
+  | "Closed"
+  | "Lost";
 
 export type LeadSource =
   | "Website"
@@ -28,6 +36,7 @@ export interface Lead {
   nextFollowUpDate?: string;
   nextFollowUpTime?: string;
   assignedTo?: string;
+  assignedAgentId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,7 +54,9 @@ export interface LeadNote {
   leadId: string;
   note: string;
   createdBy?: string;
+  userId?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 /** Extra, joined-in details about the property a lead is interested in —
@@ -65,9 +76,16 @@ export const leadStatuses: LeadStatus[] = [
   "Contacted",
   "Interested",
   "Follow-Up",
+  "Site Visit",
+  "Negotiation",
   "Closed",
   "Lost",
 ];
+
+/** Statuses a sales_agent may set from the agent portal — mirrors the
+ *  DB trigger's intent (agents change progress, not identity/ownership
+ *  fields), kept here purely for UI convenience. */
+export const agentAllowedStatuses: LeadStatus[] = leadStatuses;
 
 export const leadSources: LeadSource[] = [
   "Website",
@@ -88,6 +106,8 @@ export interface LeadStats {
   contacted: number;
   interested: number;
   followUp: number;
+  siteVisit: number;
+  negotiation: number;
   closed: number;
   lost: number;
 }

@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  MapPin,
+  Handshake,
 } from "lucide-react";
 import { leadService } from "@/services/leadService";
 import { StatCard } from "@/components/admin/StatCard";
@@ -19,7 +21,17 @@ import { formatDateOnlyShort } from "@/lib/date";
 export const dynamic = "force-dynamic";
 
 export default async function AdminLeadsPage() {
-  let stats = { total: 0, new: 0, contacted: 0, interested: 0, followUp: 0, closed: 0, lost: 0 };
+  let stats = {
+    total: 0,
+    new: 0,
+    contacted: 0,
+    interested: 0,
+    followUp: 0,
+    siteVisit: 0,
+    negotiation: 0,
+    closed: 0,
+    lost: 0,
+  };
   let leads: Awaited<ReturnType<typeof leadService.list>> = [];
   let todaysFollowUps: Awaited<ReturnType<typeof leadService.todaysFollowUps>> = [];
   let upcomingFollowUps: Awaited<ReturnType<typeof leadService.upcomingFollowUps>> = [];
@@ -60,12 +72,14 @@ export default async function AdminLeadsPage() {
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-9">
         <StatCard label="Total Leads" value={stats.total} icon={Users} />
         <StatCard label="New" value={stats.new} icon={Sparkles} tone="primary" />
         <StatCard label="Contacted" value={stats.contacted} icon={PhoneCall} />
         <StatCard label="Interested" value={stats.interested} icon={ThumbsUp} tone="success" />
         <StatCard label="Follow-Up" value={stats.followUp} icon={CalendarClock} />
+        <StatCard label="Site Visit" value={stats.siteVisit} icon={MapPin} />
+        <StatCard label="Negotiation" value={stats.negotiation} icon={Handshake} tone="primary" />
         <StatCard label="Closed" value={stats.closed} icon={CheckCircle2} tone="success" />
         <StatCard label="Lost" value={stats.lost} icon={XCircle} />
       </div>

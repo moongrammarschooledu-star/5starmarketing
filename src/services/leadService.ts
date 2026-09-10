@@ -16,6 +16,8 @@ const STATUS_TO_DB: Record<LeadStatus, string> = {
   Contacted: "contacted",
   Interested: "interested",
   "Follow-Up": "follow_up",
+  "Site Visit": "site_visit",
+  Negotiation: "negotiation",
   Closed: "closed",
   Lost: "lost",
 };
@@ -24,6 +26,8 @@ const STATUS_FROM_DB: Record<string, LeadStatus> = {
   contacted: "Contacted",
   interested: "Interested",
   follow_up: "Follow-Up",
+  site_visit: "Site Visit",
+  negotiation: "Negotiation",
   closed: "Closed",
   lost: "Lost",
 };
@@ -72,6 +76,7 @@ function mapRowToLead(row: any): Lead {
     nextFollowUpDate: row.next_follow_up_date ?? undefined,
     nextFollowUpTime: row.next_follow_up_time ?? undefined,
     assignedTo: row.assigned_to ?? undefined,
+    assignedAgentId: row.assigned_agent_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -84,7 +89,9 @@ function mapRowToNote(row: any): LeadNote {
     leadId: row.lead_id,
     note: row.note,
     createdBy: row.created_by ?? undefined,
+    userId: row.user_id ?? undefined,
     createdAt: row.created_at,
+    updatedAt: row.updated_at ?? row.created_at,
   };
 }
 
@@ -282,19 +289,60 @@ export const leadService = {
     return data ? mapRowToLead(data) : undefined;
   },
 
-  async assign(id: string, assignedTo: string | null): Promise<Lead | undefined> {
+  /** STEP 14 — assigns by agent id (the real FK), keeping the older
+   *  assigned_to text field in sync for anything still reading it. Pass
+   *  agentId: null to unassign. */
+  async assignAgent(id: string, agentId: string | null, agentName: string | null): Promise<Lead | undefined> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("leads")
-      .update({ assigned_to: assignedTo })
+      .update({ assigned_agent_id: agentId, assigned_to: agentName })
       .eq("id", id)
       .select("*")
       .maybeSingle();
     if (error) {
-      console.error("leadService.assign failed:", error);
+      console.error("leadService.assignAgent failed:", error);
       throw new Error("Could not assign this lead.");
     }
     return data ? mapRowToLead(data) : undefined;
+  },
+
+  /** "My Leads" for the agent portal — RLS already restricts an agent
+   *  session to their own assigned rows, but filtering explicitly keeps
+   *  the query honest about what it's asking for. */
+  async listByAgent(agentId: string): Promise<Lead[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("leads")
+      .select("*")
+      .eq("assigned_agent_id", agentId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("leadService.listByAgent failed:", error);
+      return [];
+    }
+    return (data ?? []).map(mapRowToLead);
+  },
+
+  /** Counts used by the team roster / performance pages — unassigned
+   *  leads count toward nobody. */
+  async countByAgent(): Promise<Map<string, { total: number; open: number; closed: number }>> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("leads").select("assigned_agent_id, status").not("assigned_agent_id", "is", null);
+    if (error) {
+      console.error("leadService.countByAgent failed:", error);
+      return new Map();
+    }
+    const map = new Map<string, { total: number; open: number; closed: number }>();
+    for (const row of data ?? []) {
+      const agentId = row.assigned_agent_id as string;
+      const entry = map.get(agentId) ?? { total: 0, open: 0, closed: 0 };
+      entry.total += 1;
+      if (row.status === "closed" || row.status === "lost") entry.closed += 1;
+      else entry.open += 1;
+      map.set(agentId, entry);
+    }
+    return map;
   },
 
   async remove(id: string): Promise<boolean> {
@@ -321,11 +369,11 @@ export const leadService = {
     return (data ?? []).map(mapRowToNote);
   },
 
-  async addNote(leadId: string, note: string, createdBy?: string): Promise<LeadNote> {
+  async addNote(leadId: string, note: string, createdBy?: string, userId?: string): Promise<LeadNote> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("lead_notes")
-      .insert({ lead_id: leadId, note, created_by: createdBy || null })
+      .insert({ lead_id: leadId, note, created_by: createdBy || null, user_id: userId || null })
       .select("*")
       .single();
     if (error) {
@@ -350,6 +398,8 @@ export const leadService = {
       contacted: count("contacted"),
       interested: count("interested"),
       followUp: count("follow_up"),
+      siteVisit: count("site_visit"),
+      negotiation: count("negotiation"),
       closed: count("closed"),
       lost: count("lost"),
     };

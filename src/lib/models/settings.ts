@@ -38,6 +38,10 @@ export interface WebsiteSettings {
   appointmentBreakEnd?: string;
   appointmentMaxVisitors: number;
   appointmentBookingNoticeHours: number;
+  // Automatic Lead Assignment (STEP 14) — 'Manual' (default) means no
+  // lead is ever auto-assigned; the admin explicitly opts into
+  // 'Round Robin' or 'Least Assigned Leads'.
+  leadAssignmentMethod: "Manual" | "Round Robin" | "Least Assigned Leads";
   updatedAt: string;
 }
 

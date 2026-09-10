@@ -5,11 +5,15 @@ import { leadService } from "@/services/leadService";
 import { whatsappService } from "@/services/whatsappService";
 import { settingsService } from "@/services/settingsService";
 import { profileService } from "@/services/profileService";
+import { teamService } from "@/services/teamService";
+import { followUpService } from "@/services/followUpService";
 import { LeadActionsPanel } from "@/components/admin/LeadActionsPanel";
 import { LeadNotes } from "@/components/admin/LeadNotes";
+import { LeadFollowUps } from "@/components/admin/LeadFollowUps";
 import { WhatsAppActivityLog } from "@/components/admin/WhatsAppActivityLog";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatDateOnly } from "@/lib/date";
+import { canAccess } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +26,7 @@ export default async function AdminLeadDetailPage({
   const lead = await leadService.getById(id);
   if (!lead) notFound();
 
-  const [property, notes, duplicates, templates, settings, admin, activity] = await Promise.all([
+  const [property, notes, duplicates, templates, settings, admin, activity, assignableAgents, followUps] = await Promise.all([
     lead.propertyId ? leadService.getLeadProperty(lead.propertyId) : Promise.resolve(undefined),
     leadService.listNotes(lead.id),
     leadService.findPossibleDuplicates(lead.id, lead.phone, lead.whatsapp),
@@ -30,7 +34,11 @@ export default async function AdminLeadDetailPage({
     settingsService.get(),
     profileService.getCurrentAdmin(),
     whatsappService.listActivity(lead.id),
+    teamService.listAssignable(),
+    followUpService.listByLead(lead.id),
   ]);
+
+  const canManage = admin ? canAccess(admin.role, "team") : false;
 
   return (
     <div>
@@ -147,6 +155,8 @@ export default async function AdminLeadDetailPage({
             </p>
           </div>
 
+          <LeadFollowUps leadId={lead.id} followUps={followUps} agentId={lead.assignedAgentId ?? ""} />
+
           <LeadNotes leadId={lead.id} notes={notes} />
 
           <WhatsAppActivityLog leadId={lead.id} activity={activity} />
@@ -159,6 +169,9 @@ export default async function AdminLeadDetailPage({
             templates={templates}
             whatsappNumber={settings.whatsapp}
             agentName={admin?.name ?? "5STAR.M Team"}
+            assignableAgents={assignableAgents}
+            canAssign={canManage}
+            canDelete={canManage}
           />
         </div>
       </div>

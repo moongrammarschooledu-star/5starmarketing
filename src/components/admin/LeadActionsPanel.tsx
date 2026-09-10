@@ -9,7 +9,7 @@ import type { WhatsAppTemplate } from "@/lib/models/whatsapp";
 import {
   updateLeadStatusAction,
   updateLeadFollowUpAction,
-  assignLeadAction,
+  assignLeadToAgentAction,
   assignLeadToMeAction,
   deleteLeadAction,
 } from "@/lib/actions/leads.actions";
@@ -23,17 +23,25 @@ export function LeadActionsPanel({
   templates,
   whatsappNumber,
   agentName,
+  assignableAgents = [],
+  canAssign = true,
+  canDelete = true,
 }: {
   lead: Lead;
   property?: LeadPropertyInfo;
   templates: WhatsAppTemplate[];
   whatsappNumber: string;
   agentName: string;
+  /** Who can be picked in "Assign Agent" — admin/manager view only. */
+  assignableAgents?: { id: string; name: string }[];
+  /** Sales Manager/Admin/Super Admin can reassign; a sales_agent cannot. */
+  canAssign?: boolean;
+  canDelete?: boolean;
 }) {
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [followUpDate, setFollowUpDate] = useState(lead.nextFollowUpDate ?? "");
   const [followUpTime, setFollowUpTime] = useState(lead.nextFollowUpTime ?? "");
-  const [assignedTo, setAssignedTo] = useState(lead.assignedTo ?? "");
+  const [agentId, setAgentId] = useState(lead.assignedAgentId ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -57,9 +65,10 @@ export function LeadActionsPanel({
   }
 
   function saveAssignment() {
+    const agent = assignableAgents.find((a) => a.id === agentId);
     startTransition(async () => {
-      await assignLeadAction(lead.id, assignedTo.trim() || null);
-      toast.show("Lead assigned.");
+      await assignLeadToAgentAction(lead.id, agent?.id ?? null, agent?.name ?? null);
+      toast.show(agent ? `Assigned to ${agent.name}.` : "Lead unassigned.");
       router.refresh();
     });
   }
@@ -153,42 +162,56 @@ export function LeadActionsPanel({
 
       <div className="rounded-2xl border border-border bg-surface p-5">
         <h3 className="flex items-center gap-2 font-heading text-sm font-bold text-ink">
-          <UserPlus className="h-4.5 w-4.5 text-primary" /> Assigned To
+          <UserPlus className="h-4.5 w-4.5 text-primary" /> Assigned Agent
         </h3>
-        <input
-          type="text"
-          value={assignedTo}
-          onChange={(e) => setAssignedTo(e.target.value)}
-          placeholder="Staff member name"
-          className="mt-3 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
-        />
-        <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={saveAssignment}
-            disabled={isPending}
-            className="rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-50"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={assignToMe}
-            disabled={isPending}
-            className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
-          >
-            Assign to Me
-          </button>
-        </div>
+        {canAssign ? (
+          <>
+            <select
+              value={agentId}
+              onChange={(e) => setAgentId(e.target.value)}
+              disabled={isPending}
+              className="mt-3 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm font-bold text-ink outline-none focus:border-primary"
+            >
+              <option value="">Unassigned</option>
+              {assignableAgents.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={saveAssignment}
+                disabled={isPending}
+                className="rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={assignToMe}
+                disabled={isPending}
+                className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
+              >
+                Assign to Me
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="mt-3 text-sm font-semibold text-ink">{lead.assignedTo || "Unassigned"}</p>
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setConfirmingDelete(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-primary/30 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5"
-      >
-        <Trash2 className="h-4 w-4" /> Delete Lead
-      </button>
+      {canDelete && (
+        <button
+          type="button"
+          onClick={() => setConfirmingDelete(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-primary/30 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5"
+        >
+          <Trash2 className="h-4 w-4" /> Delete Lead
+        </button>
+      )}
 
       <ConfirmDialog
         open={confirmingDelete}

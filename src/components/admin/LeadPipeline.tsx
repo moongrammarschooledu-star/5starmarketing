@@ -15,6 +15,8 @@ const COLUMN_TONE: Record<LeadStatus, string> = {
   Contacted: "border-ink/15 bg-ink/5",
   Interested: "border-success/30 bg-success/5",
   "Follow-Up": "border-amber-500/30 bg-amber-500/5",
+  "Site Visit": "border-burgundy/30 bg-burgundy/5",
+  Negotiation: "border-primary/50 bg-primary/10",
   Closed: "border-success/30 bg-success/10",
   Lost: "border-muted/30 bg-muted/10",
 };

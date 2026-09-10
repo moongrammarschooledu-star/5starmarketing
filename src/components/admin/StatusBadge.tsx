@@ -12,6 +12,8 @@ const palette: Record<string, string> = {
   Contacted: "bg-ink/10 text-ink",
   Interested: "bg-success/10 text-success",
   "Follow-Up": "bg-amber-500/10 text-amber-600",
+  "Site Visit": "bg-burgundy/10 text-burgundy",
+  Negotiation: "bg-primary/15 text-primary",
   Closed: "bg-success/15 text-success",
   Lost: "bg-muted/20 text-muted",
   Pending: "bg-primary/10 text-primary",

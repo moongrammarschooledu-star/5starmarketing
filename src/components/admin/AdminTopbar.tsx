@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { Menu, ExternalLink, UserCircle } from "lucide-react";
+import { StaffNotificationBell } from "./StaffNotificationBell";
 
 export function AdminTopbar({
+  adminId,
   adminName,
   onMenuClick,
 }: {
+  adminId: string;
   adminName: string;
   onMenuClick: () => void;
 }) {
@@ -34,6 +37,7 @@ export function AdminTopbar({
           <ExternalLink className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">View Website</span>
         </Link>
+        {adminId && <StaffNotificationBell userId={adminId} portal="admin" />}
         <Link
           href="/admin/profile"
           className="flex items-center gap-2 rounded-full bg-surface-muted px-3 py-2 text-xs font-bold text-ink"

@@ -30,6 +30,12 @@ export const profileService = {
       title: profile?.title ?? "Administrator",
       role: (profile?.role as AdminUser["role"]) ?? "admin",
       profileImage: profile?.profile_image ?? undefined,
+      phone: profile?.phone ?? undefined,
+      whatsapp: profile?.whatsapp ?? undefined,
+      specialization: profile?.specialization ?? undefined,
+      bio: profile?.bio ?? undefined,
+      status: (profile?.status as AdminUser["status"]) ?? "Active",
+      availability: (profile?.availability as AdminUser["availability"]) ?? "Available",
       createdAt: profile?.created_at ?? user.created_at,
       updatedAt: profile?.updated_at ?? user.created_at,
     };

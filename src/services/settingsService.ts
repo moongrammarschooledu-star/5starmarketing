@@ -47,6 +47,7 @@ function mapRowToSettings(row: any): WebsiteSettings {
     appointmentBreakEnd: row.appointment_break_end ? String(row.appointment_break_end).slice(0, 5) : undefined,
     appointmentMaxVisitors: row.appointment_max_visitors ?? 10,
     appointmentBookingNoticeHours: row.appointment_booking_notice_hours ?? 2,
+    leadAssignmentMethod: row.lead_assignment_method ?? "Manual",
     updatedAt: row.updated_at,
   };
 }
@@ -106,6 +107,7 @@ export const settingsService = {
     if (input.appointmentMaxVisitors !== undefined) row.appointment_max_visitors = input.appointmentMaxVisitors;
     if (input.appointmentBookingNoticeHours !== undefined)
       row.appointment_booking_notice_hours = input.appointmentBookingNoticeHours;
+    if (input.leadAssignmentMethod !== undefined) row.lead_assignment_method = input.leadAssignmentMethod;
 
     const { data, error } = await supabase
       .from("website_settings")

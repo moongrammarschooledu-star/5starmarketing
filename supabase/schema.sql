@@ -22,7 +22,20 @@ create table if not exists public.admin_profiles (
   profile_image text,
   -- Role architecture (STEP 9) — see the RLS/permissions notes below.
   role text not null default 'admin' check (
-    role in ('super_admin', 'admin', 'editor', 'sales_agent')
+    role in ('super_admin', 'admin', 'editor', 'sales_agent', 'sales_manager')
+  ),
+  -- Sales team fields (STEP 14). email is cached here (kept in sync by
+  -- handle_new_admin_user() below) for the same reason customer_profiles
+  -- caches it — /admin/team needs to show OTHER members' emails, and the
+  -- normal RLS-bound app client can never query auth.users directly.
+  email text,
+  phone text,
+  whatsapp text,
+  specialization text,
+  bio text,
+  status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  availability text not null default 'Available' check (
+    availability in ('Available', 'Busy', 'On Leave', 'Inactive')
   ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -31,10 +44,11 @@ create table if not exists public.admin_profiles (
 -- ---------------------------------------------------------------------
 -- customer_profiles (STEP 10)
 -- One row per customer, keyed to a Supabase Auth user. email is cached
--- here (kept in sync by a trigger below) because the `auth` schema is
--- never queryable from the app (no service-role key is used anywhere in
--- this project), so /admin/customers needs a real place to read a
--- customer's email and registration date from.
+-- here (kept in sync by a trigger below) because the app's normal
+-- RLS-bound client can never query the `auth` schema directly, so
+-- /admin/customers needs a real place to read a customer's email and
+-- registration date from. (STEP 14 later adds a service-role client,
+-- but only for creating new team member accounts — never for reads.)
 -- ---------------------------------------------------------------------
 create table if not exists public.customer_profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -59,6 +73,30 @@ set search_path = public
 stable
 as $$
   select exists (select 1 from public.admin_profiles where id = auth.uid());
+$$;
+
+-- current_admin_role() / is_admin_or_manager() (STEP 14) — role-aware
+-- helpers alongside is_admin() above (which only checks "is any kind of
+-- staff"). CRM tables need the finer check so a sales_agent's database
+-- access is actually scoped to their own leads, not just hidden in UI.
+create or replace function public.current_admin_role()
+returns text
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select role from public.admin_profiles where id = auth.uid();
+$$;
+
+create or replace function public.is_admin_or_manager()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select public.current_admin_role() in ('super_admin', 'admin', 'sales_manager');
 $$;
 
 -- ---------------------------------------------------------------------
@@ -105,6 +143,11 @@ create table if not exists public.website_settings (
   appointment_break_end time,
   appointment_max_visitors integer not null default 10,
   appointment_booking_notice_hours integer not null default 2,
+  -- Lead Assignment Method (STEP 14) — off (Manual) by default; no
+  -- automatic assignment happens unless explicitly changed.
+  lead_assignment_method text not null default 'Manual' check (
+    lead_assignment_method in ('Manual', 'Round Robin', 'Least Assigned Leads')
+  ),
   updated_at timestamptz not null default now(),
   constraint website_settings_single_row check (id = 1)
 );
@@ -244,17 +287,21 @@ create table if not exists public.leads (
     source in ('website', 'property_page', 'whatsapp', 'facebook', 'instagram', 'tiktok', 'youtube', 'direct', 'other', 'site_visit')
   ),
   status text not null default 'new' check (
-    status in ('new', 'contacted', 'interested', 'follow_up', 'closed', 'lost')
+    status in ('new', 'contacted', 'interested', 'follow_up', 'site_visit', 'negotiation', 'closed', 'lost')
   ),
   consent boolean not null default false,
   next_follow_up_date date,
   next_follow_up_time time,
   assigned_to text,
+  -- Lead Assignment (STEP 14) — kept alongside assigned_to (text) for
+  -- backward compatibility with anything already reading it.
+  assigned_agent_id uuid references public.admin_profiles (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index if not exists leads_status_idx on public.leads (status);
+create index if not exists leads_assigned_agent_idx on public.leads (assigned_agent_id);
 create index if not exists leads_property_idx on public.leads (property_id);
 create index if not exists leads_source_idx on public.leads (source);
 create index if not exists leads_follow_up_idx on public.leads (next_follow_up_date);
@@ -271,7 +318,10 @@ create table if not exists public.lead_notes (
   lead_id uuid not null references public.leads (id) on delete cascade,
   note text not null,
   created_by text,
-  created_at timestamptz not null default now()
+  -- STEP 14: FK alongside created_by (text name) for backward compat.
+  user_id uuid references public.admin_profiles (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create index if not exists lead_notes_lead_idx on public.lead_notes (lead_id);
@@ -485,6 +535,8 @@ create table if not exists public.appointments (
     status in ('Pending', 'Confirmed', 'Rescheduled', 'Completed', 'Cancelled', 'No Show')
   ),
   assigned_agent text,
+  -- STEP 14: FK alongside assigned_agent (text) for backward compat.
+  assigned_agent_id uuid references public.admin_profiles (id) on delete set null,
   admin_notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -495,6 +547,7 @@ create index if not exists appointments_customer_idx on public.appointments (cus
 create index if not exists appointments_date_idx on public.appointments (appointment_date);
 create index if not exists appointments_status_idx on public.appointments (status);
 create index if not exists appointments_slot_idx on public.appointments (appointment_date, appointment_time, assigned_agent);
+create index if not exists appointments_assigned_agent_idx on public.appointments (assigned_agent_id);
 
 -- ---------------------------------------------------------------------
 -- appointment_history (STEP 11)
@@ -611,6 +664,48 @@ create index if not exists brochures_public_idx on public.brochures (public);
 create index if not exists brochures_created_idx on public.brochures (created_at);
 
 -- ---------------------------------------------------------------------
+-- follow_ups (STEP 14) — a dedicated, re-schedulable follow-up history
+-- per lead, richer than the simple next_follow_up_date/time fields
+-- already on `leads` (which stay untouched and keep working).
+-- ---------------------------------------------------------------------
+create table if not exists public.follow_ups (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references public.leads (id) on delete cascade,
+  assigned_agent_id uuid references public.admin_profiles (id) on delete set null,
+  follow_up_date date not null,
+  follow_up_time time,
+  type text not null default 'Call' check (type in ('Call', 'WhatsApp', 'Meeting', 'Site Visit', 'Other')),
+  note text not null default '',
+  status text not null default 'Pending' check (status in ('Pending', 'Completed', 'Cancelled', 'Overdue')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists follow_ups_lead_idx on public.follow_ups (lead_id);
+create index if not exists follow_ups_agent_idx on public.follow_ups (assigned_agent_id);
+create index if not exists follow_ups_date_idx on public.follow_ups (follow_up_date);
+create index if not exists follow_ups_status_idx on public.follow_ups (status);
+
+-- ---------------------------------------------------------------------
+-- notifications (STEP 14) — STAFF-facing (admin/sales_manager/
+-- sales_agent), kept separate from customer_notifications (STEP 10).
+-- ---------------------------------------------------------------------
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.admin_profiles (id) on delete cascade,
+  type text not null,
+  title text not null,
+  message text not null,
+  entity_type text,
+  entity_id uuid,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists notifications_user_idx on public.notifications (user_id);
+create index if not exists notifications_unread_idx on public.notifications (user_id, read) where not read;
+
+-- ---------------------------------------------------------------------
 -- updated_at auto-touch trigger, shared by every table above
 -- ---------------------------------------------------------------------
 create or replace function public.set_updated_at()
@@ -638,6 +733,44 @@ create trigger set_updated_at before update on public.services
 drop trigger if exists set_updated_at on public.leads;
 create trigger set_updated_at before update on public.leads
   for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.lead_notes;
+create trigger set_updated_at before update on public.lead_notes
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.follow_ups;
+create trigger set_updated_at before update on public.follow_ups
+  for each row execute function public.set_updated_at();
+
+-- A sales_agent may only ever change status/consent/follow-up fields on
+-- a lead — never reassign it, change whose customer it is, or edit the
+-- customer's own contact details. Admins and sales managers unaffected.
+create or replace function public.protect_lead_fields_for_agent()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if not public.is_admin_or_manager() then
+    new.assigned_agent_id := old.assigned_agent_id;
+    new.assigned_to := old.assigned_to;
+    new.customer_id := old.customer_id;
+    new.property_id := old.property_id;
+    new.property_title := old.property_title;
+    new.name := old.name;
+    new.phone := old.phone;
+    new.whatsapp := old.whatsapp;
+    new.email := old.email;
+    new.source := old.source;
+    new.message := old.message;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_lead_fields_for_agent on public.leads;
+create trigger protect_lead_fields_for_agent before update on public.leads
+  for each row execute function public.protect_lead_fields_for_agent();
 
 drop trigger if exists set_updated_at on public.website_settings;
 create trigger set_updated_at before update on public.website_settings
@@ -752,8 +885,8 @@ begin
     )
     on conflict (id) do nothing;
   else
-    insert into public.admin_profiles (id, name, title, role)
-    values (new.id, coalesce(new.raw_user_meta_data ->> 'name', 'Admin'), 'Director', 'admin')
+    insert into public.admin_profiles (id, name, title, role, email)
+    values (new.id, coalesce(new.raw_user_meta_data ->> 'name', 'Admin'), 'Director', 'admin', new.email)
     on conflict (id) do nothing;
   end if;
   return new;
@@ -856,11 +989,19 @@ create policy "leads_public_insert"
   to anon, authenticated
   with check (true);
 
+-- STEP 14: role-aware — admin/sales_manager see all, a sales_agent sees
+-- (only) their own assigned leads.
 drop policy if exists "leads_admin_read" on public.leads;
 create policy "leads_admin_read"
   on public.leads for select
   to authenticated
-  using (public.is_admin());
+  using (public.is_admin_or_manager());
+
+drop policy if exists "leads_agent_read" on public.leads;
+create policy "leads_agent_read"
+  on public.leads for select
+  to authenticated
+  using (assigned_agent_id = auth.uid());
 
 -- A customer can read (only) their own leads — see leads.customer_id
 -- above — for "My Inquiries" in the Customer Portal (STEP 10).
@@ -874,23 +1015,43 @@ drop policy if exists "leads_admin_update" on public.leads;
 create policy "leads_admin_update"
   on public.leads for update
   to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using (public.is_admin_or_manager())
+  with check (public.is_admin_or_manager());
+
+drop policy if exists "leads_agent_update" on public.leads;
+create policy "leads_agent_update"
+  on public.leads for update
+  to authenticated
+  using (assigned_agent_id = auth.uid())
+  with check (assigned_agent_id = auth.uid());
 
 drop policy if exists "leads_admin_delete" on public.leads;
 create policy "leads_admin_delete"
   on public.leads for delete
   to authenticated
-  using (public.is_admin());
+  using (public.is_admin_or_manager());
 
--- lead_notes: no public policy at all (RLS defaults to deny) — only
--- authenticated admins can read or add follow-up notes.
+-- lead_notes: no public policy at all (RLS defaults to deny). STEP 14:
+-- admin/sales_manager see all notes; a sales_agent can read/add notes
+-- only on leads assigned to them.
 drop policy if exists "lead_notes_admin_all" on public.lead_notes;
 create policy "lead_notes_admin_all"
   on public.lead_notes for all
   to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using (public.is_admin_or_manager())
+  with check (public.is_admin_or_manager());
+
+drop policy if exists "lead_notes_agent_read" on public.lead_notes;
+create policy "lead_notes_agent_read"
+  on public.lead_notes for select
+  to authenticated
+  using (exists (select 1 from public.leads l where l.id = lead_notes.lead_id and l.assigned_agent_id = auth.uid()));
+
+drop policy if exists "lead_notes_agent_insert" on public.lead_notes;
+create policy "lead_notes_agent_insert"
+  on public.lead_notes for insert
+  to authenticated
+  with check (exists (select 1 from public.leads l where l.id = lead_notes.lead_id and l.assigned_agent_id = auth.uid()));
 
 -- whatsapp_templates / whatsapp_activity: no public policy at all —
 -- these are internal admin tools (message drafting + activity history),
@@ -936,6 +1097,44 @@ create policy "profile_self_update"
   to authenticated
   using (id = auth.uid())
   with check (id = auth.uid());
+
+-- STEP 14: /admin/team needs the whole roster and the ability to edit
+-- other members' rows, on top of the self policies above (Postgres OR's
+-- multiple policies for the same command). The self-update policy has
+-- no column lock, so without the trigger below any signed-in staff
+-- member — including a sales_agent — could set their OWN role/status
+-- and self-promote. Only is_admin_or_manager() may change those columns
+-- from here on; everyone else gets them silently reset to the old value.
+drop policy if exists "admin_profiles_team_read" on public.admin_profiles;
+create policy "admin_profiles_team_read"
+  on public.admin_profiles for select
+  to authenticated
+  using (public.is_admin_or_manager());
+
+drop policy if exists "admin_profiles_team_update" on public.admin_profiles;
+create policy "admin_profiles_team_update"
+  on public.admin_profiles for update
+  to authenticated
+  using (public.is_admin_or_manager())
+  with check (public.is_admin_or_manager());
+
+create or replace function public.protect_admin_profile_fields()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if not public.is_admin_or_manager() then
+    new.role := old.role;
+    new.status := old.status;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_admin_profile_fields on public.admin_profiles;
+create trigger protect_admin_profile_fields before update on public.admin_profiles
+  for each row execute function public.protect_admin_profile_fields();
 
 -- property_views / website_events (STEP 9): public insert-only (so an
 -- anonymous visitor's page view / click can be logged), admin read-only.
@@ -1081,12 +1280,27 @@ create policy "appointments_public_insert"
   to anon, authenticated
   with check (true);
 
+-- STEP 14: role-aware — admin/sales_manager manage all; a sales_agent
+-- can read/update (only) appointments assigned to them.
 drop policy if exists "appointments_admin_all" on public.appointments;
 create policy "appointments_admin_all"
   on public.appointments for all
   to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using (public.is_admin_or_manager())
+  with check (public.is_admin_or_manager());
+
+drop policy if exists "appointments_agent_read" on public.appointments;
+create policy "appointments_agent_read"
+  on public.appointments for select
+  to authenticated
+  using (assigned_agent_id = auth.uid());
+
+drop policy if exists "appointments_agent_update" on public.appointments;
+create policy "appointments_agent_update"
+  on public.appointments for update
+  to authenticated
+  using (assigned_agent_id = auth.uid())
+  with check (assigned_agent_id = auth.uid());
 
 drop policy if exists "appointments_customer_read" on public.appointments;
 create policy "appointments_customer_read"
@@ -1174,6 +1388,152 @@ create policy "brochures_admin_all"
   to authenticated
   using (public.is_admin())
   with check (public.is_admin());
+
+-- =====================================================================
+-- Follow-Ups (STEP 14) — admin/sales_manager manage all; a sales_agent
+-- fully manages (only) their own assigned follow-ups.
+-- =====================================================================
+
+alter table public.follow_ups enable row level security;
+
+drop policy if exists "follow_ups_admin_all" on public.follow_ups;
+create policy "follow_ups_admin_all"
+  on public.follow_ups for all
+  to authenticated
+  using (public.is_admin_or_manager())
+  with check (public.is_admin_or_manager());
+
+drop policy if exists "follow_ups_agent_all" on public.follow_ups;
+create policy "follow_ups_agent_all"
+  on public.follow_ups for all
+  to authenticated
+  using (assigned_agent_id = auth.uid())
+  with check (assigned_agent_id = auth.uid());
+
+-- =====================================================================
+-- Notifications (STEP 14) — STAFF-facing, self-read/update; any staff
+-- member can create one for a colleague (e.g. assigning them a lead).
+-- =====================================================================
+
+alter table public.notifications enable row level security;
+
+drop policy if exists "notifications_self_read" on public.notifications;
+create policy "notifications_self_read"
+  on public.notifications for select
+  to authenticated
+  using (user_id = auth.uid());
+
+drop policy if exists "notifications_self_update" on public.notifications;
+create policy "notifications_self_update"
+  on public.notifications for update
+  to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+drop policy if exists "notifications_staff_insert" on public.notifications;
+create policy "notifications_staff_insert"
+  on public.notifications for insert
+  to authenticated
+  with check (public.is_admin());
+
+drop policy if exists "notifications_admin_delete" on public.notifications;
+create policy "notifications_admin_delete"
+  on public.notifications for delete
+  to authenticated
+  using (public.is_admin_or_manager());
+
+-- =====================================================================
+-- Automatic lead assignment (STEP 14) — a BEFORE INSERT trigger so it
+-- works for an anonymous visitor's inquiry too (the app-level anon
+-- client can never read admin_profiles or other leads; this
+-- security-definer trigger can, without widening that access). No-ops
+-- when website_settings.lead_assignment_method is 'Manual' (the
+-- default). "Round Robin" is a deterministic modulo rotation over the
+-- active roster (ordered by name), driven by how many leads have ever
+-- been assigned so far — no separate pointer table to keep in sync.
+-- =====================================================================
+create or replace function public.auto_assign_new_lead()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_method text;
+  v_agent_id uuid;
+  v_agent_name text;
+  v_agent_count int;
+  v_total_assigned bigint;
+begin
+  if new.assigned_agent_id is not null then
+    return new;
+  end if;
+
+  select lead_assignment_method into v_method from public.website_settings limit 1;
+  if v_method is null or v_method = 'Manual' then
+    return new;
+  end if;
+
+  if v_method = 'Least Assigned Leads' then
+    select ap.id, ap.name into v_agent_id, v_agent_name
+    from public.admin_profiles ap
+    left join public.leads l on l.assigned_agent_id = ap.id and l.status not in ('closed', 'lost')
+    where ap.status = 'Active' and ap.role in ('sales_agent', 'sales_manager')
+    group by ap.id, ap.name
+    order by count(l.id) asc, ap.name asc
+    limit 1;
+  elsif v_method = 'Round Robin' then
+    select count(*) into v_agent_count from public.admin_profiles where status = 'Active' and role in ('sales_agent', 'sales_manager');
+    if v_agent_count > 0 then
+      select count(*) into v_total_assigned from public.leads where assigned_agent_id is not null;
+      select ap.id, ap.name into v_agent_id, v_agent_name
+      from public.admin_profiles ap
+      where ap.status = 'Active' and ap.role in ('sales_agent', 'sales_manager')
+      order by ap.name asc
+      offset (v_total_assigned % v_agent_count) limit 1;
+    end if;
+  end if;
+
+  if v_agent_id is not null then
+    new.assigned_agent_id := v_agent_id;
+    new.assigned_to := v_agent_name;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists auto_assign_new_lead on public.leads;
+create trigger auto_assign_new_lead before insert on public.leads
+  for each row execute function public.auto_assign_new_lead();
+
+-- Notifies + logs only when the row above actually auto-assigned
+-- someone — a manually-created lead generates neither, exactly like today.
+create or replace function public.on_lead_auto_assigned()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.assigned_agent_id is not null then
+    insert into public.notifications (user_id, type, title, message, entity_type, entity_id)
+    values (
+      new.assigned_agent_id,
+      'lead_assigned',
+      'New lead assigned to you',
+      new.name || coalesce(' — ' || new.property_title, ''),
+      'lead',
+      new.id
+    );
+    insert into public.activity_logs (admin_id, admin_name, action, entity_type, entity_id, description)
+    values (null, 'System (Auto-Assigned)', 'Lead Assigned', 'lead', new.id, new.name || ' -> ' || new.assigned_to);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_lead_auto_assigned on public.leads;
+create trigger on_lead_auto_assigned after insert on public.leads
+  for each row execute function public.on_lead_auto_assigned();
 
 -- =====================================================================
 -- Storage: property-images bucket

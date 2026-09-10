@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Phone, Mail, MessageCircle, MapPin, Users } from "lucide-react";
 import { appointmentService } from "@/services/appointmentService";
+import { teamService } from "@/services/teamService";
+import { profileService } from "@/services/profileService";
 import { requireSection } from "@/lib/guard";
+import { canAccess } from "@/lib/permissions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { AppointmentManagePanel } from "@/components/admin/AppointmentManagePanel";
 import { whatsappUrlFor } from "@/lib/site";
@@ -24,7 +27,12 @@ export default async function AdminAppointmentDetailPage({ params }: { params: P
   const appointment = await appointmentService.getById(id);
   if (!appointment) notFound();
 
-  const history = await appointmentService.listHistory(id);
+  const [history, assignableAgents, admin] = await Promise.all([
+    appointmentService.listHistory(id),
+    teamService.listAssignable(),
+    profileService.getCurrentAdmin(),
+  ]);
+  const canManage = admin ? canAccess(admin.role, "team") : false;
   const waMessage = appointment.status === "Confirmed"
     ? confirmationMessage(appointment.name, appointment.propertyTitle, appointment.appointmentDate, appointment.appointmentTime)
     : pendingMessage(appointment.name);
@@ -105,7 +113,7 @@ export default async function AdminAppointmentDetailPage({ params }: { params: P
             </div>
           </div>
 
-          <AppointmentManagePanel appointment={appointment} />
+          <AppointmentManagePanel appointment={appointment} assignableAgents={assignableAgents} canAssign={canManage} />
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-5">

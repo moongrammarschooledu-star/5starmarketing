@@ -22,11 +22,13 @@ export default async function AdminPanelLayout({ children }: { children: ReactNo
   // The middleware already guarantees a logged-in user reaches this layout,
   // so a missing profile here just falls back to a generic label rather
   // than blocking the page.
+  let adminId = "";
   let adminName = "Admin";
   let role: AdminRole = "admin";
   let newLeadsCount = 0;
   try {
     const admin = await profileService.getCurrentAdmin();
+    if (admin?.id) adminId = admin.id;
     if (admin?.name) adminName = admin.name;
     if (admin?.role) role = admin.role;
   } catch (e) {
@@ -39,7 +41,7 @@ export default async function AdminPanelLayout({ children }: { children: ReactNo
   }
 
   return (
-    <AdminShell adminName={adminName} role={role} newLeadsCount={newLeadsCount}>
+    <AdminShell adminId={adminId} adminName={adminName} role={role} newLeadsCount={newLeadsCount}>
       {children}
     </AdminShell>
   );

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { settingsService } from "@/services/settingsService";
+import type { WebsiteSettings } from "@/lib/models/settings";
 
 export interface SettingsFormState {
   error?: string;
@@ -51,6 +52,7 @@ export async function updateSettingsAction(
       appointmentBreakEnd: String(formData.get("appointmentBreakEnd") ?? "").trim() || undefined,
       appointmentMaxVisitors: numberOrUndefined(formData.get("appointmentMaxVisitors")),
       appointmentBookingNoticeHours: numberOrUndefined(formData.get("appointmentBookingNoticeHours")),
+      leadAssignmentMethod: String(formData.get("leadAssignmentMethod") ?? "Manual") as WebsiteSettings["leadAssignmentMethod"],
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not save settings." };

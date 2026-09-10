@@ -16,7 +16,9 @@ export type AdminSection =
   | "activity"
   | "customers"
   | "appointments"
-  | "brochures";
+  | "brochures"
+  | "team"
+  | "followUps";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -35,7 +37,10 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "customers",
     "appointments",
     "brochures",
+    "team",
+    "followUps",
   ],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
   sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments"],
 };
@@ -48,6 +53,7 @@ export function canAccess(role: AdminRole, section: AdminSection): boolean {
 export const roleLabels: Record<AdminRole, string> = {
   super_admin: "Super Admin",
   admin: "Admin",
+  sales_manager: "Sales Manager",
   editor: "Editor",
   sales_agent: "Sales Agent",
 };

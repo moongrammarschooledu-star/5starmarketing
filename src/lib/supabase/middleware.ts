@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ADMIN_PREFIX = "/admin";
 const ADMIN_LOGIN_PATH = "/admin/login";
+const AGENT_PREFIX = "/agent";
 const CUSTOMER_PREFIX = "/customer";
 const CUSTOMER_LOGIN_PATH = "/login";
 
@@ -23,13 +24,14 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith(ADMIN_PREFIX) && pathname !== ADMIN_LOGIN_PATH;
+  const isAgentRoute = pathname.startsWith(AGENT_PREFIX);
   const isCustomerRoute = pathname.startsWith(CUSTOMER_PREFIX);
 
   if (!url || !anonKey) {
     // Supabase isn't configured yet. Let public pages render (they'll show
     // their own "not configured" empty state), but don't pretend
     // protected routes are safe to enter without a real auth check.
-    if (isAdminRoute) {
+    if (isAdminRoute || isAgentRoute) {
       const loginUrl = new URL(ADMIN_LOGIN_PATH, request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
@@ -61,20 +63,21 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (isAdminRoute) {
+  if (isAdminRoute || isAgentRoute) {
     if (!user) {
       const loginUrl = new URL(ADMIN_LOGIN_PATH, request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
     // A logged-in customer has no admin_profiles row — block them from
-    // every /admin/* route rather than letting a page partially render.
+    // every /admin/* or /agent/* route rather than letting a page
+    // partially render. Both portals share the same staff login.
     const { data: adminProfile } = await supabase
       .from("admin_profiles")
-      .select("id")
+      .select("id, status")
       .eq("id", user.id)
       .maybeSingle();
-    if (!adminProfile) {
+    if (!adminProfile || adminProfile.status === "Inactive") {
       const loginUrl = new URL(ADMIN_LOGIN_PATH, request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);

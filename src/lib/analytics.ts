@@ -11,7 +11,11 @@ export type AnalyticsEvent =
   | "property_inquiry"
   | "contact_form_submit"
   | "whatsapp_click"
-  | "phone_click";
+  | "phone_click"
+  | "project_inquiry"
+  | "callback_request"
+  | "investment_consultation_request"
+  | "brochure_download";
 
 declare global {
   interface Window {

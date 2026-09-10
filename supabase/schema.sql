@@ -414,6 +414,35 @@ create table if not exists public.leads (
   last_touch_content text,
   last_touch_term text,
   last_touch_landing_page text,
+  -- STEP 17 — CRM fields.
+  priority text not null default 'Medium' check (priority in ('Low', 'Medium', 'High', 'Urgent')),
+  lead_type text not null default 'General Inquiry' check (
+    lead_type in (
+      'General Inquiry', 'Property Details', 'Callback Request', 'Site Visit', 'Brochure Request',
+      'Investment Inquiry', 'Project Inquiry', 'Price Request', 'Payment Plan Request'
+    )
+  ),
+  project_id uuid references public.projects (id) on delete set null,
+  project_title text,
+  purpose text check (purpose is null or purpose in ('buy', 'rent', 'invest')),
+  budget_min numeric,
+  budget_max numeric,
+  preferred_location text,
+  preferred_property_type text,
+  preferred_bedrooms integer,
+  last_contacted_at timestamptz,
+  lost_reason text check (
+    lost_reason is null or lost_reason in (
+      'Budget', 'Not Interested', 'Property Unavailable', 'Bought Elsewhere',
+      'Rent Elsewhere', 'No Response', 'Invalid Lead', 'Other'
+    )
+  ),
+  converted_at timestamptz,
+  converted_by uuid references public.admin_profiles (id) on delete set null,
+  -- Archive (section 44) — the preferred, reversible alternative to hard
+  -- delete; the existing hard-delete method/RLS stay admin/manager-only.
+  archived boolean not null default false,
+  archived_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -424,9 +453,17 @@ create index if not exists leads_property_idx on public.leads (property_id);
 create index if not exists leads_source_idx on public.leads (source);
 create index if not exists leads_follow_up_idx on public.leads (next_follow_up_date);
 create index if not exists leads_phone_idx on public.leads (phone);
+create index if not exists leads_priority_idx on public.leads (priority);
+create index if not exists leads_lead_type_idx on public.leads (lead_type);
+create index if not exists leads_project_idx on public.leads (project_id);
+create index if not exists leads_created_at_idx on public.leads (created_at);
+create index if not exists leads_archived_idx on public.leads (archived);
 create index if not exists leads_whatsapp_idx on public.leads (whatsapp);
 create index if not exists leads_customer_idx on public.leads (customer_id);
 create index if not exists leads_campaign_idx on public.leads (campaign_id);
+-- pg_trgm was already enabled in STEP 16 (see the properties indexes
+-- further up this file) — reused here for the CRM name search box.
+create index if not exists leads_name_trgm_idx on public.leads using gin (name gin_trgm_ops);
 
 -- ---------------------------------------------------------------------
 -- lead_notes
@@ -954,6 +991,11 @@ begin
     new.customer_id := old.customer_id;
     new.property_id := old.property_id;
     new.property_title := old.property_title;
+    -- STEP 17 — project identity is locked the same way property
+    -- identity already was; customer-requirement fields (purpose,
+    -- budget, preferred_*, priority, lead_type) stay agent-editable.
+    new.project_id := old.project_id;
+    new.project_title := old.project_title;
     new.name := old.name;
     new.phone := old.phone;
     new.whatsapp := old.whatsapp;
@@ -1786,6 +1828,78 @@ create trigger auto_assign_new_lead before insert on public.leads
 
 -- Notifies + logs only when the row above actually auto-assigned
 -- someone — a manually-created lead generates neither, exactly like today.
+-- =====================================================================
+-- lead_assignment_history (STEP 17, section 20) — accountability trail
+-- for every assign/reassign, manual or automatic.
+-- =====================================================================
+create table if not exists public.lead_assignment_history (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references public.leads (id) on delete cascade,
+  previous_agent_id uuid references public.admin_profiles (id) on delete set null,
+  new_agent_id uuid references public.admin_profiles (id) on delete set null,
+  changed_by uuid references public.admin_profiles (id) on delete set null,
+  reason text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists lead_assignment_history_lead_idx on public.lead_assignment_history (lead_id);
+create index if not exists lead_assignment_history_created_idx on public.lead_assignment_history (created_at);
+
+alter table public.lead_assignment_history enable row level security;
+
+drop policy if exists "lead_assignment_history_admin_all" on public.lead_assignment_history;
+create policy "lead_assignment_history_admin_all"
+  on public.lead_assignment_history for all
+  to authenticated
+  using (public.is_admin_or_manager())
+  with check (public.is_admin_or_manager());
+
+drop policy if exists "lead_assignment_history_agent_read" on public.lead_assignment_history;
+create policy "lead_assignment_history_agent_read"
+  on public.lead_assignment_history for select
+  to authenticated
+  using (previous_agent_id = auth.uid() or new_agent_id = auth.uid());
+
+-- =====================================================================
+-- communication_log (STEP 17, section 24) — a MANUAL record an agent/
+-- admin adds after actually contacting a customer. Nothing here is
+-- auto-generated (no telephony/WhatsApp Business API is wired up).
+-- =====================================================================
+create table if not exists public.communication_log (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references public.leads (id) on delete cascade,
+  agent_id uuid references public.admin_profiles (id) on delete set null,
+  communication_type text not null check (communication_type in ('Phone', 'WhatsApp', 'Email', 'SMS', 'Meeting', 'Other')),
+  direction text not null check (direction in ('Outgoing', 'Incoming')),
+  summary text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists communication_log_lead_idx on public.communication_log (lead_id);
+create index if not exists communication_log_created_idx on public.communication_log (created_at);
+
+alter table public.communication_log enable row level security;
+
+drop policy if exists "communication_log_admin_all" on public.communication_log;
+create policy "communication_log_admin_all"
+  on public.communication_log for all
+  to authenticated
+  using (public.is_admin_or_manager())
+  with check (public.is_admin_or_manager());
+
+drop policy if exists "communication_log_agent_read" on public.communication_log;
+create policy "communication_log_agent_read"
+  on public.communication_log for select
+  to authenticated
+  using (exists (select 1 from public.leads l where l.id = communication_log.lead_id and l.assigned_agent_id = auth.uid()));
+
+drop policy if exists "communication_log_agent_insert" on public.communication_log;
+create policy "communication_log_agent_insert"
+  on public.communication_log for insert
+  to authenticated
+  with check (exists (select 1 from public.leads l where l.id = communication_log.lead_id and l.assigned_agent_id = auth.uid()));
+
+-- Auto-assignment (STEP 14) now also records assignment history.
 create or replace function public.on_lead_auto_assigned()
 returns trigger
 language plpgsql
@@ -1804,6 +1918,8 @@ begin
     );
     insert into public.activity_logs (admin_id, admin_name, action, entity_type, entity_id, description)
     values (null, 'System (Auto-Assigned)', 'Lead Assigned', 'lead', new.id, new.name || ' -> ' || new.assigned_to);
+    insert into public.lead_assignment_history (lead_id, previous_agent_id, new_agent_id, changed_by, reason)
+    values (new.id, null, new.assigned_agent_id, null, 'Auto-assigned on lead creation');
   end if;
   return new;
 end;

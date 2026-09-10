@@ -10,13 +10,7 @@ type Status = "idle" | "submitting" | "success" | "error";
 const PHONE_PATTERN = /^[0-9+()\-\s]{7,20}$/;
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 
-export function PropertyInquiryForm({
-  propertyId,
-  propertyTitle,
-}: {
-  propertyId: string;
-  propertyTitle: string;
-}) {
+export function ProjectInquiryForm({ projectId, projectTitle }: { projectId: string; projectTitle: string }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +45,7 @@ export function PropertyInquiryForm({
       return;
     }
     if (!data.consent) {
-      setError("Please agree to be contacted regarding this property.");
+      setError("Please agree to be contacted regarding this project.");
       return;
     }
 
@@ -62,17 +56,17 @@ export function PropertyInquiryForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          property: propertyTitle,
-          propertyId,
-          leadType: "Property Details",
-          source: "Property Page",
+          project: projectTitle,
+          projectId,
+          leadType: "Project Inquiry",
+          source: "Website",
           ...getAttributionPayload(),
         }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");
       setStatus("success");
-      trackEvent("property_inquiry", { property_id: propertyId });
+      trackEvent("project_inquiry", { project_id: projectId });
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : null);
@@ -81,34 +75,15 @@ export function PropertyInquiryForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-border bg-surface p-6 shadow-sm"
-    >
-      <h3 className="font-heading text-lg font-bold text-ink">Request Property Details</h3>
-      <p className="mt-1 text-sm text-muted">
-        Interested in {propertyTitle}? Send us your details and we&apos;ll get back to you.
-      </p>
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+      <h3 className="font-heading text-lg font-bold text-ink">Request Project Details</h3>
+      <p className="mt-1 text-sm text-muted">Interested in {projectTitle}? Send us your details and we&apos;ll get back to you.</p>
 
       <div className="mt-5 grid grid-cols-1 gap-4">
-        {/* Honeypot — hidden from real visitors via CSS, bots that
-            auto-fill every field will trip it. */}
-        <input
-          type="text"
-          name="company"
-          tabIndex={-1}
-          autoComplete="off"
-          className="absolute -left-[9999px] h-0 w-0 opacity-0"
-          aria-hidden="true"
-        />
+        <input type="text" name="company" tabIndex={-1} autoComplete="off" className="absolute -left-[9999px] h-0 w-0 opacity-0" aria-hidden="true" />
         <Field label="Name" name="name" required placeholder="Your name" />
         <Field label="Phone" name="phone" required placeholder="03XX-XXXXXXX" type="tel" />
-        <Field
-          label="WhatsApp Number"
-          name="whatsapp"
-          placeholder="Same as phone, if different"
-          type="tel"
-        />
+        <Field label="WhatsApp Number" name="whatsapp" placeholder="Same as phone, if different" type="tel" />
         <Field label="Email" name="email" placeholder="you@example.com" type="email" />
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-semibold text-ink">Message</span>
@@ -116,18 +91,13 @@ export function PropertyInquiryForm({
             name="message"
             required
             rows={4}
-            defaultValue={`I'm interested in ${propertyTitle}. Please share complete details.`}
+            defaultValue={`I'm interested in ${projectTitle}. Please share complete details.`}
             className="w-full resize-none rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-primary"
           />
         </label>
         <label className="flex items-start gap-2.5 text-xs text-muted">
-          <input
-            type="checkbox"
-            name="consent"
-            required
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary"
-          />
-          I agree to be contacted regarding this property.
+          <input type="checkbox" name="consent" required className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary" />
+          I agree to be contacted regarding this project.
         </label>
       </div>
 
@@ -136,9 +106,7 @@ export function PropertyInquiryForm({
         disabled={status === "submitting"}
         className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:bg-primary-hover disabled:opacity-60"
       >
-        {status === "submitting" ? (
-          "Sending..."
-        ) : (
+        {status === "submitting" ? "Sending..." : (
           <>
             <Send className="h-4 w-4" /> Request Details
           </>
@@ -148,15 +116,10 @@ export function PropertyInquiryForm({
       {error && <p className="mt-3 text-sm font-semibold text-primary">{error}</p>}
       {status === "success" && (
         <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-success">
-          <CheckCircle2 className="h-4 w-4" /> Thank you! Your inquiry has been received. Our
-          team will contact you soon.
+          <CheckCircle2 className="h-4 w-4" /> Thank you! Your inquiry has been received. Our team will contact you soon.
         </p>
       )}
-      {status === "error" && !error && (
-        <p className="mt-3 text-sm font-semibold text-primary">
-          Something went wrong. Please try WhatsApp instead.
-        </p>
-      )}
+      {status === "error" && !error && <p className="mt-3 text-sm font-semibold text-primary">Something went wrong. Please try WhatsApp instead.</p>}
     </form>
   );
 }

@@ -13,6 +13,7 @@ import { site, whatsappUrlFor } from "@/lib/site";
 import { MediaGallery } from "@/components/MediaGallery";
 import { PropertyInquiryForm } from "@/components/PropertyInquiryForm";
 import { PropertyWhatsAppButton } from "@/components/PropertyWhatsAppButton";
+import { BrochureDownloadLink } from "@/components/BrochureDownloadLink";
 import { PropertyInfoPanel } from "@/components/PropertyInfoPanel";
 import { PropertyFeaturesGrid } from "@/components/PropertyFeaturesGrid";
 import { PropertyPaymentPlan } from "@/components/PropertyPaymentPlan";
@@ -254,14 +255,14 @@ export default async function PropertyDetailsPage({
               </Link>
 
               {brochure?.generatedFile && (
-                <a
+                <BrochureDownloadLink
                   href={brochure.generatedFile}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  title={property.title}
+                  propertyId={property.id}
                   className="mt-3 flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
                 >
                   <FileDown className="h-4 w-4" /> Download Property Brochure
-                </a>
+                </BrochureDownloadLink>
               )}
             </div>
 

@@ -20,6 +20,37 @@ export type LeadSource =
   | "Other"
   | "Site Visit";
 
+// STEP 17 — CRM fields.
+
+export type LeadPriority = "Low" | "Medium" | "High" | "Urgent";
+
+/** What the customer actually wants, distinct from `source` (where they
+ *  came from) — consolidates STEP 17's longer capture-point list
+ *  (Contact Agent / Call Request / WhatsApp Inquiry / General Property
+ *  Inquiry are all just channel variations of the same intent). */
+export type LeadType =
+  | "General Inquiry"
+  | "Property Details"
+  | "Callback Request"
+  | "Site Visit"
+  | "Brochure Request"
+  | "Investment Inquiry"
+  | "Project Inquiry"
+  | "Price Request"
+  | "Payment Plan Request";
+
+export type LeadPurpose = "Buy" | "Rent" | "Invest";
+
+export type LostReason =
+  | "Budget"
+  | "Not Interested"
+  | "Property Unavailable"
+  | "Bought Elsewhere"
+  | "Rent Elsewhere"
+  | "No Response"
+  | "Invalid Lead"
+  | "Other";
+
 export interface Lead {
   id: string;
   name: string;
@@ -54,16 +85,51 @@ export interface Lead {
   lastTouchContent?: string;
   lastTouchTerm?: string;
   lastTouchLandingPage?: string;
+  // STEP 17 — CRM fields.
+  priority: LeadPriority;
+  leadType: LeadType;
+  projectId?: string;
+  projectTitle?: string;
+  projectName?: string;
+  purpose?: LeadPurpose;
+  budgetMin?: number;
+  budgetMax?: number;
+  preferredLocation?: string;
+  preferredPropertyType?: string;
+  preferredBedrooms?: number;
+  lastContactedAt?: string;
+  lostReason?: LostReason;
+  convertedAt?: string;
+  convertedBy?: string;
+  convertedByName?: string;
+  archived: boolean;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export type LeadInput = Omit<
   Lead,
-  "id" | "createdAt" | "updatedAt" | "status" | "consent" | "campaignId" | "campaignName"
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "status"
+  | "consent"
+  | "campaignId"
+  | "campaignName"
+  | "priority"
+  | "leadType"
+  | "projectName"
+  | "convertedAt"
+  | "convertedBy"
+  | "convertedByName"
+  | "archived"
+  | "archivedAt"
 > & {
   status?: LeadStatus;
   consent?: boolean;
+  priority?: LeadPriority;
+  leadType?: LeadType;
 };
 
 export interface LeadNote {
@@ -117,6 +183,33 @@ export const leadSources: LeadSource[] = [
   "Site Visit",
 ];
 
+export const leadPriorities: LeadPriority[] = ["Low", "Medium", "High", "Urgent"];
+
+export const leadTypes: LeadType[] = [
+  "General Inquiry",
+  "Property Details",
+  "Callback Request",
+  "Site Visit",
+  "Brochure Request",
+  "Investment Inquiry",
+  "Project Inquiry",
+  "Price Request",
+  "Payment Plan Request",
+];
+
+export const leadPurposes: LeadPurpose[] = ["Buy", "Rent", "Invest"];
+
+export const lostReasons: LostReason[] = [
+  "Budget",
+  "Not Interested",
+  "Property Unavailable",
+  "Bought Elsewhere",
+  "Rent Elsewhere",
+  "No Response",
+  "Invalid Lead",
+  "Other",
+];
+
 export interface LeadStats {
   total: number;
   new: number;
@@ -127,4 +220,22 @@ export interface LeadStats {
   negotiation: number;
   closed: number;
   lost: number;
+}
+
+/** CRM Dashboard (STEP 17, section 1) — every field is a real, live
+ *  count. "Qualified" reuses the existing "Interested" pipeline stage
+ *  (display label only, the underlying status value is unchanged) and
+ *  "Converted" reuses "Closed" — both are display-mapping decisions to
+ *  avoid renaming the 8-stage enum everywhere it's already used. */
+export interface CrmDashboardStats {
+  total: number;
+  new: number;
+  contacted: number;
+  qualified: number;
+  siteVisit: number;
+  negotiation: number;
+  converted: number;
+  lost: number;
+  followUpDue: number;
+  unassigned: number;
 }

@@ -13,6 +13,8 @@ import { PropertyLocationSection } from "@/components/PropertyLocationSection";
 import { PropertyCTASection } from "@/components/PropertyCTASection";
 import { PropertyDocuments } from "@/components/PropertyDocuments";
 import { PropertyCard } from "@/components/PropertyCard";
+import { ProjectInquiryForm } from "@/components/ProjectInquiryForm";
+import { BrochureDownloadLink } from "@/components/BrochureDownloadLink";
 import { ShareButtons } from "@/components/ShareButtons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -235,16 +237,21 @@ export default async function ProjectDetailsPage({
                   <Phone className="h-4 w-4" /> Call Now
                 </PhoneLink>
                 {brochure?.generatedFile && (
-                  <a
+                  <BrochureDownloadLink
                     href={brochure.generatedFile}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    title={project.name}
+                    projectId={project.id}
+                    projectTitle={project.name}
                     className="flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
                   >
                     <FileDown className="h-4 w-4" /> Download Project Brochure
-                  </a>
+                  </BrochureDownloadLink>
                 )}
               </div>
+            </div>
+
+            <div className="mt-6">
+              <ProjectInquiryForm projectId={project.id} projectTitle={project.name} />
             </div>
           </div>
         </div>

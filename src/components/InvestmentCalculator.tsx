@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { TrendingUp, AlertCircle, Info } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+import { TrendingUp, AlertCircle, Info, PhoneCall, CheckCircle2 } from "lucide-react";
 import {
   calculateInvestment,
   validateInvestmentInput,
@@ -9,6 +9,10 @@ import {
   INVESTMENT_DISCLAIMER,
   type InvestmentCalculationInput,
 } from "@/lib/calculator";
+import { getAttributionPayload } from "@/lib/attribution";
+import { trackEvent } from "@/lib/analytics";
+
+const PHONE_PATTERN = /^[0-9+()\-\s]{7,20}$/;
 
 export function InvestmentCalculator({
   title = "Property Investment Calculator",
@@ -40,6 +44,63 @@ export function InvestmentCalculator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [purchasePrice, initialInvestment, expectedSellingPrice, holdingPeriod, error]
   );
+
+  const [showConsultForm, setShowConsultForm] = useState(false);
+  const [consultStatus, setConsultStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [consultError, setConsultError] = useState<string | null>(null);
+
+  async function submitConsultation(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
+    setConsultError(null);
+
+    if (typeof data.company === "string" && data.company.trim()) {
+      setConsultStatus("success");
+      form.reset();
+      return;
+    }
+
+    const name = String(data.name ?? "").trim();
+    const phone = String(data.phone ?? "").trim();
+    if (!name || !phone) {
+      setConsultError("Please enter your name and phone number.");
+      return;
+    }
+    if (!PHONE_PATTERN.test(phone)) {
+      setConsultError("Please enter a valid phone number.");
+      return;
+    }
+
+    setConsultStatus("submitting");
+    try {
+      // Non-sensitive summary only — the calculator's exact figures stay
+      // in the visitor's browser, never stored against the lead.
+      const summary = result
+        ? `Used the investment calculator (${holdingPeriod} ${holdingPeriodUnit.toLowerCase()} holding period, ${result.estimatedGain >= 0 ? "positive" : "negative"} estimated return) and requested a consultation.`
+        : "Requested an investment consultation.";
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          message: summary,
+          leadType: "Investment Inquiry",
+          source: "Website",
+          consent: true,
+          ...getAttributionPayload(),
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");
+      setConsultStatus("success");
+      trackEvent("investment_consultation_request");
+      form.reset();
+    } catch (err) {
+      setConsultError(err instanceof Error ? err.message : null);
+      setConsultStatus("error");
+    }
+  }
 
   return (
     <div className={compact ? "" : "rounded-2xl border border-border bg-surface p-5 sm:p-6"}>
@@ -138,6 +199,48 @@ export function InvestmentCalculator({
           <p className="mt-4 flex items-start gap-2 text-xs font-semibold text-muted-foreground">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {INVESTMENT_DISCLAIMER}
           </p>
+
+          {consultStatus === "success" ? (
+            <p className="mt-4 flex items-center gap-2 rounded-xl border border-success/30 bg-success/5 px-4 py-3 text-sm font-semibold text-success">
+              <CheckCircle2 className="h-4 w-4" /> Thank you — our investment consultant will contact you soon.
+            </p>
+          ) : showConsultForm ? (
+            <form onSubmit={submitConsultation} className="mt-4 rounded-xl border border-border bg-surface-muted p-4">
+              <input type="text" name="company" tabIndex={-1} autoComplete="off" className="absolute -left-[9999px] h-0 w-0 opacity-0" aria-hidden="true" />
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  placeholder="Your name"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  placeholder="03XX-XXXXXXX"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
+                />
+              </div>
+              {consultError && <p className="mt-2 text-xs font-semibold text-primary">{consultError}</p>}
+              <button
+                type="submit"
+                disabled={consultStatus === "submitting"}
+                className="mt-3 w-full rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+              >
+                {consultStatus === "submitting" ? "Sending..." : "Request Consultation"}
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowConsultForm(true)}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border-2 border-primary/30 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5"
+            >
+              <PhoneCall className="h-4 w-4" /> Talk to an Investment Consultant
+            </button>
+          )}
         </>
       )}
     </div>

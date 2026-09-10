@@ -30,9 +30,36 @@ export async function trackWhatsAppLeadAction(propertyTitle?: string, propertyId
   revalidateAll();
 }
 
+/** Fired from brochure download links so a real download shows up as a
+ *  lead in the CRM (lead_type: "Brochure Request"), mirroring how
+ *  trackWhatsAppLeadAction turns a WhatsApp click into a lead — never
+ *  blocks the actual download. */
+export async function trackBrochureDownloadLeadAction(title?: string, propertyId?: string, projectId?: string, projectTitle?: string) {
+  try {
+    await leadService.create({
+      name: "Brochure Visitor",
+      phone: "Downloaded Brochure",
+      propertyId,
+      propertyTitle: propertyId ? title : undefined,
+      projectId,
+      projectTitle: projectId ? (projectTitle ?? title) : undefined,
+      leadType: "Brochure Request",
+      message: title ? `Downloaded the brochure for ${title}.` : "Downloaded a brochure.",
+      source: "Website",
+    });
+  } catch (e) {
+    console.error("trackBrochureDownloadLeadAction failed:", e);
+    return;
+  }
+  revalidateAll();
+}
+
 function revalidateAll() {
   revalidatePath("/admin/dashboard");
   revalidatePath("/admin/leads");
+  revalidatePath("/admin/crm");
+  revalidatePath("/admin/crm/leads");
+  revalidatePath("/admin/crm/pipeline");
 }
 
 export async function updateLeadStatusAction(id: string, status: LeadStatus) {
@@ -53,6 +80,7 @@ export async function updateLeadStatusAction(id: string, status: LeadStatus) {
     }
     revalidateAll();
     revalidatePath(`/admin/leads/${id}`);
+    revalidatePath(`/admin/crm/leads/${id}`);
   } catch (e) {
     console.error("updateLeadStatusAction failed:", e);
     throw e;
@@ -64,6 +92,7 @@ export async function updateLeadFollowUpAction(id: string, date: string | null, 
     await leadService.updateFollowUp(id, date, time);
     revalidateAll();
     revalidatePath(`/admin/leads/${id}`);
+    revalidatePath(`/admin/crm/leads/${id}`);
   } catch (e) {
     console.error("updateLeadFollowUpAction failed:", e);
     throw e;
@@ -88,6 +117,7 @@ export async function addLeadNoteAction(leadId: string, note: string) {
     const admin = await profileService.getCurrentAdmin();
     await leadService.addNote(leadId, trimmed, admin?.name ?? "Admin", admin?.id);
     revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath(`/admin/crm/leads/${leadId}`);
     revalidatePath(`/agent/leads/${leadId}`);
   } catch (e) {
     console.error("addLeadNoteAction failed:", e);
@@ -99,11 +129,17 @@ export async function addLeadNoteAction(leadId: string, note: string) {
  *  the admin "Assign Agent" action and (once wired) automatic assignment.
  *  Logs "Lead Assigned" vs "Lead Reassigned" depending on whether the
  *  lead already had an agent, and notifies the newly-assigned agent. */
-export async function assignLeadToAgentAction(leadId: string, agentId: string | null, agentName: string | null) {
+export async function assignLeadToAgentAction(
+  leadId: string,
+  agentId: string | null,
+  agentName: string | null,
+  reason?: string
+) {
   try {
     const existing = await leadService.getById(leadId);
     const wasAssigned = Boolean(existing?.assignedAgentId);
-    const updated = await leadService.assignAgent(leadId, agentId, agentName);
+    const changedBy = await profileService.getCurrentAdmin();
+    const updated = await leadService.assignAgent(leadId, agentId, agentName, changedBy?.id, reason);
     if (updated) {
       await activityService.log(
         wasAssigned ? "Lead Reassigned" : "Lead Assigned",
@@ -123,7 +159,8 @@ export async function assignLeadToAgentAction(leadId: string, agentId: string | 
       }
     }
     revalidatePath(`/admin/leads/${leadId}`);
-    revalidatePath("/admin/leads");
+    revalidatePath(`/admin/crm/leads/${leadId}`);
+    revalidateAll();
     revalidatePath("/agent/leads");
     revalidatePath("/agent/dashboard");
   } catch (e) {

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { leadService } from "@/services/leadService";
 import { notificationService } from "@/services/notificationService";
 import { createClient } from "@/lib/supabase/server";
-import type { LeadSource } from "@/lib/models/lead";
+import type { LeadSource, LeadType } from "@/lib/models/lead";
+import { leadTypes } from "@/lib/models/lead";
 
 const ALLOWED_SOURCES: LeadSource[] = ["Website", "Property Page"];
 const MAX_MESSAGE_LENGTH = 2000;
@@ -51,6 +52,10 @@ export async function POST(request: Request) {
     message,
     property,
     propertyId,
+    project,
+    projectId,
+    leadType,
+    preferredTime,
     consent,
     source,
     company,
@@ -128,6 +133,13 @@ export async function POST(request: Request) {
   }
 
   const trimmedProperty = typeof property === "string" && property.trim() ? property.trim() : undefined;
+  const trimmedProject = typeof project === "string" && project.trim() ? project.trim() : undefined;
+  const resolvedLeadType: LeadType | undefined = leadTypes.includes(leadType as LeadType) ? (leadType as LeadType) : undefined;
+  // A "preferred callback time" isn't a field the leads table has (or
+  // needs) — it's simply folded into the message text, same as any other
+  // visitor-supplied context.
+  const preferredTimeStr = typeof preferredTime === "string" && preferredTime.trim() ? preferredTime.trim() : undefined;
+  const fullMessage = preferredTimeStr ? `${message.trim()}\n\nPreferred callback time: ${preferredTimeStr}` : message.trim();
 
   try {
     await leadService.create({
@@ -137,8 +149,11 @@ export async function POST(request: Request) {
       email: typeof email === "string" && email.trim() ? email.trim() : undefined,
       propertyId: typeof propertyId === "string" && propertyId.trim() ? propertyId.trim() : undefined,
       propertyTitle: trimmedProperty,
+      projectId: typeof projectId === "string" && projectId.trim() ? projectId.trim() : undefined,
+      projectTitle: trimmedProject,
+      leadType: resolvedLeadType,
       customerId,
-      message: message.trim(),
+      message: fullMessage,
       source: resolvedSource,
       consent: consent === true || consent === "on" || consent === "true",
       firstTouchSource: str(firstTouchSource),

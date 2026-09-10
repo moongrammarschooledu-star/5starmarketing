@@ -24,6 +24,7 @@ import {
   UserCog,
   ListTodo,
   Megaphone,
+  Kanban,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -35,6 +36,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/properties", label: "Properties", icon: Building2, section: "properties" },
   { href: "/admin/properties/new", label: "Add Property", icon: PlusCircle, section: "properties" },
   { href: "/admin/leads", label: "Leads", icon: Users, section: "leads" },
+  { href: "/admin/crm", label: "CRM", icon: Kanban, section: "leads" },
   { href: "/admin/customers", label: "Customers", icon: Users2, section: "customers" },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarClock, section: "appointments" },
   { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, section: "appointments" },

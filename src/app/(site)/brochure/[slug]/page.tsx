@@ -7,6 +7,7 @@ import { brochureService } from "@/services/brochureService";
 import { formatPKR } from "@/lib/calculator";
 import { whatsappUrlFor } from "@/lib/site";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { BrochureDownloadLink } from "@/components/BrochureDownloadLink";
 
 export const dynamic = "force-dynamic";
 
@@ -63,14 +64,16 @@ export default async function PublicBrochurePage({ params }: { params: Promise<{
             View Full Details
           </Link>
           {brochure.generatedFile ? (
-            <a
+            <BrochureDownloadLink
               href={brochure.generatedFile}
-              target="_blank"
-              rel="noopener noreferrer"
+              title={target.name}
+              propertyId={brochure.propertyId}
+              projectId={brochure.projectId}
+              projectTitle={target.name}
               className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
             >
               <Download className="h-4 w-4" /> Download PDF
-            </a>
+            </BrochureDownloadLink>
           ) : (
             <span className="rounded-full border-2 border-border px-5 py-2.5 text-sm font-bold text-muted-foreground">
               PDF not yet available

@@ -532,6 +532,56 @@ create index if not exists appointment_reminders_appointment_idx on public.appoi
 create index if not exists appointment_reminders_remind_at_idx on public.appointment_reminders (remind_at) where not sent;
 
 -- ---------------------------------------------------------------------
+-- payment_plans (STEP 12) — a NEW, richer payment-plan system alongside
+-- the simple inline payment_* columns already on `properties` (STEP 7),
+-- which keep working exactly as before. A property only gets a row here
+-- once an admin explicitly builds one via /admin/properties/[id]/edit.
+-- ---------------------------------------------------------------------
+create table if not exists public.payment_plans (
+  id uuid primary key default gen_random_uuid(),
+  property_id uuid not null unique references public.properties (id) on delete cascade,
+  payment_option text not null default 'Installments' check (
+    payment_option in ('Cash', 'Installments', 'Both')
+  ),
+  calculation_type text not null default 'Automatic' check (
+    calculation_type in ('Automatic', 'Custom')
+  ),
+  property_price numeric not null,
+  down_payment numeric not null default 0,
+  booking_fee numeric,
+  confirmation_fee numeric,
+  processing_fee numeric,
+  additional_charges numeric,
+  additional_charges_description text,
+  installment_frequency text not null default 'Monthly' check (
+    installment_frequency in ('Monthly', 'Quarterly', 'Yearly')
+  ),
+  duration integer not null default 12,
+  installment_amount numeric,
+  enabled boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists payment_plans_property_idx on public.payment_plans (property_id);
+create index if not exists payment_plans_enabled_idx on public.payment_plans (enabled);
+
+-- ---------------------------------------------------------------------
+-- payment_schedule_items (STEP 12) — custom installment breakdowns.
+-- ---------------------------------------------------------------------
+create table if not exists public.payment_schedule_items (
+  id uuid primary key default gen_random_uuid(),
+  payment_plan_id uuid not null references public.payment_plans (id) on delete cascade,
+  installment_number integer not null,
+  due_date date,
+  amount numeric not null,
+  description text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists payment_schedule_items_plan_idx on public.payment_schedule_items (payment_plan_id);
+
+-- ---------------------------------------------------------------------
 -- updated_at auto-touch trigger, shared by every table above
 -- ---------------------------------------------------------------------
 create or replace function public.set_updated_at()
@@ -618,6 +668,10 @@ $$;
 drop trigger if exists protect_appointment_fields on public.appointments;
 create trigger protect_appointment_fields before update on public.appointments
   for each row execute function public.protect_appointment_fields();
+
+drop trigger if exists set_updated_at on public.payment_plans;
+create trigger set_updated_at before update on public.payment_plans
+  for each row execute function public.set_updated_at();
 
 -- A customer can update their own name/phone/whatsapp/photo, but never
 -- their own `disabled` flag or cached `email` (email changes must go
@@ -1025,6 +1079,45 @@ create policy "appointment_history_admin_all"
 drop policy if exists "appointment_reminders_admin_all" on public.appointment_reminders;
 create policy "appointment_reminders_admin_all"
   on public.appointment_reminders for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- =====================================================================
+-- Payment Plans (STEP 12) — public can read an enabled plan (so the
+-- property page / calculator can show it); only admins can write.
+-- =====================================================================
+
+alter table public.payment_plans enable row level security;
+alter table public.payment_schedule_items enable row level security;
+
+drop policy if exists "payment_plans_public_read" on public.payment_plans;
+create policy "payment_plans_public_read"
+  on public.payment_plans for select
+  to anon, authenticated
+  using (enabled = true);
+
+drop policy if exists "payment_plans_admin_all" on public.payment_plans;
+create policy "payment_plans_admin_all"
+  on public.payment_plans for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "payment_schedule_items_public_read" on public.payment_schedule_items;
+create policy "payment_schedule_items_public_read"
+  on public.payment_schedule_items for select
+  to anon, authenticated
+  using (
+    exists (
+      select 1 from public.payment_plans pp
+      where pp.id = payment_schedule_items.payment_plan_id and pp.enabled = true
+    )
+  );
+
+drop policy if exists "payment_schedule_items_admin_all" on public.payment_schedule_items;
+create policy "payment_schedule_items_admin_all"
+  on public.payment_schedule_items for all
   to authenticated
   using (public.is_admin())
   with check (public.is_admin());

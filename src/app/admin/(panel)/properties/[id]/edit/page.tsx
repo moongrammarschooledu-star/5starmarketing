@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { PropertyForm } from "@/components/admin/PropertyForm";
+import { PaymentPlanManager } from "@/components/admin/PaymentPlanManager";
 import { updatePropertyAction } from "@/lib/actions/properties.actions";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
+import { paymentPlanService } from "@/services/paymentPlanService";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,9 @@ export default async function EditPropertyPage({
   ]);
   if (!property) notFound();
 
+  const plan = await paymentPlanService.getForPropertyAdmin(id);
+  const scheduleItems = plan ? await paymentPlanService.listScheduleItems(plan.id) : [];
+
   const boundAction = updatePropertyAction.bind(null, id);
 
   return (
@@ -27,6 +32,10 @@ export default async function EditPropertyPage({
 
       <div className="mt-6">
         <PropertyForm action={boundAction} initialValues={property} submitLabel="Save Changes" projects={projects} />
+      </div>
+
+      <div className="mt-6">
+        <PaymentPlanManager propertyId={id} propertySlug={property.slug} plan={plan} scheduleItems={scheduleItems} />
       </div>
     </div>
   );

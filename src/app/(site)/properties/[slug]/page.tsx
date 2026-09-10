@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FolderKanban, Phone, CalendarClock } from "lucide-react";
+import { ArrowLeft, FolderKanban, Phone, CalendarClock, Calculator } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { settingsService } from "@/services/settingsService";
+import { paymentPlanService } from "@/services/paymentPlanService";
+import { calculatePaymentPlan, formatPKR } from "@/lib/calculator";
+import { InvestmentCalculator } from "@/components/InvestmentCalculator";
 import { site, whatsappUrlFor } from "@/lib/site";
 import { MediaGallery } from "@/components/MediaGallery";
 import { PropertyInquiryForm } from "@/components/PropertyInquiryForm";
@@ -80,10 +83,30 @@ export default async function PropertyDetailsPage({
   ]);
   if (!property) notFound();
 
-  const [project, related] = await Promise.all([
+  const [project, related, savedPaymentPlan] = await Promise.all([
     property.projectId ? projectService.getById(property.projectId) : Promise.resolve(undefined),
     propertyService.listRelated(property, 4),
+    paymentPlanService.getForProperty(property.id),
   ]);
+
+  // Estimated Monthly Installment preview (section 18) — prefers the new
+  // saved payment plan when it exists and is set to automatic
+  // calculation; falls back to the older inline plan fields (STEP 7) so
+  // properties set up before this step keep showing their estimate too.
+  let estimatedInstallment: string | undefined;
+  if (savedPaymentPlan && savedPaymentPlan.calculationType === "Automatic") {
+    const calc = calculatePaymentPlan({
+      propertyPrice: savedPaymentPlan.propertyPrice,
+      downPayment: savedPaymentPlan.downPayment,
+      duration: savedPaymentPlan.duration,
+      frequency: savedPaymentPlan.installmentFrequency,
+    });
+    estimatedInstallment = `${formatPKR(calc.installmentAmount)} / ${savedPaymentPlan.installmentFrequency.toLowerCase()}`;
+  } else if (property.paymentPlan.monthlyInstallment) {
+    estimatedInstallment = `${formatPKR(property.paymentPlan.monthlyInstallment)} / month`;
+  }
+
+  const calculatorHref = `/calculator?property=${property.slug}`;
 
   const whatsappDisplayName = settings?.whatsappDisplayName || site.fullName;
   const whatsappMessage = `Assalam-o-Alaikum ${whatsappDisplayName},\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
@@ -177,6 +200,12 @@ export default async function PropertyDetailsPage({
 
             <PropertyPaymentPlan paymentOption={property.paymentOption} plan={property.paymentPlan} />
 
+            {property.priceValue && (
+              <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+                <InvestmentCalculator purchasePrice={property.priceValue} compact />
+              </div>
+            )}
+
             <PropertyDocuments documents={property.documents} />
 
             <PropertyLocationSection location={property.location} mapsQuery={property.mapsQuery} />
@@ -186,8 +215,20 @@ export default async function PropertyDetailsPage({
             <div className="rounded-2xl border border-border bg-surface-muted p-6">
               <div className="text-2xl font-extrabold text-primary">{property.price}</div>
               <div className="mt-1 text-sm font-medium text-muted">{property.paymentOption}</div>
+              {estimatedInstallment && (
+                <div className="mt-1 text-xs font-semibold text-muted-foreground">
+                  Estimated Installment: <span className="text-ink">{estimatedInstallment}</span>
+                </div>
+              )}
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
+              <Link
+                href={calculatorHref}
+                className="mt-4 flex items-center justify-center gap-2 rounded-full border-2 border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/10"
+              >
+                <Calculator className="h-4 w-4" /> Calculate Payment Plan
+              </Link>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
                 <PhoneLink
                   phoneHref={site.phoneHref}
                   context="property_detail_sidebar"

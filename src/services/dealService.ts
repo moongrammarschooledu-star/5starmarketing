@@ -16,6 +16,8 @@ import type { DealSearchFilters, DealSearchResult } from "@/lib/models/deal";
 import { DEFAULT_DEAL_PAGE_SIZE, MAX_DEAL_PAGE_SIZE } from "@/lib/models/deal";
 import { paymentPlanService } from "./paymentPlanService";
 import { inventoryService } from "./inventoryService";
+import { settingsService } from "./settingsService";
+import { documentService } from "./documentService";
 
 const SELECT_WITH_JOINS =
   "*, agent:admin_profiles!deals_agent_id_fkey(name), creator:admin_profiles!deals_created_by_fkey(name), leads(name), projects(name), property_inventory(unit_number)";
@@ -424,6 +426,20 @@ export const dealService = {
     }
     if (nextStatus === "Cancelled" && !cancellationReason) {
       throw new Error("A cancellation reason is required.");
+    }
+
+    // Deal completion document gate (STEP 20, section 15) — admin-
+    // configurable, defaults OFF so existing/in-flight deals are never
+    // retroactively blocked. Enforced here, server-side, not just in
+    // the UI.
+    if (nextStatus === "Completed") {
+      const settings = await settingsService.get().catch(() => null);
+      if (settings?.requireDocumentsForDealCompletion) {
+        const complete = await documentService.isDealDocumentationComplete(id, current.dealType, current.propertyType);
+        if (!complete) {
+          throw new Error("This deal cannot be completed until all mandatory documents are approved.");
+        }
+      }
     }
 
     const supabase = await createClient();

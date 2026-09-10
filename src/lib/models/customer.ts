@@ -74,7 +74,15 @@ export type NotificationType =
   | "document_approved"
   | "payment_due"
   | "payment_overdue"
-  | "payment_received";
+  | "payment_received"
+  // STEP 20 — Documents & Agreements
+  | "document_required"
+  | "document_rejected"
+  | "agreement_ready"
+  | "signature_required"
+  | "agreement_signed"
+  | "payment_receipt_available"
+  | "document_expiring";
 
 export interface CustomerNotification {
   id: string;

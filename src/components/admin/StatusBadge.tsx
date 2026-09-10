@@ -44,6 +44,16 @@ const palette: Record<string, string> = {
   UNDER_CONSTRUCTION: "bg-ink/10 text-ink",
   COMING_SOON: "bg-burgundy/10 text-burgundy",
   BLOCKED: "bg-muted/20 text-muted",
+  // Documents (STEP 20)
+  DRAFT: "bg-muted/20 text-muted",
+  UPLOADED: "bg-primary/10 text-primary",
+  UNDER_REVIEW: "bg-amber-500/10 text-amber-600",
+  VERIFIED: "bg-success/10 text-success",
+  APPROVED: "bg-success/15 text-success",
+  REJECTED: "bg-primary/15 text-primary",
+  EXPIRED: "bg-primary/10 text-primary",
+  ARCHIVED: "bg-muted/20 text-muted",
+  SUPERSEDED: "bg-muted/20 text-muted",
 };
 
 export function StatusBadge({ status }: { status: string }) {

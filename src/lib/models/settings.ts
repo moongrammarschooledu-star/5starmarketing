@@ -54,6 +54,9 @@ export interface WebsiteSettings {
   // can configure instead of one being hardcoded; still overridable
   // per deal. Undefined until an admin sets it.
   defaultCommissionRate?: number;
+  // Documents (STEP 20) — off by default so existing/in-flight deals
+  // are never retroactively blocked from completing.
+  requireDocumentsForDealCompletion: boolean;
   updatedAt: string;
 }
 

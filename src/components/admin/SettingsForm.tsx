@@ -169,6 +169,15 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
             Suggested when creating a deal — always overridable per deal. Leave blank to enter a rate manually every time.
           </p>
         </div>
+        <label className="mt-4 flex items-start gap-2.5 text-sm">
+          <input type="checkbox" name="requireDocumentsForDealCompletion" defaultChecked={settings.requireDocumentsForDealCompletion} className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary" />
+          <span>
+            <span className="font-semibold text-ink">Require approved documents before completing a deal</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              When on, a deal cannot be marked Completed until every required document checklist item is approved. Off by default.
+            </span>
+          </span>
+        </label>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">

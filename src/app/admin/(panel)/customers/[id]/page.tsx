@@ -5,9 +5,11 @@ import { customerService } from "@/services/customerService";
 import { favoritesService } from "@/services/favoritesService";
 import { leadService } from "@/services/leadService";
 import { savedSearchService } from "@/services/savedSearchService";
+import { documentService } from "@/services/documentService";
 import { requireSection } from "@/lib/guard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { CustomerDisableToggle } from "@/components/admin/CustomerDisableToggle";
+import { FileStack } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +20,11 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
   const customer = await customerService.getByIdForAdmin(id);
   if (!customer) notFound();
 
-  const [favorites, inquiries, searches] = await Promise.all([
+  const [favorites, inquiries, searches, documents] = await Promise.all([
     favoritesService.listProperties(id),
     leadService.listByCustomer(id),
     savedSearchService.list(id),
+    documentService.listByCustomer(id),
   ]);
 
   return (
@@ -94,6 +97,36 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
       </div>
 
       <div className="mt-6 rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 font-heading text-base font-bold text-ink">
+            <FileStack className="h-4.5 w-4.5 text-primary" /> Documents
+          </h2>
+          <span className="text-xs font-semibold text-muted">{documents.length} total</span>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+          <DocStat label="Pending" value={documents.filter((d) => d.status === "UPLOADED" || d.status === "UNDER_REVIEW").length} />
+          <DocStat label="Approved" value={documents.filter((d) => d.status === "APPROVED").length} />
+          <DocStat label="Rejected" value={documents.filter((d) => d.status === "REJECTED").length} />
+          <DocStat label="Expired" value={documents.filter((d) => d.status === "EXPIRED").length} />
+          <DocStat label="Missing Required" value="—" />
+        </div>
+        <div className="mt-3 space-y-2">
+          {documents.length === 0 && <p className="py-4 text-center text-sm text-muted">No documents yet.</p>}
+          {documents.slice(0, 6).map((d) => (
+            <Link key={d.id} href={`/admin/documents/${d.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 text-sm transition-colors hover:border-primary/30">
+              <span className="truncate font-semibold text-ink">{d.title}</span>
+              <StatusBadge status={d.status} />
+            </Link>
+          ))}
+        </div>
+        {documents.length > 6 && (
+          <Link href={`/admin/documents?customerId=${customer.id}`} className="mt-3 inline-block text-xs font-bold text-primary hover:underline">
+            View all {documents.length} documents →
+          </Link>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="font-heading text-base font-bold text-ink">Saved Searches</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {searches.length === 0 && <p className="text-sm text-muted">No saved searches.</p>}
@@ -113,6 +146,15 @@ function SummaryCard({ label, value }: { label: string; value: string | number }
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="mt-1 font-heading text-xl font-extrabold text-ink">{value}</div>
+    </div>
+  );
+}
+
+function DocStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl bg-surface-muted p-3 text-center">
+      <div className="font-heading text-lg font-extrabold text-ink">{value}</div>
+      <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</div>
     </div>
   );
 }

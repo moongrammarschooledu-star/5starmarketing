@@ -15,6 +15,7 @@ import {
   LogOut,
   Handshake,
   Receipt,
+  FileStack,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -28,6 +29,7 @@ const navItems = [
   { href: "/customer/appointments", label: "My Appointments", icon: CalendarClock },
   { href: "/customer/deals", label: "My Deals", icon: Handshake },
   { href: "/customer/payments", label: "My Payments", icon: Receipt },
+  { href: "/customer/documents", label: "My Documents", icon: FileStack },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

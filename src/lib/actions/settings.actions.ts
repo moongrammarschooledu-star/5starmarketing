@@ -54,6 +54,7 @@ export async function updateSettingsAction(
       appointmentBookingNoticeHours: numberOrUndefined(formData.get("appointmentBookingNoticeHours")),
       leadAssignmentMethod: String(formData.get("leadAssignmentMethod") ?? "Manual") as WebsiteSettings["leadAssignmentMethod"],
       defaultCommissionRate: numberOrUndefined(formData.get("defaultCommissionRate")),
+      requireDocumentsForDealCompletion: formData.get("requireDocumentsForDealCompletion") === "on",
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not save settings." };

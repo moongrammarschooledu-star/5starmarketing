@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, User, Building2, FolderKanban, Receipt } from "lucide-react";
+import { ArrowLeft, User, Building2, FolderKanban, Receipt, FileStack } from "lucide-react";
 import { dealService } from "@/services/dealService";
 import { dealPaymentService } from "@/services/dealPaymentService";
 import { dealDocumentService } from "@/services/dealDocumentService";
@@ -120,6 +120,25 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
           <DealPaymentSchedule installments={schedule} />
           <DealPaymentsPanel dealId={deal.id} payments={payments} />
           <DealDocumentsPanel dealId={deal.id} documents={documents} canManage={canManage} />
+
+          <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 font-heading text-base font-bold text-ink">
+                  <FileStack className="h-4.5 w-4.5 text-primary" /> Documents &amp; Agreements
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  Checklist progress, generated booking forms, agreements and signature requests for this deal.
+                </p>
+              </div>
+              <Link
+                href={`/admin/deals/${deal.id}/documents`}
+                className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
+              >
+                <FileStack className="h-4 w-4" /> Open Documents
+              </Link>
+            </div>
+          </div>
           <DealCommissionPanel deal={deal} canManage={canManage} />
           <DealNotesPanel dealId={deal.id} notes={notes} />
           <DealActivityTimeline activity={activity} />

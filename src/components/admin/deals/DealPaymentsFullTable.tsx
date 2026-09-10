@@ -3,9 +3,10 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, XCircle, RotateCcw, Printer } from "lucide-react";
+import { CheckCircle2, XCircle, RotateCcw, Printer, FileText } from "lucide-react";
 import type { Deal, DealPayment } from "@/lib/models/deal";
 import { verifyDealPaymentAction, rejectDealPaymentAction, refundDealPaymentAction } from "@/lib/actions/deals.actions";
+import { generatePaymentReceiptAction } from "@/lib/actions/documents.actions";
 import { formatPKR } from "@/lib/calculator";
 import { useToast } from "@/components/admin/ToastProvider";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -33,6 +34,18 @@ export function DealPaymentsFullTable({ deal, payments, canVerify }: { deal: Dea
       await rejectDealPaymentAction(paymentId, deal.id);
       toast.show("Payment rejected.");
       router.refresh();
+    });
+  }
+
+  function generateReceipt(paymentId: string) {
+    startTransition(async () => {
+      try {
+        const doc = await generatePaymentReceiptAction(paymentId);
+        toast.show("Receipt generated.");
+        router.push(`/admin/documents/${doc.id}`);
+      } catch (e) {
+        toast.show(e instanceof Error ? e.message : "Could not generate a receipt for this payment.");
+      }
     });
   }
 
@@ -107,6 +120,11 @@ export function DealPaymentsFullTable({ deal, payments, canVerify }: { deal: Dea
                         <XCircle className="h-4 w-4" />
                       </button>
                     </>
+                  )}
+                  {p.status === "Verified" && (
+                    <button type="button" onClick={() => generateReceipt(p.id)} disabled={isPending} title="Generate Receipt" className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-primary hover:border-primary">
+                      <FileText className="h-4 w-4" />
+                    </button>
                   )}
                   {canVerify && p.status === "Verified" && (
                     <button

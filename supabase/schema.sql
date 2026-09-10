@@ -582,6 +582,35 @@ create table if not exists public.payment_schedule_items (
 create index if not exists payment_schedule_items_plan_idx on public.payment_schedule_items (payment_plan_id);
 
 -- ---------------------------------------------------------------------
+-- brochures (STEP 13) — a generated marketing PDF for one property or
+-- one project (never both — see the check constraint below).
+-- ---------------------------------------------------------------------
+create table if not exists public.brochures (
+  id uuid primary key default gen_random_uuid(),
+  property_id uuid references public.properties (id) on delete cascade,
+  project_id uuid references public.projects (id) on delete cascade,
+  type text not null check (type in ('property', 'project')),
+  title text not null,
+  slug text not null unique,
+  selected_sections text[] not null default array[
+    'cover', 'overview', 'gallery', 'features', 'amenities', 'paymentPlan', 'location', 'contact', 'whatsappCta', 'disclaimer'
+  ],
+  generated_file text,
+  public boolean not null default false,
+  created_by uuid references public.admin_profiles (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint brochures_one_target check (
+    (property_id is not null and project_id is null) or (property_id is null and project_id is not null)
+  )
+);
+
+create index if not exists brochures_property_idx on public.brochures (property_id);
+create index if not exists brochures_project_idx on public.brochures (project_id);
+create index if not exists brochures_public_idx on public.brochures (public);
+create index if not exists brochures_created_idx on public.brochures (created_at);
+
+-- ---------------------------------------------------------------------
 -- updated_at auto-touch trigger, shared by every table above
 -- ---------------------------------------------------------------------
 create or replace function public.set_updated_at()
@@ -671,6 +700,10 @@ create trigger protect_appointment_fields before update on public.appointments
 
 drop trigger if exists set_updated_at on public.payment_plans;
 create trigger set_updated_at before update on public.payment_plans
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.brochures;
+create trigger set_updated_at before update on public.brochures
   for each row execute function public.set_updated_at();
 
 -- A customer can update their own name/phone/whatsapp/photo, but never
@@ -1123,6 +1156,26 @@ create policy "payment_schedule_items_admin_all"
   with check (public.is_admin());
 
 -- =====================================================================
+-- Brochures (STEP 13) — public can read only a brochure explicitly
+-- marked public; admins have full access.
+-- =====================================================================
+
+alter table public.brochures enable row level security;
+
+drop policy if exists "brochures_public_read" on public.brochures;
+create policy "brochures_public_read"
+  on public.brochures for select
+  to anon, authenticated
+  using (public = true);
+
+drop policy if exists "brochures_admin_all" on public.brochures;
+create policy "brochures_admin_all"
+  on public.brochures for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- =====================================================================
 -- Storage: property-images bucket
 -- Public read (so <Image> tags and the browser can load them directly),
 -- writes restricted to authenticated admins.
@@ -1258,3 +1311,40 @@ create policy "customer_avatars_delete"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'customer-avatars');
+
+-- =====================================================================
+-- Storage: brochures bucket (STEP 13). A brochure PDF is finished
+-- marketing material with no customer PII in it, the same sensitivity
+-- level as property-images/project-images/documents, so it follows the
+-- identical public-read / admin-write shape. brochures.public controls
+-- *discoverability* (whether a public page links to it), not storage
+-- access — consistent with how the `documents` bucket already works.
+-- =====================================================================
+
+insert into storage.buckets (id, name, public)
+values ('brochures', 'brochures', true)
+on conflict (id) do nothing;
+
+drop policy if exists "brochures_storage_public_read" on storage.objects;
+create policy "brochures_storage_public_read"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'brochures');
+
+drop policy if exists "brochures_storage_admin_write" on storage.objects;
+create policy "brochures_storage_admin_write"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'brochures' and public.is_admin());
+
+drop policy if exists "brochures_storage_admin_update" on storage.objects;
+create policy "brochures_storage_admin_update"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'brochures' and public.is_admin());
+
+drop policy if exists "brochures_storage_admin_delete" on storage.objects;
+create policy "brochures_storage_admin_delete"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'brochures' and public.is_admin());

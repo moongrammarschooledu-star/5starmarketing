@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FolderKanban, Phone, CalendarClock, Calculator } from "lucide-react";
+import { ArrowLeft, FolderKanban, Phone, CalendarClock, Calculator, FileDown } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { settingsService } from "@/services/settingsService";
 import { paymentPlanService } from "@/services/paymentPlanService";
+import { brochureService } from "@/services/brochureService";
 import { calculatePaymentPlan, formatPKR } from "@/lib/calculator";
 import { InvestmentCalculator } from "@/components/InvestmentCalculator";
 import { site, whatsappUrlFor } from "@/lib/site";
@@ -83,10 +84,11 @@ export default async function PropertyDetailsPage({
   ]);
   if (!property) notFound();
 
-  const [project, related, savedPaymentPlan] = await Promise.all([
+  const [project, related, savedPaymentPlan, brochure] = await Promise.all([
     property.projectId ? projectService.getById(property.projectId) : Promise.resolve(undefined),
     propertyService.listRelated(property, 4),
     paymentPlanService.getForProperty(property.id),
+    brochureService.getActivePublicForProperty(property.id).catch(() => undefined),
   ]);
 
   // Estimated Monthly Installment preview (section 18) — prefers the new
@@ -250,6 +252,17 @@ export default async function PropertyDetailsPage({
               >
                 <CalendarClock className="h-4 w-4" /> Schedule a Site Visit
               </Link>
+
+              {brochure?.generatedFile && (
+                <a
+                  href={brochure.generatedFile}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
+                >
+                  <FileDown className="h-4 w-4" /> Download Property Brochure
+                </a>
+              )}
             </div>
 
             <div id="inquiry-form" className="mt-5 scroll-mt-24">

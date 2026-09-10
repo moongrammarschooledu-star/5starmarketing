@@ -20,6 +20,7 @@ import {
   Users2,
   CalendarClock,
   CalendarDays,
+  FileText,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -36,6 +37,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, section: "appointments" },
   { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle, section: "whatsapp" },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban, section: "projects" },
+  { href: "/admin/brochures", label: "Brochures", icon: FileText, section: "brochures" },
   { href: "/admin/services", label: "Services", icon: Wrench, section: "services" },
   { href: "/admin/reports", label: "Reports", icon: ClipboardList, section: "reports" },
   { href: "/admin/activity", label: "Activity Log", icon: History, section: "activity" },

@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Building2, CheckCircle2, Phone, MessageCircle, User } from "lucide-react";
+import { ArrowLeft, MapPin, Building2, CheckCircle2, Phone, MessageCircle, User, FileDown } from "lucide-react";
 import { projectService } from "@/services/projectService";
 import { propertyService } from "@/services/propertyService";
 import { settingsService } from "@/services/settingsService";
+import { brochureService } from "@/services/brochureService";
 import { site, whatsappUrlFor } from "@/lib/site";
 import { MediaGallery } from "@/components/MediaGallery";
 import { PropertyLocationSection } from "@/components/PropertyLocationSection";
@@ -64,7 +65,10 @@ export default async function ProjectDetailsPage({
   ]);
   if (!project) notFound();
 
-  const properties = await propertyService.listByProject(project.id);
+  const [properties, brochure] = await Promise.all([
+    propertyService.listByProject(project.id),
+    brochureService.getActivePublicForProject(project.id).catch(() => undefined),
+  ]);
 
   const whatsappNumber = project.whatsappNumber || settings?.whatsapp || site.whatsappNumber;
   const whatsappMessage = `Assalam-o-Alaikum 5STAR.M Estate & Builders,\n\nI am interested in the project: ${project.name} (${project.location}).\n\nPlease share complete details.\n\nThank you.`;
@@ -230,6 +234,16 @@ export default async function ProjectDetailsPage({
                 >
                   <Phone className="h-4 w-4" /> Call Now
                 </PhoneLink>
+                {brochure?.generatedFile && (
+                  <a
+                    href={brochure.generatedFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 rounded-full border-2 border-ink/15 px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
+                  >
+                    <FileDown className="h-4 w-4" /> Download Project Brochure
+                  </a>
+                )}
               </div>
             </div>
           </div>

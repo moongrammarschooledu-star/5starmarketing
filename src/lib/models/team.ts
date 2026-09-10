@@ -32,7 +32,13 @@ export type StaffNotificationType =
   | "follow_up_due"
   | "follow_up_overdue"
   | "appointment_assigned"
-  | "status_changed";
+  | "status_changed"
+  // STEP 19 — Inventory
+  | "inventory_reserved"
+  | "inventory_reservation_expiring"
+  | "inventory_released"
+  | "inventory_booked"
+  | "inventory_sold";
 
 export interface StaffNotification {
   id: string;

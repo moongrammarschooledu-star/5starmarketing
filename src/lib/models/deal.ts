@@ -37,6 +37,7 @@ export interface Deal {
   customerId?: string;
   propertyId?: string;
   projectId?: string;
+  inventoryId?: string;
   agentId?: string;
   sellerName?: string;
   sellerPhone?: string;
@@ -84,6 +85,7 @@ export interface Deal {
   projectName?: string;
   agentName?: string;
   leadName?: string;
+  inventoryUnitNumber?: string;
 }
 
 export type DealInput = Omit<
@@ -117,6 +119,7 @@ export type DealInput = Omit<
   | "projectName"
   | "agentName"
   | "leadName"
+  | "inventoryUnitNumber"
 > & {
   status?: DealStatus;
   bookingStatus?: BookingStatus;

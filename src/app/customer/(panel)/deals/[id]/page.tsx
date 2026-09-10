@@ -70,6 +70,7 @@ export default async function CustomerDealDetailPage({ params }: { params: Promi
               <Row label="Received" value={formatPKR(deal.receivedAmount)} />
               <Row label="Outstanding" value={formatPKR(deal.outstandingAmount)} />
               {deal.expectedCompletionDate && <Row label="Expected Completion" value={formatDateOnly(deal.expectedCompletionDate)} />}
+              {deal.inventoryUnitNumber && <Row label="Unit" value={deal.inventoryUnitNumber} />}
             </div>
           </div>
 

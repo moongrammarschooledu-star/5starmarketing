@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import type { Lead } from "@/lib/models/lead";
 import type { DealType } from "@/lib/models/deal";
+import type { InventoryUnit } from "@/lib/models/inventory";
 import { dealTypes } from "@/lib/models/deal";
 import { createDealAction } from "@/lib/actions/deals.actions";
 import { useToast } from "@/components/admin/ToastProvider";
@@ -13,22 +14,25 @@ const PURPOSE_TO_DEAL_TYPE: Record<string, DealType> = { Buy: "Property Sale", R
 
 export function DealForm({
   lead,
+  inventoryUnit,
   properties,
   projects,
   agents,
   defaultCommissionRate,
 }: {
   lead?: Lead;
+  inventoryUnit?: InventoryUnit;
   properties: { id: string; title: string; status: string; priceValue?: number }[];
   projects: { id: string; name: string }[];
   agents: { id: string; name: string }[];
   defaultCommissionRate?: number;
 }) {
-  const [propertyId, setPropertyId] = useState(lead?.propertyId ?? "");
-  const [projectId, setProjectId] = useState(lead?.projectId ?? "");
-  const [agentId, setAgentId] = useState(lead?.assignedAgentId ?? "");
+  const [propertyId, setPropertyId] = useState(inventoryUnit?.propertyId ?? lead?.propertyId ?? "");
+  const [projectId, setProjectId] = useState(inventoryUnit?.projectId ?? lead?.projectId ?? "");
+  const [agentId, setAgentId] = useState(inventoryUnit?.agentId ?? lead?.assignedAgentId ?? "");
   const [dealType, setDealType] = useState<DealType>((lead?.purpose && PURPOSE_TO_DEAL_TYPE[lead.purpose]) || "Property Sale");
   const [negotiatedPrice, setNegotiatedPrice] = useState<string>(() => {
+    if (inventoryUnit?.price) return String(inventoryUnit.price);
     const property = properties.find((p) => p.id === lead?.propertyId);
     return property?.priceValue ? String(property.priceValue) : "";
   });
@@ -56,9 +60,10 @@ export function DealForm({
       try {
         const deal = await createDealAction({
           leadId: lead?.id,
-          customerId: lead?.customerId,
+          customerId: lead?.customerId ?? inventoryUnit?.customerId,
           propertyId: propertyId || undefined,
           projectId: projectId || undefined,
+          inventoryId: inventoryUnit?.id,
           agentId: agentId || undefined,
           sellerName: sellerName || undefined,
           sellerPhone: sellerPhone || undefined,
@@ -85,6 +90,13 @@ export function DealForm({
         <div className="rounded-xl bg-surface-muted p-3.5 text-sm">
           <span className="font-bold text-ink">{lead.name}</span> — {lead.phone}
           {lead.propertyTitle && <span className="text-muted"> · {lead.propertyTitle}</span>}
+        </div>
+      )}
+      {inventoryUnit && (
+        <div className="rounded-xl bg-surface-muted p-3.5 text-sm">
+          <span className="font-bold text-ink">Unit {inventoryUnit.unitNumber}</span>
+          {inventoryUnit.projectName && <span className="text-muted"> · {inventoryUnit.projectName}</span>}
+          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{inventoryUnit.status}</span>
         </div>
       )}
 

@@ -15,9 +15,10 @@ import { dealStatuses, allDealStatuses, PROPERTY_SALE_DEAL_TYPES } from "@/lib/m
 import type { DealSearchFilters, DealSearchResult } from "@/lib/models/deal";
 import { DEFAULT_DEAL_PAGE_SIZE, MAX_DEAL_PAGE_SIZE } from "@/lib/models/deal";
 import { paymentPlanService } from "./paymentPlanService";
+import { inventoryService } from "./inventoryService";
 
 const SELECT_WITH_JOINS =
-  "*, agent:admin_profiles!deals_agent_id_fkey(name), creator:admin_profiles!deals_created_by_fkey(name), leads(name), projects(name)";
+  "*, agent:admin_profiles!deals_agent_id_fkey(name), creator:admin_profiles!deals_created_by_fkey(name), leads(name), projects(name), property_inventory(unit_number)";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRowToDeal(row: any): Deal {
@@ -28,6 +29,7 @@ function mapRowToDeal(row: any): Deal {
     customerId: row.customer_id ?? undefined,
     propertyId: row.property_id ?? undefined,
     projectId: row.project_id ?? undefined,
+    inventoryId: row.inventory_id ?? undefined,
     agentId: row.agent_id ?? undefined,
     sellerName: row.seller_name ?? undefined,
     sellerPhone: row.seller_phone ?? undefined,
@@ -61,6 +63,7 @@ function mapRowToDeal(row: any): Deal {
     agentName: row.agent?.name ?? undefined,
     projectName: row.projects?.name ?? undefined,
     leadName: row.leads?.name ?? undefined,
+    inventoryUnitNumber: row.property_inventory?.unit_number ?? undefined,
   };
 }
 
@@ -165,6 +168,30 @@ async function syncPropertyAvailability(deal: Deal, nextStatus: DealStatus) {
         await propertyService.update(deal.propertyId, { status: "Available" });
       }
     }
+  }
+}
+
+/** STEP 19 inventory sync — mirrors syncPropertyAvailability above, but
+ *  for a specific unit (section 14/56/57). Each inventory row is a
+ *  single unit, so unlike properties there's no "other active deal"
+ *  check needed: the conditional-update guards inside inventoryService
+ *  already make it impossible for two deals to both hold the same unit
+ *  in a confirmed stage. Never promotes Booked straight to Sold on
+ *  payment alone (section 57) — only an explicit deal-status change
+ *  drives this. */
+async function syncInventoryAvailability(deal: Deal, nextStatus: DealStatus) {
+  if (!deal.inventoryId) return;
+  try {
+    if (nextStatus === "Booked") {
+      await inventoryService.markBooked(deal.inventoryId, deal.id);
+    } else if (nextStatus === "Completed") {
+      if (deal.dealType === "Property Rent") await inventoryService.markRented(deal.inventoryId);
+      else if (PROPERTY_SALE_DEAL_TYPES.includes(deal.dealType)) await inventoryService.markSold(deal.inventoryId);
+    } else if (nextStatus === "Cancelled") {
+      await inventoryService.setAvailable(deal.inventoryId);
+    }
+  } catch (e) {
+    console.error("dealService: inventory availability sync failed:", e);
   }
 }
 
@@ -312,6 +339,7 @@ export const dealService = {
         customer_id: input.customerId || null,
         property_id: input.propertyId || null,
         project_id: input.projectId || null,
+        inventory_id: input.inventoryId || null,
         agent_id: input.agentId || null,
         seller_name: input.sellerName || null,
         seller_phone: input.sellerPhone || null,
@@ -422,6 +450,7 @@ export const dealService = {
     } catch (e) {
       console.error("dealService.updateStatus: property availability sync failed:", e);
     }
+    await syncInventoryAvailability(deal, nextStatus);
     return deal;
   },
 

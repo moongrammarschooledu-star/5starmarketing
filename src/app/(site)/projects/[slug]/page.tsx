@@ -21,6 +21,8 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PhoneLink } from "@/components/PhoneLink";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { ProjectViewTracker } from "@/components/ProjectViewTracker";
+import { PublicInventorySummary } from "@/components/PublicInventorySummary";
+import { inventoryService } from "@/services/inventoryService";
 
 export const dynamic = "force-dynamic";
 
@@ -67,9 +69,10 @@ export default async function ProjectDetailsPage({
   ]);
   if (!project) notFound();
 
-  const [properties, brochure] = await Promise.all([
+  const [properties, brochure, inventorySummary] = await Promise.all([
     propertyService.listByProject(project.id),
     brochureService.getActivePublicForProject(project.id).catch(() => undefined),
+    inventoryService.getPublicProjectSummaryByType(project.id).catch(() => []),
   ]);
 
   const whatsappNumber = project.whatsappNumber || settings?.whatsapp || site.whatsappNumber;
@@ -182,6 +185,8 @@ export default async function ProjectDetailsPage({
                 )}
               </div>
             )}
+
+            <PublicInventorySummary summary={inventorySummary} />
 
             {project.images.length > 0 && (
               <div>

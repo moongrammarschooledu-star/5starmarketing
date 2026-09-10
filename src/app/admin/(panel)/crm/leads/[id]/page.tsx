@@ -149,6 +149,11 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
                   View project on site →
                 </Link>
               )}
+              {lead.projectId && canCreateDeal && (
+                <Link href={`/admin/inventory/projects/${lead.projectId}`} className="mt-3 ml-4 inline-block text-xs font-bold text-primary hover:underline">
+                  Check unit availability →
+                </Link>
+              )}
             </div>
           )}
 

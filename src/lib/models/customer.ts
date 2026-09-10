@@ -28,6 +28,12 @@ export interface PropertyAlert {
   maxPrice?: number;
   purpose?: string;
   enabled: boolean;
+  // STEP 16 — architecture for future "notify me when matching
+  // properties are added" automation (no sending implemented here).
+  savedSearchId?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filtersJson?: Record<string, any>;
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +48,10 @@ export interface SavedSearch {
   location?: string;
   sizeCategory?: string;
   purpose?: string;
+  /** STEP 16 — full advanced-search filter snapshot (JSON), alongside
+   *  the loose text fields above which stay for backward compatibility. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filtersJson?: Record<string, any>;
   enabled: boolean;
   createdAt: string;
   updatedAt: string;

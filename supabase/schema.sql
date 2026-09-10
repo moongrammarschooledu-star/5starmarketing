@@ -178,10 +178,20 @@ create table if not exists public.properties (
   location_area text not null default 'Other Locations' check (
     location_area in ('Lahore', 'Johar Town', 'Other Locations')
   ),
+  -- STEP 16 — Country → City → Area hierarchy: city is its own field,
+  -- distinct from location_area's coarse enum and location's free text.
+  city text not null default 'Lahore',
   size text not null,
   size_category text not null default 'Custom' check (
     size_category in ('3 Marla', '5 Marla', '10 Marla', '1 Kanal', 'Custom')
   ),
+  -- STEP 16 — normalized size (sq ft) for real numeric range filtering;
+  -- size/size_category above stay display-only, never parsed as numbers.
+  size_sqft numeric,
+  bedrooms integer,
+  bathrooms integer,
+  latitude numeric check (latitude is null or (latitude between -90 and 90)),
+  longitude numeric check (longitude is null or (longitude between -180 and 180)),
   price text not null,
   price_value numeric,
   payment_option text not null check (
@@ -212,6 +222,20 @@ create index if not exists properties_featured_idx on public.properties (feature
 create index if not exists properties_type_idx on public.properties (property_type);
 create index if not exists properties_slug_idx on public.properties (slug);
 create index if not exists properties_project_idx on public.properties (project_id);
+-- STEP 16 — advanced search/map indexes.
+create index if not exists properties_purpose_idx on public.properties (purpose);
+create index if not exists properties_city_idx on public.properties (city);
+create index if not exists properties_price_value_idx on public.properties (price_value);
+create index if not exists properties_size_sqft_idx on public.properties (size_sqft);
+create index if not exists properties_bedrooms_idx on public.properties (bedrooms);
+create index if not exists properties_bathrooms_idx on public.properties (bathrooms);
+create index if not exists properties_created_at_idx on public.properties (created_at);
+create index if not exists properties_lat_lng_idx on public.properties (latitude, longitude);
+
+create extension if not exists pg_trgm;
+create index if not exists properties_title_trgm_idx on public.properties using gin (title gin_trgm_ops);
+create index if not exists properties_description_trgm_idx on public.properties using gin (description gin_trgm_ops);
+create index if not exists properties_location_trgm_idx on public.properties using gin (location gin_trgm_ops);
 
 -- ---------------------------------------------------------------------
 -- projects
@@ -501,6 +525,30 @@ create index if not exists property_views_property_idx on public.property_views 
 create index if not exists property_views_created_idx on public.property_views (created_at);
 
 -- ---------------------------------------------------------------------
+-- property_popularity (STEP 16) — real view/inquiry counts per
+-- property, from property_views above and leads.property_id. Powers
+-- "Most Viewed"/"Most Inquired" sort with zero invented numbers; a
+-- property with no tracked activity is 0, not omitted.
+-- ---------------------------------------------------------------------
+create or replace view public.property_popularity as
+select
+  p.id as property_id,
+  coalesce(pv.view_count, 0) as view_count,
+  coalesce(l.inquiry_count, 0) as inquiry_count
+from public.properties p
+left join (
+  select property_id, count(*) as view_count
+  from public.property_views
+  group by property_id
+) pv on pv.property_id = p.id
+left join (
+  select property_id, count(*) as inquiry_count
+  from public.leads
+  where property_id is not null
+  group by property_id
+) l on l.property_id = p.id;
+
+-- ---------------------------------------------------------------------
 -- website_events (STEP 9) — whatsapp_click / phone_click /
 -- contact_form_submit / project_view. property_view has its own table
 -- above; property_inquiry is already captured as a row in `leads`.
@@ -520,6 +568,36 @@ create index if not exists website_events_type_idx on public.website_events (eve
 create index if not exists website_events_property_idx on public.website_events (property_id);
 create index if not exists website_events_project_idx on public.website_events (project_id);
 create index if not exists website_events_created_idx on public.website_events (created_at);
+
+-- ---------------------------------------------------------------------
+-- search_events (STEP 16) — dedicated search/map UX analytics, kept
+-- separate from website_events/campaign_events (different closed enums,
+-- different purpose). Public insert-only, admin/manager read-only.
+-- ---------------------------------------------------------------------
+create table if not exists public.search_events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null check (
+    event_type in (
+      'property_search', 'filter_applied', 'filter_removed', 'sort_changed',
+      'map_opened', 'map_marker_clicked', 'search_area_clicked',
+      'property_result_clicked', 'favorite_from_search', 'compare_from_search',
+      'saved_search_created'
+    )
+  ),
+  session_id text,
+  customer_id uuid references auth.users (id) on delete set null,
+  property_id uuid references public.properties (id) on delete set null,
+  query text,
+  filters jsonb,
+  utm_source text,
+  utm_medium text,
+  utm_campaign text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists search_events_type_idx on public.search_events (event_type);
+create index if not exists search_events_created_idx on public.search_events (created_at);
+create index if not exists search_events_property_idx on public.search_events (property_id);
 
 -- ---------------------------------------------------------------------
 -- activity_logs (STEP 9) — admin action history. Written only by
@@ -567,6 +645,12 @@ create table if not exists public.property_alerts (
   max_price numeric,
   purpose text,
   enabled boolean not null default true,
+  -- STEP 16 — architecture for future "notify me" automation (no
+  -- sending implemented here). saved_search_id's FK to saved_searches
+  -- is added further down, once that table exists.
+  saved_search_id uuid,
+  filters_json jsonb,
+  last_checked_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -585,11 +669,29 @@ create table if not exists public.saved_searches (
   size_category text,
   purpose text,
   enabled boolean not null default true,
+  -- STEP 16 — full snapshot of the advanced-search filter set, alongside
+  -- (not replacing) the loose text columns above.
+  filters_json jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index if not exists saved_searches_user_idx on public.saved_searches (user_id);
+
+-- property_alerts.saved_search_id references this table, which is
+-- created after property_alerts — added here as a deferred FK, same
+-- pattern as properties.project_id → projects further up this file.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where constraint_name = 'property_alerts_saved_search_id_fkey' and table_name = 'property_alerts'
+  ) then
+    alter table public.property_alerts
+      add constraint property_alerts_saved_search_id_fkey
+      foreign key (saved_search_id) references public.saved_searches (id) on delete set null;
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- customer_notifications (STEP 10) — architecture only; rows are written
@@ -1326,6 +1428,21 @@ create policy "website_events_admin_read"
   on public.website_events for select
   to authenticated
   using (public.is_admin());
+
+-- search_events (STEP 16): public insert-only, admin/manager read-only.
+alter table public.search_events enable row level security;
+
+drop policy if exists "search_events_public_insert" on public.search_events;
+create policy "search_events_public_insert"
+  on public.search_events for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "search_events_admin_read" on public.search_events;
+create policy "search_events_admin_read"
+  on public.search_events for select
+  to authenticated
+  using (public.is_admin_or_manager());
 
 -- activity_logs (STEP 9): admin-only end to end — no anonymous access.
 drop policy if exists "activity_logs_admin_all" on public.activity_logs;

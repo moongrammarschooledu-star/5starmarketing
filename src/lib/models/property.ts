@@ -34,8 +34,23 @@ export interface Property {
   purpose: Purpose;
   location: string;
   locationArea: LocationArea;
+  // STEP 16 — city is its own field (for the Country → City → Area
+  // hierarchy) distinct from `locationArea`'s coarse 3-value enum and
+  // `location`'s free-text address/locality line.
+  city: string;
   size: string;
   sizeCategory: SizeCategory;
+  /** STEP 16 — normalized size in square feet, entered by the admin.
+   *  Powers accurate numeric min/max size filtering; the free-text
+   *  `size`/`sizeCategory` fields above stay display-only and are never
+   *  parsed for comparison. Undefined on properties an admin hasn't
+   *  filled this in for yet — those simply don't match a size filter. */
+  sizeSqft?: number;
+  /** STEP 16 — only meaningful for residential property types; left
+   *  undefined (never 0) for plots/commercial so bedroom filters can't
+   *  produce misleading matches. */
+  bedrooms?: number;
+  bathrooms?: number;
   price: string;
   priceValue?: number;
   paymentOption: PaymentOption;
@@ -46,6 +61,10 @@ export interface Property {
   features: string[];
   amenities: string[];
   mapsQuery?: string;
+  /** STEP 16 — real coordinates only; undefined until an admin sets them
+   *  via the map picker. Never inferred/randomized. */
+  latitude?: number;
+  longitude?: number;
   projectId?: string;
   paymentPlan: PropertyPaymentPlan;
   documents: PropertyDocument[];

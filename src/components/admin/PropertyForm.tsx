@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import dynamic from "next/dynamic";
 import { AlertCircle } from "lucide-react";
 import {
   propertyTypes,
@@ -15,6 +16,14 @@ import type { Project } from "@/lib/models/project";
 import type { PropertyFormState } from "@/lib/actions/properties.actions";
 import { ImageUploader } from "./ImageUploader";
 import { DocumentUploader } from "./DocumentUploader";
+
+// Leaflet touches `window` at import time — this file is already a
+// Client Component, so ssr:false can be called directly here (no
+// separate wrapper needed, unlike a Server Component caller).
+const PropertyLocationPicker = dynamic(() => import("./PropertyLocationPicker").then((m) => m.PropertyLocationPicker), {
+  ssr: false,
+  loading: () => <div className="h-72 w-full animate-pulse rounded-xl bg-surface-muted" />,
+});
 
 export function PropertyForm({
   action,
@@ -45,8 +54,28 @@ export function PropertyForm({
           <Select label="Purpose" name="purpose" options={purposes} defaultValue={initialValues?.purpose} />
           <Field label="Location (display)" name="location" required defaultValue={initialValues?.location} placeholder="e.g. Johar Town, Lahore" />
           <Select label="Location Area (filter)" name="locationArea" options={locationAreas} defaultValue={initialValues?.locationArea} />
+          <Field label="City" name="city" defaultValue={initialValues?.city ?? "Lahore"} placeholder="Lahore" />
           <Field label="Size (display)" name="size" required defaultValue={initialValues?.size} placeholder="e.g. 10 Marla" />
           <Select label="Size Category (filter)" name="sizeCategory" options={sizeCategories} defaultValue={initialValues?.sizeCategory} />
+          <Field
+            label="Size in Sq. Ft. (for advanced search — optional)"
+            name="sizeSqft"
+            type="number"
+            defaultValue={initialValues?.sizeSqft}
+            placeholder="e.g. 2250"
+          />
+          <Field
+            label="Bedrooms (residential only — optional)"
+            name="bedrooms"
+            type="number"
+            defaultValue={initialValues?.bedrooms}
+          />
+          <Field
+            label="Bathrooms (residential only — optional)"
+            name="bathrooms"
+            type="number"
+            defaultValue={initialValues?.bathrooms}
+          />
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-semibold text-ink">Project</span>
             <select
@@ -167,6 +196,17 @@ export function PropertyForm({
         </p>
         <div className="mt-4">
           <Field label="Maps Search Query" name="mapsQuery" defaultValue={initialValues?.mapsQuery ?? initialValues?.location} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Map Coordinates</h2>
+        <p className="mt-1 text-xs text-muted">
+          Powers the interactive Map Search on the public site (List/Map/Split view). Optional — a
+          property without coordinates simply won&apos;t appear on the map, everything else keeps working.
+        </p>
+        <div className="mt-4">
+          <PropertyLocationPicker initialLatitude={initialValues?.latitude} initialLongitude={initialValues?.longitude} />
         </div>
       </section>
 

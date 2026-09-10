@@ -12,6 +12,9 @@ function mapRow(row: any): PropertyAlert {
     minPrice: row.min_price ?? undefined,
     maxPrice: row.max_price ?? undefined,
     purpose: row.purpose ?? undefined,
+    savedSearchId: row.saved_search_id ?? undefined,
+    filtersJson: row.filters_json ?? undefined,
+    lastCheckedAt: row.last_checked_at ?? undefined,
     enabled: row.enabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -42,6 +45,8 @@ export const propertyAlertService = {
       min_price: input.minPrice ?? null,
       max_price: input.maxPrice ?? null,
       purpose: input.purpose || null,
+      saved_search_id: input.savedSearchId || null,
+      filters_json: input.filtersJson ?? null,
       enabled: input.enabled,
     });
     if (error) {

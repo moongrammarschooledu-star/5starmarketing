@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Download, Printer, Building2, Users, FolderKanban, Megaphone, CalendarClock } from "lucide-react";
+import { Download, Printer, Building2, Users, FolderKanban, Megaphone, CalendarClock, Search } from "lucide-react";
 import { reportService } from "@/services/reportService";
 import { resolveDateRange } from "@/services/analyticsService";
 import { appointmentService } from "@/services/appointmentService";
+import { searchAnalyticsService } from "@/services/searchAnalyticsService";
 import type { DateRangeKey } from "@/lib/models/analytics";
 import { AnalyticsTimeFilter } from "@/components/admin/AnalyticsTimeFilter";
 import { CountBucketChart } from "@/components/admin/charts/CountBucketChart";
@@ -28,14 +29,16 @@ export default async function AdminReportsPage({
   let project: Awaited<ReturnType<typeof reportService.projectReport>> | null = null;
   let marketing: Awaited<ReturnType<typeof reportService.marketingReport>> = [];
   let appointments: Awaited<ReturnType<typeof appointmentService.stats>> | null = null;
+  let search: Awaited<ReturnType<typeof searchAnalyticsService.summary>> | null = null;
 
   try {
-    [property, lead, project, marketing, appointments] = await Promise.all([
+    [property, lead, project, marketing, appointments, search] = await Promise.all([
       reportService.propertyReport(),
       reportService.leadReport(range),
       reportService.projectReport(),
       reportService.marketingReport(range),
       appointmentService.stats(),
+      searchAnalyticsService.summary(range),
     ]);
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load reports.";
@@ -196,6 +199,35 @@ export default async function AdminReportsPage({
           </>
         )}
       </ReportSection>
+
+      {/* PROPERTY SEARCH ANALYTICS (STEP 16) */}
+      <ReportSection title={`Property Search Analytics (${range.label})`} icon={Search}>
+        {search && !search.hasEnoughData && (
+          <p className="py-6 text-center text-sm text-muted">No data available yet.</p>
+        )}
+        {search && search.hasEnoughData && (
+          <>
+            <StatRow
+              items={[
+                { label: "Total Searches", value: search.totalSearches },
+                { label: "Map Searches", value: search.mapSearches },
+                { label: "Saved Searches", value: search.savedSearchesCreated },
+                {
+                  label: "Search → Click Rate",
+                  value: search.resultClickThroughRate !== null ? `${Math.round(search.resultClickThroughRate * 100)}%` : "—",
+                },
+              ]}
+            />
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <CountBucketChart title="Most Searched Locations" data={search.topLocations} empty="No data available yet." />
+              <CountBucketChart title="Most Searched Property Types" data={search.topPropertyTypes} empty="No data available yet." />
+              <CountBucketChart title="Sale vs Rent Searches" data={search.saleVsRent} empty="No data available yet." />
+              <CountBucketChart title="Popular Price Ranges" data={search.topPriceRanges} empty="No data available yet." />
+              <CountBucketChart title="Popular Bedroom Filters" data={search.topBedroomFilters} empty="No data available yet." />
+            </div>
+          </>
+        )}
+      </ReportSection>
     </div>
   );
 }
@@ -246,7 +278,7 @@ function ReportSection({
   );
 }
 
-function StatRow({ items }: { items: { label: string; value: number }[] }) {
+function StatRow({ items }: { items: { label: string; value: number | string }[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
       {items.map((i) => (

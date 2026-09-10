@@ -8,6 +8,8 @@ import { propertyAlertService } from "@/services/propertyAlertService";
 import { savedSearchService } from "@/services/savedSearchService";
 import { notificationService } from "@/services/notificationService";
 import type { CustomerProfileInput, PropertyAlertInput, SavedSearchInput } from "@/lib/models/customer";
+import type { PropertySearchFilters } from "@/lib/models/propertySearch";
+import { searchAnalyticsService } from "@/services/searchAnalyticsService";
 
 async function currentUserId(): Promise<string | null> {
   const supabase = await createClient();
@@ -153,6 +155,51 @@ export async function createSavedSearchAction(formData: FormData) {
   };
   await savedSearchService.create(userId, input);
   revalidatePath("/customer/saved-searches");
+}
+
+/** STEP 16 — saves the FULL advanced-search filter set (used by the
+ *  "Save Search" button on /properties), deriving the legacy loose text
+ *  fields best-effort so the existing SavedSearchManager list keeps
+ *  displaying something sensible either way. */
+export async function createSavedSearchFromFiltersAction(
+  name: string,
+  filters: PropertySearchFilters,
+  notifyMe = false
+): Promise<{ ok: boolean; error?: string }> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Please sign in to save a search." };
+
+  const input: SavedSearchInput = {
+    name: name.trim() || "My Search",
+    propertyType: filters.type,
+    location: filters.area ?? filters.city,
+    purpose: filters.purpose,
+    filtersJson: filters,
+    enabled: true,
+  };
+  try {
+    await savedSearchService.create(userId, input);
+    // Architecture only (section 37) — no automated notification is
+    // actually sent; this just records that the customer opted in, for
+    // a future scheduled job to read.
+    if (notifyMe) {
+      await propertyAlertService.create(userId, {
+        propertyType: filters.type,
+        location: filters.area ?? filters.city,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        purpose: filters.purpose,
+        filtersJson: filters,
+        enabled: true,
+      });
+    }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not save this search." };
+  }
+  await searchAnalyticsService.record("saved_search_created", { customerId: userId, filters });
+  revalidatePath("/customer/saved-searches");
+  revalidatePath("/customer/property-alerts");
+  return { ok: true };
 }
 
 export async function toggleSavedSearchAction(id: string, enabled: boolean) {

@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Property, PropertyInput, PropertyType, Purpose, PaymentOption, PropertyStatus } from "@/lib/models/property";
+import type { PropertySearchFilters, PropertySearchResult } from "@/lib/models/propertySearch";
+import { DEFAULT_PAGE_SIZE } from "@/lib/models/propertySearch";
 import {
   resolveStorageImages,
   deleteStorageImages,
@@ -73,8 +75,12 @@ function mapRowToProperty(row: any): Property {
     purpose: PURPOSE_FROM_DB[row.purpose] ?? "For Sale",
     location: row.location,
     locationArea: row.location_area ?? "Other Locations",
+    city: row.city ?? "Lahore",
     size: row.size,
     sizeCategory: row.size_category ?? "Custom",
+    sizeSqft: row.size_sqft ?? undefined,
+    bedrooms: row.bedrooms ?? undefined,
+    bathrooms: row.bathrooms ?? undefined,
     price: row.price,
     priceValue: row.price_value ?? undefined,
     paymentOption: PAYMENT_FROM_DB[row.payment_option] ?? "Cash",
@@ -85,6 +91,8 @@ function mapRowToProperty(row: any): Property {
     features: row.features ?? [],
     amenities: row.amenities ?? [],
     mapsQuery: row.maps_url ?? undefined,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
     projectId: row.project_id ?? undefined,
     paymentPlan: {
       totalPrice: row.payment_total_price ?? undefined,
@@ -106,8 +114,12 @@ function mapPropertyToRow(input: Partial<PropertyInput>) {
   if (input.purpose !== undefined) row.purpose = PURPOSE_TO_DB[input.purpose];
   if (input.location !== undefined) row.location = input.location;
   if (input.locationArea !== undefined) row.location_area = input.locationArea;
+  if (input.city !== undefined) row.city = input.city;
   if (input.size !== undefined) row.size = input.size;
   if (input.sizeCategory !== undefined) row.size_category = input.sizeCategory;
+  if (input.sizeSqft !== undefined) row.size_sqft = input.sizeSqft ?? null;
+  if (input.bedrooms !== undefined) row.bedrooms = input.bedrooms ?? null;
+  if (input.bathrooms !== undefined) row.bathrooms = input.bathrooms ?? null;
   if (input.price !== undefined) row.price = input.price;
   if (input.priceValue !== undefined) row.price_value = input.priceValue ?? null;
   if (input.paymentOption !== undefined) row.payment_option = PAYMENT_TO_DB[input.paymentOption];
@@ -118,6 +130,8 @@ function mapPropertyToRow(input: Partial<PropertyInput>) {
   if (input.amenities !== undefined) row.amenities = input.amenities;
   if (input.images !== undefined) row.images = input.images;
   if (input.mapsQuery !== undefined) row.maps_url = input.mapsQuery || null;
+  if (input.latitude !== undefined) row.latitude = input.latitude ?? null;
+  if (input.longitude !== undefined) row.longitude = input.longitude ?? null;
   if (input.projectId !== undefined) row.project_id = input.projectId || null;
   if (input.paymentPlan !== undefined) {
     row.payment_total_price = input.paymentPlan.totalPrice ?? null;
@@ -150,6 +164,124 @@ async function deletePropertyImages(images: string[]) {
   return deleteStorageImages(images, BUCKET);
 }
 
+/** Applies every PropertySearchFilters dimension to a Supabase query
+ *  builder chain — the single place search/map/popularity-sort all
+ *  build their WHERE clause from, so the three code paths can never
+ *  silently drift apart. `query` is typed loosely (the builder's
+ *  generic return type changes shape with every chained call, which
+ *  TypeScript can't express across a reusable function boundary without
+ *  a lot of ceremony this internal helper doesn't need). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildFilteredQuery(query: any, filters: PropertySearchFilters) {
+  query = query.neq("status", "inactive");
+
+  if (filters.q) {
+    // Escape ilike wildcard characters in user input so a search for
+    // "50% off" or "a_b" can't be (mis)read as a wildcard pattern.
+    const q = filters.q.replace(/[%_]/g, "\\$&");
+    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,location.ilike.%${q}%`);
+  }
+  if (filters.purpose) query = query.eq("purpose", PURPOSE_TO_DB[filters.purpose]);
+  if (filters.type) query = query.eq("property_type", TYPE_TO_DB[filters.type]);
+  if (filters.city) query = query.ilike("city", filters.city);
+  if (filters.area) query = query.ilike("location", `%${filters.area}%`);
+  if (filters.projectId) query = query.eq("project_id", filters.projectId);
+  if (filters.minPrice !== undefined) query = query.gte("price_value", filters.minPrice);
+  if (filters.maxPrice !== undefined) query = query.lte("price_value", filters.maxPrice);
+  if (filters.minSize !== undefined) query = query.gte("size_sqft", filters.minSize);
+  if (filters.maxSize !== undefined) query = query.lte("size_sqft", filters.maxSize);
+  if (filters.bedrooms !== undefined) query = query.gte("bedrooms", filters.bedrooms);
+  if (filters.bathrooms !== undefined) query = query.gte("bathrooms", filters.bathrooms);
+  if (filters.status) query = query.eq("status", STATUS_TO_DB[filters.status]);
+  if (filters.paymentOption) query = query.eq("payment_option", PAYMENT_TO_DB[filters.paymentOption]);
+  if (filters.minDownPayment !== undefined) query = query.gte("payment_down_payment", filters.minDownPayment);
+  if (filters.maxDownPayment !== undefined) query = query.lte("payment_down_payment", filters.maxDownPayment);
+  if (filters.minMonthlyInstallment !== undefined) query = query.gte("payment_monthly_installment", filters.minMonthlyInstallment);
+  if (filters.maxMonthlyInstallment !== undefined) query = query.lte("payment_monthly_installment", filters.maxMonthlyInstallment);
+  if (filters.featured) query = query.eq("featured", true);
+  if (filters.amenities?.length) query = query.contains("amenities", filters.amenities);
+  if (filters.bounds) {
+    query = query
+      .gte("latitude", filters.bounds.south)
+      .lte("latitude", filters.bounds.north)
+      .gte("longitude", filters.bounds.west)
+      .lte("longitude", filters.bounds.east);
+  }
+  return query;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applySort(query: any, sort: PropertySearchFilters["sort"]) {
+  switch (sort) {
+    case "oldest":
+      return query.order("created_at", { ascending: true });
+    case "price_asc":
+      return query.order("price_value", { ascending: true, nullsFirst: false });
+    case "price_desc":
+      return query.order("price_value", { ascending: false, nullsFirst: false });
+    case "size_asc":
+      return query.order("size_sqft", { ascending: true, nullsFirst: false });
+    case "size_desc":
+      return query.order("size_sqft", { ascending: false, nullsFirst: false });
+    case "newest":
+    default:
+      return query.order("created_at", { ascending: false });
+  }
+}
+
+/** "Most Viewed"/"Most Inquired" sort (section 15) — real counts from
+ *  the property_popularity view (STEP 16 migration), joined in memory
+ *  since PostgREST can't order a query by an aggregate from a second
+ *  table. Bounded to 500 matching ids so this never becomes an
+ *  unbounded full-catalog fetch. */
+async function searchByPopularity(filters: PropertySearchFilters, page: number, pageSize: number): Promise<PropertySearchResult> {
+  const supabase = await createClient();
+  const idQuery = buildFilteredQuery(supabase.from("properties").select("id"), filters).limit(500);
+  const { data: idRows, error: idError } = await idQuery;
+  if (idError) {
+    console.error("propertyService.search (popularity ids) failed:", idError);
+    throw new Error("Could not load properties.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ids = (idRows ?? []).map((r: any) => r.id as string);
+  if (ids.length === 0) {
+    return { properties: [], total: 0, page, pageSize, totalPages: 1 };
+  }
+
+  const { data: popularity, error: popError } = await supabase
+    .from("property_popularity")
+    .select("property_id, view_count, inquiry_count")
+    .in("property_id", ids);
+  if (popError) {
+    console.error("propertyService.search (popularity counts) failed:", popError);
+    throw new Error("Could not load properties.");
+  }
+  const countByProperty = new Map((popularity ?? []).map((r) => [r.property_id as string, r]));
+  const metric = filters.sort === "most_inquired" ? "inquiry_count" : "view_count";
+  const sortedIds = [...ids].sort((a, b) => {
+    const av = (countByProperty.get(a)?.[metric] as number) ?? 0;
+    const bv = (countByProperty.get(b)?.[metric] as number) ?? 0;
+    return bv - av;
+  });
+
+  const total = sortedIds.length;
+  const from = (page - 1) * pageSize;
+  const pageIds = sortedIds.slice(from, from + pageSize);
+  if (pageIds.length === 0) {
+    return { properties: [], total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
+  }
+
+  const { data: rows, error: rowsError } = await supabase.from("properties").select("*").in("id", pageIds);
+  if (rowsError) {
+    console.error("propertyService.search (popularity rows) failed:", rowsError);
+    throw new Error("Could not load properties.");
+  }
+  const byId = new Map((rows ?? []).map((r) => [r.id as string, r]));
+  const properties = pageIds.map((id) => byId.get(id)).filter(Boolean).map((r) => mapRowToProperty(r));
+
+  return { properties, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
+}
+
 export const propertyService = {
   async list(): Promise<Property[]> {
     const supabase = await createClient();
@@ -163,6 +295,86 @@ export const propertyService = {
       throw new Error("Could not load properties.");
     }
     return (data ?? []).map(mapRowToProperty);
+  },
+
+  /** Advanced Property Search (STEP 16) — the ONLY method behind
+   *  /properties' filtering/search/sort/pagination. Every filter is
+   *  applied server-side via the Supabase query builder (ilike/eq/gte/
+   *  lte/contains), never fetch-all-then-filter-in-JS. Only publicly
+   *  visible listings (never "Inactive") are ever returned here. */
+  async search(filters: PropertySearchFilters): Promise<PropertySearchResult> {
+    const page = Math.max(1, filters.page ?? 1);
+    const pageSize = Math.min(48, Math.max(1, filters.pageSize ?? DEFAULT_PAGE_SIZE));
+
+    if (filters.sort === "most_viewed" || filters.sort === "most_inquired") {
+      return searchByPopularity(filters, page, pageSize);
+    }
+
+    const supabase = await createClient();
+    let query = buildFilteredQuery(supabase.from("properties").select("*", { count: "exact" }), filters);
+    query = applySort(query, filters.sort);
+
+    const from = (page - 1) * pageSize;
+    const { data, error, count } = await query.range(from, from + pageSize - 1);
+    if (error) {
+      console.error("propertyService.search failed:", error);
+      throw new Error("Could not load properties.");
+    }
+    const total = count ?? 0;
+    return {
+      properties: (data ?? []).map(mapRowToProperty),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
+  },
+
+  /** Map bounds search (section 26) shares the exact same filter set as
+   *  `search`, just capped higher and unpaginated — the map wants every
+   *  matching marker in view, not one page of results. */
+  async searchForMap(filters: PropertySearchFilters, limit = 500): Promise<Property[]> {
+    const supabase = await createClient();
+    const query = buildFilteredQuery(supabase.from("properties").select("*"), filters)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .limit(limit);
+    const { data, error } = await query;
+    if (error) {
+      console.error("propertyService.searchForMap failed:", error);
+      return [];
+    }
+    return (data ?? []).map(mapRowToProperty);
+  },
+
+  /** Distinct amenities actually present across real listings — the
+   *  amenities filter is built from this, never a hardcoded wishlist. */
+  async listDistinctAmenities(): Promise<string[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("properties").select("amenities").neq("status", "inactive");
+    if (error) {
+      console.error("propertyService.listDistinctAmenities failed:", error);
+      return [];
+    }
+    const set = new Set<string>();
+    for (const row of data ?? []) {
+      for (const a of row.amenities ?? []) set.add(a);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  },
+
+  /** Distinct cities actually present — for the City filter dropdown,
+   *  never a hardcoded list of cities the business doesn't operate in. */
+  async listDistinctCities(): Promise<string[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("properties").select("city").neq("status", "inactive");
+    if (error) {
+      console.error("propertyService.listDistinctCities failed:", error);
+      return [];
+    }
+    const set = new Set<string>();
+    for (const row of data ?? []) if (row.city) set.add(row.city);
+    return [...set].sort((a, b) => a.localeCompare(b));
   },
 
   async listFeatured(limit = 3): Promise<Property[]> {

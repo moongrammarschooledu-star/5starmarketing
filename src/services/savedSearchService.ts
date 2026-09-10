@@ -12,6 +12,7 @@ function mapRow(row: any): SavedSearch {
     location: row.location ?? undefined,
     sizeCategory: row.size_category ?? undefined,
     purpose: row.purpose ?? undefined,
+    filtersJson: row.filters_json ?? undefined,
     enabled: row.enabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -42,6 +43,7 @@ export const savedSearchService = {
       location: input.location || null,
       size_category: input.sizeCategory || null,
       purpose: input.purpose || null,
+      filters_json: input.filtersJson ?? null,
       enabled: input.enabled,
     });
     if (error) {

@@ -9,6 +9,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: site.url, changeFrequency: "weekly", priority: 1 },
     { url: `${site.url}/about`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${site.url}/properties`, changeFrequency: "daily", priority: 0.9 },
+    // Curated search landing pages (STEP 16) — listed at their real
+    // canonical URL (the destination /properties?... their /properties/*
+    // short links redirect to), not the redirecting short URL itself.
+    { url: `${site.url}/properties?purpose=sale`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${site.url}/properties?purpose=rent`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${site.url}/properties?type=house`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${site.url}/properties?type=flat`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${site.url}/properties?type=commercial`, changeFrequency: "daily", priority: 0.7 },
     { url: `${site.url}/projects`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${site.url}/services`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${site.url}/investment`, changeFrequency: "monthly", priority: 0.5 },

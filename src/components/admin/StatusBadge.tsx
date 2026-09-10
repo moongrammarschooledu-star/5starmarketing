@@ -21,6 +21,20 @@ const palette: Record<string, string> = {
   Rescheduled: "bg-amber-500/10 text-amber-600",
   Cancelled: "bg-muted/20 text-muted",
   "No Show": "bg-muted/20 text-muted",
+  // Deals (STEP 18)
+  "Booking Pending": "bg-amber-500/10 text-amber-600",
+  Booked: "bg-primary/15 text-primary",
+  Documentation: "bg-ink/10 text-ink",
+  "Payment In Progress": "bg-burgundy/10 text-burgundy",
+  Verified: "bg-success/10 text-success",
+  Rejected: "bg-primary/10 text-primary",
+  Refunded: "bg-muted/20 text-muted",
+  Approved: "bg-success/10 text-success",
+  "Under Review": "bg-amber-500/10 text-amber-600",
+  Paid: "bg-success/15 text-success",
+  "Partially Paid": "bg-amber-500/10 text-amber-600",
+  Due: "bg-amber-500/10 text-amber-600",
+  Overdue: "bg-primary/15 text-primary",
 };
 
 export function StatusBadge({ status }: { status: string }) {

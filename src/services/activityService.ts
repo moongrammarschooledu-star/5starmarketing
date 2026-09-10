@@ -13,14 +13,24 @@ function mapRow(row: any): ActivityLogEntry {
     entityType: row.entity_type ?? undefined,
     entityId: row.entity_id ?? undefined,
     description: row.description,
+    metadata: row.metadata ?? undefined,
     createdAt: row.created_at,
   };
 }
 
 export const activityService = {
   /** Best-effort — called after a real admin mutation succeeds. A logging
-   *  failure must never undo or block the action it's describing. */
-  async log(action: string, description: string, entityType?: string, entityId?: string): Promise<void> {
+   *  failure must never undo or block the action it's describing.
+   *  `metadata` (STEP 18) carries structured detail — old/new values,
+   *  amounts — for financial/audit-sensitive actions; optional and
+   *  additive, every pre-STEP18 call site keeps working unchanged. */
+  async log(
+    action: string,
+    description: string,
+    entityType?: string,
+    entityId?: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
     try {
       const supabase = await createClient();
       const admin = await profileService.getCurrentAdmin();
@@ -31,6 +41,7 @@ export const activityService = {
         entity_type: entityType ?? null,
         entity_id: entityId ?? null,
         description,
+        metadata: metadata ?? null,
       });
     } catch (e) {
       console.error("activityService.log failed:", e);

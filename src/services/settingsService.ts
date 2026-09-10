@@ -53,6 +53,7 @@ function mapRowToSettings(row: any): WebsiteSettings {
     marketingDefaultCampaign: row.marketing_default_campaign ?? undefined,
     marketingAttributionWindowDays: row.marketing_attribution_window_days ?? 30,
     marketingDefaultLandingPage: row.marketing_default_landing_page ?? undefined,
+    defaultCommissionRate: row.default_commission_rate ?? undefined,
     updatedAt: row.updated_at,
   };
 }
@@ -118,6 +119,7 @@ export const settingsService = {
     if (input.marketingDefaultCampaign !== undefined) row.marketing_default_campaign = input.marketingDefaultCampaign || null;
     if (input.marketingAttributionWindowDays !== undefined) row.marketing_attribution_window_days = input.marketingAttributionWindowDays;
     if (input.marketingDefaultLandingPage !== undefined) row.marketing_default_landing_page = input.marketingDefaultLandingPage || null;
+    if (input.defaultCommissionRate !== undefined) row.default_commission_rate = input.defaultCommissionRate ?? null;
 
     const { data, error } = await supabase
       .from("website_settings")

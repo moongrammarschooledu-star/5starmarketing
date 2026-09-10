@@ -50,6 +50,10 @@ export interface WebsiteSettings {
   marketingDefaultCampaign?: string;
   marketingAttributionWindowDays: number;
   marketingDefaultLandingPage?: string;
+  // Deals (STEP 18) — a suggested default commission rate (%) admins
+  // can configure instead of one being hardcoded; still overridable
+  // per deal. Undefined until an admin sets it.
+  defaultCommissionRate?: number;
   updatedAt: string;
 }
 

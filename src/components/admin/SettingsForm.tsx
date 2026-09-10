@@ -158,6 +158,17 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
             </select>
           </label>
         </div>
+        <div className="mt-4 max-w-sm">
+          <Field
+            label="Default Commission Rate (%)"
+            name="defaultCommissionRate"
+            type="number"
+            defaultValue={settings.defaultCommissionRate ?? ""}
+          />
+          <p className="mt-1.5 text-xs text-muted">
+            Suggested when creating a deal — always overridable per deal. Leave blank to enter a rate manually every time.
+          </p>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">

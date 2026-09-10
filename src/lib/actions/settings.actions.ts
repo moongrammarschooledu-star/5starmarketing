@@ -53,6 +53,7 @@ export async function updateSettingsAction(
       appointmentMaxVisitors: numberOrUndefined(formData.get("appointmentMaxVisitors")),
       appointmentBookingNoticeHours: numberOrUndefined(formData.get("appointmentBookingNoticeHours")),
       leadAssignmentMethod: String(formData.get("leadAssignmentMethod") ?? "Manual") as WebsiteSettings["leadAssignmentMethod"],
+      defaultCommissionRate: numberOrUndefined(formData.get("defaultCommissionRate")),
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not save settings." };

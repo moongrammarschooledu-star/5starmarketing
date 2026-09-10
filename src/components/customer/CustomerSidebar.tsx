@@ -13,6 +13,8 @@ import {
   BookmarkCheck,
   UserCircle,
   LogOut,
+  Handshake,
+  Receipt,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -24,6 +26,8 @@ const navItems = [
   { href: "/compare", label: "Compare", icon: Scale },
   { href: "/customer/inquiries", label: "My Inquiries", icon: MessageSquare },
   { href: "/customer/appointments", label: "My Appointments", icon: CalendarClock },
+  { href: "/customer/deals", label: "My Deals", icon: Handshake },
+  { href: "/customer/payments", label: "My Payments", icon: Receipt },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

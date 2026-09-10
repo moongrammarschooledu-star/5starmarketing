@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, User, Building2, Info, MessageSquareText, AlertTriangle, Megaphone, Archive } from "lucide-react";
+import { ArrowLeft, User, Building2, Info, MessageSquareText, AlertTriangle, Megaphone, Archive, Handshake } from "lucide-react";
 import { leadService } from "@/services/leadService";
+import { dealService } from "@/services/dealService";
 import { communicationLogService } from "@/services/communicationLogService";
 import { whatsappService } from "@/services/whatsappService";
 import { settingsService } from "@/services/settingsService";
@@ -31,7 +32,7 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
   const lead = await leadService.getById(id);
   if (!lead) notFound();
 
-  const [property, project, notes, duplicates, templates, settings, admin, activity, assignableAgents, followUps, communications, assignmentHistory] =
+  const [property, project, notes, duplicates, templates, settings, admin, activity, assignableAgents, followUps, communications, assignmentHistory, existingDeal] =
     await Promise.all([
       lead.propertyId ? leadService.getLeadProperty(lead.propertyId) : Promise.resolve(undefined),
       lead.projectId ? leadService.getLeadProject(lead.projectId) : Promise.resolve(undefined),
@@ -45,9 +46,11 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
       followUpService.listByLead(lead.id),
       communicationLogService.listByLead(lead.id),
       leadService.listAssignmentHistory(lead.id),
+      dealService.getByLeadId(lead.id),
     ]);
 
   const canManage = admin ? canAccess(admin.role, "team") : false;
+  const canCreateDeal = admin ? canAccess(admin.role, "deals") : false;
 
   return (
     <div>
@@ -209,6 +212,14 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
         </div>
 
         <div className="space-y-6">
+          {canCreateDeal && (
+            <Link
+              href={existingDeal ? `/admin/deals/${existingDeal.id}` : `/admin/deals/new?lead=${lead.id}`}
+              className="flex items-center justify-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink/90"
+            >
+              <Handshake className="h-4 w-4" /> {existingDeal ? `View Deal ${existingDeal.dealNumber}` : "Create Deal"}
+            </Link>
+          )}
           <LeadStatusActionsPanel lead={lead} duplicates={duplicates} />
           <LeadActionsPanel
             lead={lead}

@@ -68,7 +68,13 @@ export type NotificationType =
   | "appointment_confirmed"
   | "appointment_rescheduled"
   | "appointment_cancelled"
-  | "appointment_completed";
+  | "appointment_completed"
+  // STEP 18 — Deals
+  | "deal_status_updated"
+  | "document_approved"
+  | "payment_due"
+  | "payment_overdue"
+  | "payment_received";
 
 export interface CustomerNotification {
   id: string;

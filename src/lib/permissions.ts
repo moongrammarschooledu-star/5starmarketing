@@ -19,7 +19,8 @@ export type AdminSection =
   | "brochures"
   | "team"
   | "followUps"
-  | "marketing";
+  | "marketing"
+  | "deals";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -41,11 +42,22 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "team",
     "followUps",
     "marketing",
+    "deals",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals"],
 };
+
+/** Fine-grained Deals capabilities (section 53-55) — the section-level
+ *  "deals" check above only gates overall visibility; these gate the
+ *  financially-sensitive actions within it. Deliberately code-level
+ *  (not a DB permissions table) since the existing RBAC model in this
+ *  codebase is role-based throughout, not a granular ACL system — this
+ *  mirrors that same approach for Deals specifically. */
+export function canManageDealFinancials(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
 
 export function canAccess(role: AdminRole, section: AdminSection): boolean {
   const sections = ROLE_SECTIONS[role] ?? [];

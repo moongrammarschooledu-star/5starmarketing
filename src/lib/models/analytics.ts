@@ -78,6 +78,9 @@ export interface ActivityLogEntry {
   entityType?: string;
   entityId?: string;
   description: string;
+  // STEP 18 — structured detail (old/new values, amounts) alongside the
+  // human-readable description. Undefined for every pre-STEP18 entry.
+  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 

@@ -77,6 +77,20 @@ function mapRowToLead(row: any): Lead {
     nextFollowUpTime: row.next_follow_up_time ?? undefined,
     assignedTo: row.assigned_to ?? undefined,
     assignedAgentId: row.assigned_agent_id ?? undefined,
+    campaignId: row.campaign_id ?? undefined,
+    campaignName: row.campaigns?.name ?? undefined,
+    firstTouchSource: row.first_touch_source ?? undefined,
+    firstTouchMedium: row.first_touch_medium ?? undefined,
+    firstTouchCampaign: row.first_touch_campaign ?? undefined,
+    firstTouchContent: row.first_touch_content ?? undefined,
+    firstTouchTerm: row.first_touch_term ?? undefined,
+    firstTouchLandingPage: row.first_touch_landing_page ?? undefined,
+    lastTouchSource: row.last_touch_source ?? undefined,
+    lastTouchMedium: row.last_touch_medium ?? undefined,
+    lastTouchCampaign: row.last_touch_campaign ?? undefined,
+    lastTouchContent: row.last_touch_content ?? undefined,
+    lastTouchTerm: row.last_touch_term ?? undefined,
+    lastTouchLandingPage: row.last_touch_landing_page ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -174,7 +188,7 @@ export const leadService = {
 
   async getById(id: string): Promise<Lead | undefined> {
     const supabase = await createClient();
-    const { data, error } = await supabase.from("leads").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await supabase.from("leads").select("*, campaigns(name)").eq("id", id).maybeSingle();
     if (error) {
       console.error("leadService.getById failed:", error);
       throw new Error("Could not load this lead.");
@@ -239,6 +253,13 @@ export const leadService = {
   // problem entirely rather than relaxing SELECT access for anon.
   async create(input: LeadInput): Promise<void> {
     const supabase = await createClient();
+
+    // campaign_id is resolved server-side by a security-definer trigger
+    // (resolve_lead_campaign_attribution) matching last/first-touch
+    // utm_campaign against campaigns.utm_campaign — not here, since an
+    // anonymous visitor's client can never read the campaigns table
+    // directly (its RLS is admin/manager-only, same reasoning as STEP
+    // 14's auto_assign_new_lead trigger).
     const { error } = await supabase.from("leads").insert({
       name: input.name,
       phone: input.phone,
@@ -251,6 +272,18 @@ export const leadService = {
       source: SOURCE_TO_DB[input.source],
       status: STATUS_TO_DB[input.status ?? "New"],
       consent: input.consent ?? false,
+      first_touch_source: input.firstTouchSource || null,
+      first_touch_medium: input.firstTouchMedium || null,
+      first_touch_campaign: input.firstTouchCampaign || null,
+      first_touch_content: input.firstTouchContent || null,
+      first_touch_term: input.firstTouchTerm || null,
+      first_touch_landing_page: input.firstTouchLandingPage || null,
+      last_touch_source: input.lastTouchSource || null,
+      last_touch_medium: input.lastTouchMedium || null,
+      last_touch_campaign: input.lastTouchCampaign || null,
+      last_touch_content: input.lastTouchContent || null,
+      last_touch_term: input.lastTouchTerm || null,
+      last_touch_landing_page: input.lastTouchLandingPage || null,
     });
 
     if (error) {

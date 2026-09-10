@@ -37,13 +37,30 @@ export interface Lead {
   nextFollowUpTime?: string;
   assignedTo?: string;
   assignedAgentId?: string;
+  // Marketing attribution (STEP 15) — captured once at creation from the
+  // visitor's client-side first/last-touch record; immutable afterward
+  // (locked at the database level, not just here).
+  campaignId?: string;
+  campaignName?: string;
+  firstTouchSource?: string;
+  firstTouchMedium?: string;
+  firstTouchCampaign?: string;
+  firstTouchContent?: string;
+  firstTouchTerm?: string;
+  firstTouchLandingPage?: string;
+  lastTouchSource?: string;
+  lastTouchMedium?: string;
+  lastTouchCampaign?: string;
+  lastTouchContent?: string;
+  lastTouchTerm?: string;
+  lastTouchLandingPage?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export type LeadInput = Omit<
   Lead,
-  "id" | "createdAt" | "updatedAt" | "status" | "consent"
+  "id" | "createdAt" | "updatedAt" | "status" | "consent" | "campaignId" | "campaignName"
 > & {
   status?: LeadStatus;
   consent?: boolean;

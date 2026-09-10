@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { reportService } from "@/services/reportService";
+import { campaignService } from "@/services/campaignService";
+import { marketingAnalyticsService } from "@/services/marketingAnalyticsService";
 import { resolveDateRange } from "@/services/analyticsService";
 import { toCsv } from "@/lib/csv";
 import type { DateRangeKey } from "@/lib/models/analytics";
@@ -15,13 +17,21 @@ async function requireReportsAccess() {
   return !!admin && canAccess(admin.role, "reports");
 }
 
-export async function GET(request: Request) {
-  if (!(await requireReportsAccess())) {
-    return NextResponse.json({ error: "Not authorized." }, { status: 401 });
-  }
+const MARKETING_REPORT_TYPES = new Set(["campaign-performance", "utm-sources", "utm-performance", "platform-performance", "cost-analysis", "conversion-funnel"]);
 
+async function requireMarketingAccess() {
+  const admin = await profileService.getCurrentAdmin();
+  return !!admin && canAccess(admin.role, "marketing");
+}
+
+export async function GET(request: Request) {
   const url = new URL(request.url);
   const type = url.searchParams.get("type");
+
+  const authorized = MARKETING_REPORT_TYPES.has(type ?? "") ? await requireMarketingAccess() : await requireReportsAccess();
+  if (!authorized) {
+    return NextResponse.json({ error: "Not authorized." }, { status: 401 });
+  }
   const rangeKey = (url.searchParams.get("range") as DateRangeKey) || "30d";
   const range = resolveDateRange(rangeKey, {
     from: url.searchParams.get("from") ?? undefined,
@@ -94,6 +104,71 @@ export async function GET(request: Request) {
       csv = toCsv(
         ["Source", "Leads", "Date Range"],
         sources.map((b) => [b.label, b.count, range.label])
+      );
+    } else if (type === "campaign-performance") {
+      const campaigns = await campaignService.list();
+      filename = "campaign-performance.csv";
+      const rows = await Promise.all(
+        campaigns.map(async (c) => {
+          const perf = await campaignService.performance(c.id, range);
+          return [c.name, c.platform, c.status, perf.leads, perf.qualifiedLeads, perf.siteVisits, perf.closedLeads, perf.leadConversionRate !== null ? `${Math.round(perf.leadConversionRate * 100)}%` : "No sufficient data"];
+        })
+      );
+      csv = toCsv(["Campaign", "Platform", "Status", "Leads", "Qualified Leads", "Site Visits", "Closed Leads", "Conversion Rate"], rows);
+    } else if (type === "utm-sources") {
+      const sources = await marketingAnalyticsService.sourcesReport(range);
+      filename = "lead-sources.csv";
+      csv = toCsv(
+        ["Source", "Visitors", "Leads", "Qualified Leads", "Site Visits", "Closed Leads", "Conversion Rate"],
+        sources.map((r) => [r.source, r.visitors, r.leads, r.qualifiedLeads, r.siteVisits, r.closedLeads, r.conversionRate !== null ? `${Math.round(r.conversionRate * 100)}%` : "No sufficient data"])
+      );
+    } else if (type === "utm-performance") {
+      const rows = await marketingAnalyticsService.utmPerformance(range);
+      filename = "utm-performance.csv";
+      csv = toCsv(
+        ["UTM Source", "UTM Medium", "UTM Campaign", "Leads", "Closed Leads"],
+        rows.map((r) => [r.source, r.medium, r.campaign, r.leads, r.closedLeads])
+      );
+    } else if (type === "platform-performance") {
+      const rows = await marketingAnalyticsService.platformPerformance();
+      filename = "platform-performance.csv";
+      csv = toCsv(
+        ["Platform", "Campaigns", "Leads", "Closed Leads"],
+        rows.map((r) => [r.platform, r.campaigns, r.leads, r.closedLeads])
+      );
+    } else if (type === "cost-analysis") {
+      const campaigns = await campaignService.list();
+      filename = "cost-analysis.csv";
+      const rows = await Promise.all(
+        campaigns.map(async (c) => {
+          const cost = await campaignService.cost(c.id);
+          return [
+            c.name,
+            cost.budget ?? "",
+            cost.spent ?? "",
+            cost.costPerLead !== null ? cost.costPerLead.toFixed(0) : "Not available",
+            cost.costPerQualifiedLead !== null ? cost.costPerQualifiedLead.toFixed(0) : "Not available",
+            cost.costPerSiteVisit !== null ? cost.costPerSiteVisit.toFixed(0) : "Not available",
+            cost.costPerClosedLead !== null ? cost.costPerClosedLead.toFixed(0) : "Not available",
+            cost.overBudget ? "Over Budget" : "On Track",
+          ];
+        })
+      );
+      csv = toCsv(["Campaign", "Budget", "Spent", "Cost/Lead", "Cost/Qualified Lead", "Cost/Site Visit", "Cost/Closed Lead", "Budget Status"], rows);
+    } else if (type === "conversion-funnel") {
+      const funnel = await marketingAnalyticsService.funnel(range);
+      filename = "conversion-funnel.csv";
+      csv = toCsv(
+        ["Stage", "Count", "Date Range"],
+        [
+          ["Visitors", funnel.visitors, range.label],
+          ["Property Views", funnel.propertyViews, range.label],
+          ["Inquiries", funnel.inquiries, range.label],
+          ["Qualified Leads", funnel.qualifiedLeads, range.label],
+          ["Site Visits", funnel.siteVisits, range.label],
+          ["Negotiations", funnel.negotiations, range.label],
+          ["Closed Leads", funnel.closedLeads, range.label],
+        ]
       );
     } else {
       return NextResponse.json({ error: "Unknown report type." }, { status: 400 });

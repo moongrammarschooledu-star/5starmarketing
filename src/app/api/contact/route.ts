@@ -43,8 +43,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
   }
 
-  const { name, phone, whatsapp, email, message, property, propertyId, consent, source, company } =
-    body as Record<string, unknown>;
+  const {
+    name,
+    phone,
+    whatsapp,
+    email,
+    message,
+    property,
+    propertyId,
+    consent,
+    source,
+    company,
+    firstTouchSource,
+    firstTouchMedium,
+    firstTouchCampaign,
+    firstTouchContent,
+    firstTouchTerm,
+    firstTouchLandingPage,
+    lastTouchSource,
+    lastTouchMedium,
+    lastTouchCampaign,
+    lastTouchContent,
+    lastTouchTerm,
+    lastTouchLandingPage,
+  } = body as Record<string, unknown>;
+
+  // Attribution is optional, visitor-supplied context — never trusted
+  // beyond "is this a plain string", and stored as-is (it only ever
+  // drives internal marketing reporting, never anything security-sensitive).
+  const str = (v: unknown): string | undefined => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 
   // Honeypot: a hidden field real visitors never fill in. Bots that
   // auto-fill every field trip it — respond as if it worked so they don't
@@ -114,6 +141,18 @@ export async function POST(request: Request) {
       message: message.trim(),
       source: resolvedSource,
       consent: consent === true || consent === "on" || consent === "true",
+      firstTouchSource: str(firstTouchSource),
+      firstTouchMedium: str(firstTouchMedium),
+      firstTouchCampaign: str(firstTouchCampaign),
+      firstTouchContent: str(firstTouchContent),
+      firstTouchTerm: str(firstTouchTerm),
+      firstTouchLandingPage: str(firstTouchLandingPage),
+      lastTouchSource: str(lastTouchSource),
+      lastTouchMedium: str(lastTouchMedium),
+      lastTouchCampaign: str(lastTouchCampaign),
+      lastTouchContent: str(lastTouchContent),
+      lastTouchTerm: str(lastTouchTerm),
+      lastTouchLandingPage: str(lastTouchLandingPage),
     });
     if (customerId) {
       await notificationService.notify(

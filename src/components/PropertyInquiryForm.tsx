@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Send, CheckCircle2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { getAttributionPayload } from "@/lib/attribution";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -64,6 +65,7 @@ export function PropertyInquiryForm({
           property: propertyTitle,
           propertyId,
           source: "Property Page",
+          ...getAttributionPayload(),
         }),
       });
       const json = await res.json().catch(() => null);

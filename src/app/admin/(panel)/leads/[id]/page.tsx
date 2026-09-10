@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, User, Building2, Info, MessageSquareText, AlertTriangle } from "lucide-react";
+import { ArrowLeft, User, Building2, Info, MessageSquareText, AlertTriangle, Megaphone } from "lucide-react";
 import { leadService } from "@/services/leadService";
 import { whatsappService } from "@/services/whatsappService";
 import { settingsService } from "@/services/settingsService";
@@ -154,6 +154,25 @@ export default async function AdminLeadDetailPage({
               {lead.message || "—"}
             </p>
           </div>
+
+          {(lead.campaignName || lead.firstTouchSource || lead.lastTouchSource) && (
+            <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+              <h2 className="flex items-center gap-2 font-heading text-base font-bold text-ink">
+                <Megaphone className="h-4.5 w-4.5 text-primary" /> Marketing Attribution
+              </h2>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {lead.campaignName && <Row label="Campaign" value={lead.campaignName} />}
+                <Row label="First Source" value={lead.firstTouchSource ?? "—"} />
+                <Row label="First Medium" value={lead.firstTouchMedium ?? "—"} />
+                <Row label="First Campaign" value={lead.firstTouchCampaign ?? "—"} />
+                <Row label="First Landing Page" value={lead.firstTouchLandingPage ?? "—"} />
+                <Row label="Last Source" value={lead.lastTouchSource ?? "—"} />
+                <Row label="Last Medium" value={lead.lastTouchMedium ?? "—"} />
+                <Row label="Last Campaign" value={lead.lastTouchCampaign ?? "—"} />
+                <Row label="Last Landing Page" value={lead.lastTouchLandingPage ?? "—"} />
+              </div>
+            </div>
+          )}
 
           <LeadFollowUps leadId={lead.id} followUps={followUps} agentId={lead.assignedAgentId ?? ""} />
 

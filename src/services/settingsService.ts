@@ -48,6 +48,11 @@ function mapRowToSettings(row: any): WebsiteSettings {
     appointmentMaxVisitors: row.appointment_max_visitors ?? 10,
     appointmentBookingNoticeHours: row.appointment_booking_notice_hours ?? 2,
     leadAssignmentMethod: row.lead_assignment_method ?? "Manual",
+    marketingDefaultUtmSource: row.marketing_default_utm_source ?? undefined,
+    marketingDefaultUtmMedium: row.marketing_default_utm_medium ?? undefined,
+    marketingDefaultCampaign: row.marketing_default_campaign ?? undefined,
+    marketingAttributionWindowDays: row.marketing_attribution_window_days ?? 30,
+    marketingDefaultLandingPage: row.marketing_default_landing_page ?? undefined,
     updatedAt: row.updated_at,
   };
 }
@@ -108,6 +113,11 @@ export const settingsService = {
     if (input.appointmentBookingNoticeHours !== undefined)
       row.appointment_booking_notice_hours = input.appointmentBookingNoticeHours;
     if (input.leadAssignmentMethod !== undefined) row.lead_assignment_method = input.leadAssignmentMethod;
+    if (input.marketingDefaultUtmSource !== undefined) row.marketing_default_utm_source = input.marketingDefaultUtmSource || null;
+    if (input.marketingDefaultUtmMedium !== undefined) row.marketing_default_utm_medium = input.marketingDefaultUtmMedium || null;
+    if (input.marketingDefaultCampaign !== undefined) row.marketing_default_campaign = input.marketingDefaultCampaign || null;
+    if (input.marketingAttributionWindowDays !== undefined) row.marketing_attribution_window_days = input.marketingAttributionWindowDays;
+    if (input.marketingDefaultLandingPage !== undefined) row.marketing_default_landing_page = input.marketingDefaultLandingPage || null;
 
     const { data, error } = await supabase
       .from("website_settings")

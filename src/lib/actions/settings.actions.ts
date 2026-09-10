@@ -61,3 +61,24 @@ export async function updateSettingsAction(
   revalidatePath("/admin/settings");
   return { success: true };
 }
+
+export async function updateMarketingSettingsAction(
+  _prevState: SettingsFormState,
+  formData: FormData
+): Promise<SettingsFormState> {
+  try {
+    await settingsService.update({
+      marketingDefaultUtmSource: String(formData.get("marketingDefaultUtmSource") ?? "").trim() || undefined,
+      marketingDefaultUtmMedium: String(formData.get("marketingDefaultUtmMedium") ?? "").trim() || undefined,
+      marketingDefaultCampaign: String(formData.get("marketingDefaultCampaign") ?? "").trim() || undefined,
+      marketingAttributionWindowDays: numberOrUndefined(formData.get("marketingAttributionWindowDays")) ?? 30,
+      marketingDefaultLandingPage: String(formData.get("marketingDefaultLandingPage") ?? "").trim() || undefined,
+      whatsapp: String(formData.get("whatsapp") ?? "").trim() || undefined,
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not save marketing settings." };
+  }
+
+  revalidatePath("/admin/settings/marketing");
+  return { success: true };
+}

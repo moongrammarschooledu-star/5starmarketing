@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { getOrCreateSessionId } from "@/lib/session";
 import { recordPropertyViewAction } from "@/lib/actions/analytics.actions";
+import { recordCampaignEventAction } from "@/lib/actions/marketing.actions";
+import { getAttribution } from "@/lib/attribution";
 
 /** Fires a `property_view` analytics event once per page load — kept as
  *  its own tiny client component so the property detail page itself can
@@ -11,7 +13,20 @@ import { recordPropertyViewAction } from "@/lib/actions/analytics.actions";
 export function PropertyViewTracker({ propertyId, propertyType, locationArea }: { propertyId: string; propertyType: string; locationArea: string }) {
   useEffect(() => {
     trackEvent("property_view", { property_id: propertyId, property_type: propertyType, location: locationArea });
-    recordPropertyViewAction(propertyId, getOrCreateSessionId());
+    const sessionId = getOrCreateSessionId();
+    recordPropertyViewAction(propertyId, sessionId);
+    const { lastTouch } = getAttribution();
+    if (lastTouch) {
+      recordCampaignEventAction("property_view", {
+        propertyId,
+        sessionId,
+        utmSource: lastTouch.source,
+        utmMedium: lastTouch.medium,
+        utmCampaign: lastTouch.campaign,
+        utmContent: lastTouch.content,
+        utmTerm: lastTouch.term,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 

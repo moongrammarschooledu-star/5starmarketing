@@ -6,6 +6,7 @@ import { settingsService } from "@/services/settingsService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JsonLd } from "@/components/JsonLd";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { AttributionTracker } from "@/components/AttributionTracker";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -114,6 +115,7 @@ export default async function RootLayout({
       <body className={`${poppins.variable} ${inter.variable} antialiased`}>
         <JsonLd data={localBusinessJsonLd} />
         <JsonLd data={websiteJsonLd} />
+        <AttributionTracker attributionWindowDays={settings?.marketingAttributionWindowDays ?? 30} />
         {children}
         <GoogleAnalytics />
       </body>

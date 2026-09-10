@@ -6,6 +6,7 @@ import { SectionHeading } from "./SectionHeading";
 import { site, whatsappLink } from "@/lib/site";
 import { trackEvent } from "@/lib/analytics";
 import { getOrCreateSessionId } from "@/lib/session";
+import { getAttributionPayload } from "@/lib/attribution";
 import { recordWebsiteEventAction } from "@/lib/actions/analytics.actions";
 
 const interests = [
@@ -55,7 +56,7 @@ export function Contact() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, source: "Website" }),
+        body: JSON.stringify({ ...data, source: "Website", ...getAttributionPayload() }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");

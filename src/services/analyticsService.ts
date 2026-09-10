@@ -165,7 +165,7 @@ export const analyticsService = {
       return { hasEnoughData: false, totalLeads: total, contactRate: null, interestRate: null, leadConversionRate: null, closedLeadRate: null };
     }
     const beyondNew = rows.filter((r) => r.status !== "new").length;
-    const reachedInterested = rows.filter((r) => ["interested", "follow_up", "closed"].includes(r.status)).length;
+    const reachedInterested = rows.filter((r) => ["interested", "follow_up", "site_visit", "negotiation", "closed"].includes(r.status)).length;
     const closed = rows.filter((r) => r.status === "closed").length;
     const lost = rows.filter((r) => r.status === "lost").length;
     const decided = closed + lost;

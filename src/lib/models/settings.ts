@@ -42,6 +42,14 @@ export interface WebsiteSettings {
   // lead is ever auto-assigned; the admin explicitly opts into
   // 'Round Robin' or 'Least Assigned Leads'.
   leadAssignmentMethod: "Manual" | "Round Robin" | "Least Assigned Leads";
+  // Marketing / Attribution (STEP 15). marketingWhatsappNumber
+  // deliberately reuses the `whatsapp` field above rather than
+  // duplicating it — see settingsService.
+  marketingDefaultUtmSource?: string;
+  marketingDefaultUtmMedium?: string;
+  marketingDefaultCampaign?: string;
+  marketingAttributionWindowDays: number;
+  marketingDefaultLandingPage?: string;
   updatedAt: string;
 }
 

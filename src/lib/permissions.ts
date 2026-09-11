@@ -63,6 +63,13 @@ export function canManageDealFinancials(role: AdminRole): boolean {
   return role === "super_admin" || role === "admin" || role === "sales_manager";
 }
 
+/** Marketing Automation (STEP 21) — rules/workflows/templates editing is
+ *  restricted the same way deal financials are; same code-level,
+ *  role-based (not a granular ACL) philosophy as the rest of this app. */
+export function canManageMarketingAutomation(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
 export function canAccess(role: AdminRole, section: AdminSection): boolean {
   const sections = ROLE_SECTIONS[role] ?? [];
   return sections === "*" || sections.includes(section);

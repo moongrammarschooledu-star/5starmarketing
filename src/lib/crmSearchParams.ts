@@ -2,6 +2,8 @@ import type { LeadStatus, LeadPriority, LeadSource, LeadType, LeadPurpose } from
 import { leadStatuses, leadPriorities, leadSources, leadTypes, leadPurposes } from "./models/lead";
 import type { LeadSearchFilters, FollowUpDueFilter } from "./models/crm";
 import { DEFAULT_LEAD_PAGE_SIZE, MAX_LEAD_PAGE_SIZE } from "./models/crm";
+import type { ScoreLevel } from "./models/leadScoring";
+import { scoreLevels } from "./models/leadScoring";
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
@@ -43,11 +45,13 @@ export function parseCrmSearchParams(sp: RawSearchParams): LeadSearchFilters {
   const followUpDue = FOLLOW_UP_DUE_VALUES.includes(followUpDueRaw as FollowUpDueFilter) ? (followUpDueRaw as FollowUpDueFilter) : undefined;
   const dateFrom = one(sp.from)?.trim().slice(0, 10) || undefined;
   const dateTo = one(sp.to)?.trim().slice(0, 10) || undefined;
+  const scoreLevel = scoreLevels.includes(one(sp.score_level) as ScoreLevel) ? (one(sp.score_level) as ScoreLevel) : undefined;
+  const tagId = one(sp.tag)?.trim().slice(0, 100) || undefined;
 
   const page = Math.max(1, num(one(sp.page), { min: 1, max: 100000 }) ?? 1);
   const pageSize = Math.min(MAX_LEAD_PAGE_SIZE, Math.max(1, num(one(sp.page_size), { min: 1, max: MAX_LEAD_PAGE_SIZE }) ?? DEFAULT_LEAD_PAGE_SIZE));
 
-  return { q, status, priority, source, leadType, purpose, agentId, unassigned, campaignId, propertyId, projectId, propertyType, followUpDue, dateFrom, dateTo, page, pageSize };
+  return { q, status, priority, source, leadType, purpose, agentId, unassigned, campaignId, propertyId, projectId, propertyType, followUpDue, dateFrom, dateTo, scoreLevel, tagId, page, pageSize };
 }
 
 /** Inverse of parseCrmSearchParams — used for pagination links and CSV
@@ -69,6 +73,8 @@ export function buildCrmSearchQuery(filters: LeadSearchFilters): URLSearchParams
   if (filters.followUpDue) params.set("follow_up", filters.followUpDue);
   if (filters.dateFrom) params.set("from", filters.dateFrom);
   if (filters.dateTo) params.set("to", filters.dateTo);
+  if (filters.scoreLevel) params.set("score_level", filters.scoreLevel);
+  if (filters.tagId) params.set("tag", filters.tagId);
   if (filters.page && filters.page > 1) params.set("page", String(filters.page));
   return params;
 }

@@ -9,6 +9,9 @@ import { settingsService } from "@/services/settingsService";
 import { profileService } from "@/services/profileService";
 import { teamService } from "@/services/teamService";
 import { followUpService } from "@/services/followUpService";
+import { leadScoringService } from "@/services/leadScoringService";
+import { marketingTagService } from "@/services/marketingTagService";
+import { LeadScorePanel } from "@/components/admin/marketing/LeadScorePanel";
 import { LeadActionsPanel } from "@/components/admin/LeadActionsPanel";
 import { LeadNotes } from "@/components/admin/LeadNotes";
 import { LeadFollowUps } from "@/components/admin/LeadFollowUps";
@@ -32,7 +35,7 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
   const lead = await leadService.getById(id);
   if (!lead) notFound();
 
-  const [property, project, notes, duplicates, templates, settings, admin, activity, assignableAgents, followUps, communications, assignmentHistory, existingDeal] =
+  const [property, project, notes, duplicates, templates, settings, admin, activity, assignableAgents, followUps, communications, assignmentHistory, existingDeal, scoreHistory, allTags, leadTags] =
     await Promise.all([
       lead.propertyId ? leadService.getLeadProperty(lead.propertyId) : Promise.resolve(undefined),
       lead.projectId ? leadService.getLeadProject(lead.projectId) : Promise.resolve(undefined),
@@ -47,6 +50,9 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
       communicationLogService.listByLead(lead.id),
       leadService.listAssignmentHistory(lead.id),
       dealService.getByLeadId(lead.id),
+      leadScoringService.listHistory(lead.id),
+      marketingTagService.list(),
+      marketingTagService.listForLead(lead.id),
     ]);
 
   const canManage = admin ? canAccess(admin.role, "team") : false;
@@ -225,6 +231,7 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
               <Handshake className="h-4 w-4" /> {existingDeal ? `View Deal ${existingDeal.dealNumber}` : "Create Deal"}
             </Link>
           )}
+          <LeadScorePanel lead={lead} history={scoreHistory} allTags={allTags} leadTags={leadTags} />
           <LeadStatusActionsPanel lead={lead} duplicates={duplicates} />
           <LeadActionsPanel
             lead={lead}

@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Customer, CustomerProfileInput, CustomerSummary } from "@/lib/models/customer";
+import type { Customer, CustomerProfileInput, CustomerConsentInput, CustomerSummary } from "@/lib/models/customer";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(row: any): Customer {
@@ -12,6 +12,10 @@ function mapRow(row: any): Customer {
     whatsapp: row.whatsapp ?? undefined,
     profileImage: row.profile_image ?? undefined,
     disabled: !!row.disabled,
+    emailOptIn: row.email_opt_in ?? true,
+    whatsappOptIn: row.whatsapp_opt_in ?? true,
+    smsOptIn: row.sms_opt_in ?? true,
+    marketingOptIn: row.marketing_opt_in ?? true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -56,6 +60,23 @@ export const customerService = {
       console.error("customerService.updateProfile failed:", error);
       throw new Error("Could not update your profile.");
     }
+  },
+
+  /** Communication preferences (section 32) — a customer opting out here
+   *  only affects marketing sends; transactional notifications (deal/
+   *  payment/document updates) follow their own separate rules. */
+  async updateConsent(input: CustomerConsentInput): Promise<void> {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not signed in.");
+
+    const { error } = await supabase
+      .from("customer_profiles")
+      .update({ email_opt_in: input.emailOptIn, whatsapp_opt_in: input.whatsappOptIn, sms_opt_in: input.smsOptIn, marketing_opt_in: input.marketingOptIn })
+      .eq("id", user.id);
+    if (error) throw new Error("Could not update your communication preferences.");
   },
 
   async updateEmail(newEmail: string): Promise<void> {

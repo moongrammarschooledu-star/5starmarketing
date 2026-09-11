@@ -76,6 +76,9 @@ export async function updateMarketingSettingsAction(
       marketingAttributionWindowDays: numberOrUndefined(formData.get("marketingAttributionWindowDays")) ?? 30,
       marketingDefaultLandingPage: String(formData.get("marketingDefaultLandingPage") ?? "").trim() || undefined,
       whatsapp: String(formData.get("whatsapp") ?? "").trim() || undefined,
+      leadScoreThresholdWarm: numberOrUndefined(formData.get("leadScoreThresholdWarm")) ?? 20,
+      leadScoreThresholdHot: numberOrUndefined(formData.get("leadScoreThresholdHot")) ?? 40,
+      leadScoreThresholdVeryHot: numberOrUndefined(formData.get("leadScoreThresholdVeryHot")) ?? 70,
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not save marketing settings." };

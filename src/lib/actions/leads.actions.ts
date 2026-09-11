@@ -6,6 +6,7 @@ import { profileService } from "@/services/profileService";
 import { activityService } from "@/services/activityService";
 import { notificationService } from "@/services/notificationService";
 import { staffNotificationService } from "@/services/staffNotificationService";
+import { automationService } from "@/services/automationService";
 import type { LeadStatus } from "@/lib/models/lead";
 
 /** Fired from the property WhatsApp-inquiry buttons so the click shows up
@@ -76,6 +77,17 @@ export async function updateLeadStatusAction(id: string, status: LeadStatus) {
           "lead",
           id
         );
+      }
+      // Marketing Automation (STEP 21) — best-effort, never blocks the
+      // status update itself. "Qualified" reuses "Interested" (same
+      // display-mapping convention as crmStatusLabel).
+      try {
+        await automationService.executeTrigger("LEAD_STATUS_CHANGED", { leadId: id, newStatus: status });
+        if (status === "Interested") {
+          await automationService.scheduleFollowUpsFor("LEAD_QUALIFIED", id);
+        }
+      } catch (e) {
+        console.error("updateLeadStatusAction: marketing automation failed:", e);
       }
     }
     revalidateAll();

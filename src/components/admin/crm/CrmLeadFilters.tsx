@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X, Download } from "lucide-react";
 import { leadStatuses, leadPriorities, leadSources, leadTypes, leadPurposes } from "@/lib/models/lead";
 import type { LeadSearchFilters } from "@/lib/models/crm";
+import { scoreLevels, scoreLevelLabels } from "@/lib/models/leadScoring";
 
 const ALL = "";
 
@@ -45,7 +46,19 @@ export function CrmLeadFilters({
   }
 
   const hasFilters =
-    filters.status || filters.priority || filters.source || filters.leadType || filters.purpose || filters.agentId || filters.unassigned || filters.followUpDue || filters.dateFrom || filters.dateTo || filters.q;
+    filters.status ||
+    filters.priority ||
+    filters.source ||
+    filters.leadType ||
+    filters.purpose ||
+    filters.agentId ||
+    filters.unassigned ||
+    filters.followUpDue ||
+    filters.dateFrom ||
+    filters.dateTo ||
+    filters.scoreLevel ||
+    filters.tagId ||
+    filters.q;
 
   const exportParams = new URLSearchParams(searchParams.toString());
   exportParams.delete("page");
@@ -105,6 +118,21 @@ export function CrmLeadFilters({
           <Select label="Source" value={filters.source ?? ALL} onChange={(v) => update({ source: v })} options={leadSources} />
           <Select label="Lead Type" value={filters.leadType ?? ALL} onChange={(v) => update({ type: v })} options={leadTypes} />
           <Select label="Purpose" value={filters.purpose ?? ALL} onChange={(v) => update({ purpose: v })} options={leadPurposes} />
+          <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
+            Score Level
+            <select
+              value={filters.scoreLevel ?? ALL}
+              onChange={(e) => update({ score_level: e.target.value || undefined })}
+              className="rounded-lg border border-border bg-surface px-2.5 py-2 text-sm font-medium text-ink outline-none focus:border-primary"
+            >
+              <option value={ALL}>All</option>
+              {scoreLevels.map((s) => (
+                <option key={s} value={s}>
+                  {scoreLevelLabels[s]}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
             Agent
             <select

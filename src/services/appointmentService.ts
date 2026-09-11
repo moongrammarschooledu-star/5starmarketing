@@ -5,6 +5,8 @@ import { propertyService } from "./propertyService";
 import { leadService } from "./leadService";
 import { activityService } from "./activityService";
 import { notificationService } from "./notificationService";
+import { automationService } from "./automationService";
+import { leadScoringService } from "./leadScoringService";
 import type {
   Appointment,
   AppointmentInput,
@@ -275,6 +277,20 @@ export const appointmentService = {
       console.error("appointmentService.create: CRM linking failed (appointment still saved):", e);
     }
 
+    // Marketing Automation (STEP 21) — best-effort, never blocks the
+    // site visit request itself.
+    if (appointment.leadId) {
+      try {
+        const scoreChange = await leadScoringService.applyEvent(appointment.leadId, "SITE_VISIT_REQUESTED");
+        await automationService.executeTrigger("SITE_VISIT_BOOKED", { leadId: appointment.leadId, appointmentId: appointment.id });
+        if (scoreChange && scoreChange.newLevel !== scoreChange.previousLevel) {
+          await automationService.executeTrigger("LEAD_SCORE_CHANGED", { leadId: appointment.leadId, scoreLevel: scoreChange.newLevel, previousScoreLevel: scoreChange.previousLevel });
+        }
+      } catch (e) {
+        console.error("appointmentService.create: marketing automation failed:", e);
+      }
+    }
+
     await supabase.from("appointment_history").insert({
       appointment_id: appointment.id,
       changed_by: input.customerId ? "Customer" : "Website",
@@ -446,6 +462,15 @@ export const appointmentService = {
       await notificationService.notify(updated.customerId, n.type, n.title, n.message, "appointment", id);
     }
     await activityService.log("Updated Appointment", `${updated.name} → ${status}`, "appointment", id);
+
+    if (status === "Completed" && updated.leadId) {
+      try {
+        await automationService.executeTrigger("SITE_VISIT_COMPLETED", { leadId: updated.leadId, appointmentId: id });
+        await automationService.scheduleFollowUpsFor("SITE_VISIT_COMPLETED", updated.leadId);
+      } catch (e) {
+        console.error("appointmentService.updateStatus: marketing automation failed:", e);
+      }
+    }
 
     return updated;
   },

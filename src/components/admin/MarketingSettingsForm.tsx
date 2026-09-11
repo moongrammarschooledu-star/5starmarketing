@@ -56,6 +56,19 @@ export function MarketingSettingsForm({ settings }: { settings: WebsiteSettings 
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Lead Score Thresholds</h2>
+        <p className="mt-1 text-xs text-muted">
+          A lead&apos;s score (see Marketing → Automation → Rules) determines its level, which drives its suggested priority and SLA. A
+          lead below the Warm threshold stays Cold.
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Warm at" name="leadScoreThresholdWarm" type="number" defaultValue={String(settings.leadScoreThresholdWarm)} />
+          <Field label="Hot at" name="leadScoreThresholdHot" type="number" defaultValue={String(settings.leadScoreThresholdHot)} />
+          <Field label="Very Hot at" name="leadScoreThresholdVeryHot" type="number" defaultValue={String(settings.leadScoreThresholdVeryHot)} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="font-heading text-base font-bold text-ink">WhatsApp Number</h2>
         <p className="mt-1 text-xs text-muted">Shared with Business Information in Website Settings — updating it here updates it everywhere.</p>
         <div className="mt-4 max-w-xs">

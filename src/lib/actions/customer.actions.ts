@@ -83,6 +83,26 @@ export async function updateCustomerProfileAction(
   return { success: true };
 }
 
+/** Communication preferences (STEP 21, section 32) — a customer's own
+ *  opt-in/opt-out choices for marketing sends. */
+export async function updateCustomerConsentAction(
+  _prevState: CustomerProfileState,
+  formData: FormData
+): Promise<CustomerProfileState> {
+  try {
+    await customerService.updateConsent({
+      emailOptIn: formData.get("emailOptIn") === "on",
+      whatsappOptIn: formData.get("whatsappOptIn") === "on",
+      smsOptIn: formData.get("smsOptIn") === "on",
+      marketingOptIn: formData.get("marketingOptIn") === "on",
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not update your communication preferences." };
+  }
+  revalidatePath("/customer/profile");
+  return { success: true };
+}
+
 export async function updateCustomerEmailAction(
   _prevState: CustomerProfileState,
   formData: FormData

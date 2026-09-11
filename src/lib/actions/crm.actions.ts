@@ -6,6 +6,7 @@ import { communicationLogService } from "@/services/communicationLogService";
 import { profileService } from "@/services/profileService";
 import { activityService } from "@/services/activityService";
 import { notificationService } from "@/services/notificationService";
+import { automationService } from "@/services/automationService";
 import { canAccess } from "@/lib/permissions";
 import type { LeadPriority, LeadType, LeadPurpose, LostReason } from "@/lib/models/lead";
 import type { CommunicationType, CommunicationDirection } from "@/lib/models/crm";
@@ -43,6 +44,14 @@ export async function markLeadConvertedAction(id: string) {
         "lead",
         id
       );
+    }
+    // Marketing Automation (STEP 21, section 68) — preserves attribution
+    // (already immutable at the DB level), fires a conversion event, and
+    // is the one trigger allowed to run even on a Closed lead.
+    try {
+      await automationService.executeTrigger("LEAD_CONVERTED", { leadId: id });
+    } catch (e) {
+      console.error("markLeadConvertedAction: marketing automation failed:", e);
     }
   }
   revalidateLead(id);

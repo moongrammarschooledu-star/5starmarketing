@@ -44,6 +44,7 @@ export function CrmLeadsTable({
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Priority</th>
+              <th className="px-4 py-3">Score</th>
               <th className="px-4 py-3">Agent</th>
               <th className="px-4 py-3">Follow-Up</th>
               <th className="px-4 py-3">Created</th>
@@ -53,7 +54,7 @@ export function CrmLeadsTable({
           <tbody>
             {leads.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-10 text-center text-muted">
+                <td colSpan={11} className="px-4 py-10 text-center text-muted">
                   No leads match those filters.
                 </td>
               </tr>
@@ -86,6 +87,9 @@ export function CrmLeadsTable({
                 </td>
                 <td className="px-4 py-3">
                   <PriorityBadge priority={l.priority} />
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={l.scoreLevel} /> <span className="ml-1 text-xs text-muted">{l.score}</span>
                 </td>
                 <td className="px-4 py-3 text-xs text-muted">{l.assignedTo || "Unassigned"}</td>
                 <td className="px-4 py-3 text-xs text-muted">
@@ -145,6 +149,7 @@ export function CrmLeadsTable({
                 <Phone className="h-3.5 w-3.5 text-primary" /> {l.phone}
               </span>
               <PriorityBadge priority={l.priority} />
+              <StatusBadge status={l.scoreLevel} />
               <span className="rounded-full bg-ink/5 px-2 py-0.5 font-bold text-ink">{l.leadType}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">

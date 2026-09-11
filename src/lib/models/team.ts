@@ -15,6 +15,11 @@ export interface FollowUp {
   status: FollowUpStatus;
   createdAt: string;
   updatedAt: string;
+  // Marketing Automation (STEP 21) — "automation" follow-ups share an
+  // automationGroupKey (lead + trigger event) so completing/cancelling
+  // any one of them auto-cancels the rest of the same cascade.
+  source: "manual" | "automation";
+  automationGroupKey?: string;
   // Joined-in, read-only context for list views — not persisted here.
   leadName?: string;
   leadPhone?: string;
@@ -22,7 +27,10 @@ export interface FollowUp {
   agentName?: string;
 }
 
-export type FollowUpInput = Pick<FollowUp, "leadId" | "assignedAgentId" | "followUpDate" | "followUpTime" | "type" | "note">;
+export type FollowUpInput = Pick<FollowUp, "leadId" | "assignedAgentId" | "followUpDate" | "followUpTime" | "type" | "note"> & {
+  source?: "manual" | "automation";
+  automationGroupKey?: string;
+};
 
 /** Staff-facing notifications — distinct from the customer-facing
  *  CustomerNotification model; these point at admin_profiles.id. */
@@ -38,7 +46,10 @@ export type StaffNotificationType =
   | "inventory_reservation_expiring"
   | "inventory_released"
   | "inventory_booked"
-  | "inventory_sold";
+  | "inventory_sold"
+  // STEP 21 — Marketing Automation
+  | "sla_breached"
+  | "automation_alert";
 
 export interface StaffNotification {
   id: string;

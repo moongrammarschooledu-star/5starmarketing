@@ -150,6 +150,31 @@ export default async function AdminMarketingDashboardPage({
           Marketing Settings
         </Link>
       </div>
+
+      <div className="mt-8 rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">Lead Conversion Automation</h2>
+        <p className="mt-1 text-sm text-muted">Scoring, SLA alerts, automated follow-ups and workflows connecting marketing activity to CRM and deals.</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link href="/admin/marketing/dashboard" className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
+            Conversion Dashboard
+          </Link>
+          <Link href="/admin/marketing/leads" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+            Scored Leads
+          </Link>
+          <Link href="/admin/marketing/automation" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+            Automation
+          </Link>
+          <Link href="/admin/marketing/templates" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+            Templates
+          </Link>
+          <Link href="/admin/marketing/audience" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+            Audience
+          </Link>
+          <Link href="/admin/marketing/analytics" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+            Automation Analytics
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

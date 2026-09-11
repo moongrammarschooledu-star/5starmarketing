@@ -57,6 +57,11 @@ export interface WebsiteSettings {
   // Documents (STEP 20) — off by default so existing/in-flight deals
   // are never retroactively blocked from completing.
   requireDocumentsForDealCompletion: boolean;
+  // Lead Scoring (STEP 21) — configurable score-level thresholds; see
+  // leadScoringService/the apply_lead_signals DB trigger.
+  leadScoreThresholdWarm: number;
+  leadScoreThresholdHot: number;
+  leadScoreThresholdVeryHot: number;
   updatedAt: string;
 }
 

@@ -117,6 +117,10 @@ function mapRowToLead(row: any): Lead {
     convertedByName: row.converted_by_admin?.name ?? undefined,
     archived: !!row.archived,
     archivedAt: row.archived_at ?? undefined,
+    score: row.score ?? 0,
+    scoreLevel: (row.score_level as Lead["scoreLevel"]) ?? "COLD",
+    autoPriority: row.auto_priority ?? undefined,
+    tags: Array.isArray(row.lead_tags) ? row.lead_tags.map((t: { marketing_tags?: { name?: string } }) => t.marketing_tags?.name).filter((n: string | undefined): n is string => !!n) : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -176,6 +180,7 @@ function buildLeadFilteredQuery(query: any, filters: LeadSearchFilters, includeA
   if (filters.propertyType) query = query.eq("preferred_property_type", filters.propertyType);
   if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
   if (filters.dateTo) query = query.lt("created_at", filters.dateTo);
+  if (filters.scoreLevel) query = query.eq("score_level", filters.scoreLevel);
 
   if (filters.followUpDue) {
     const today = todayISO();
@@ -198,6 +203,10 @@ export const leadService = {
     const supabase = await createClient();
 
     let query = buildLeadFilteredQuery(supabase.from("leads").select("*, campaigns(name), projects(name)", { count: "exact" }), filters);
+    if (filters.tagId) {
+      const { data: tagged } = await supabase.from("lead_tags").select("lead_id").eq("tag_id", filters.tagId);
+      query = query.in("id", (tagged ?? []).map((t) => t.lead_id));
+    }
     query = query.order("created_at", { ascending: false });
 
     const from = (page - 1) * pageSize;
@@ -296,7 +305,7 @@ export const leadService = {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("leads")
-      .select("*, campaigns(name), projects(name), converted_by_admin:admin_profiles!leads_converted_by_fkey(name)")
+      .select("*, campaigns(name), projects(name), converted_by_admin:admin_profiles!leads_converted_by_fkey(name), lead_tags(marketing_tags(name))")
       .eq("id", id)
       .maybeSingle();
     if (error) {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, MessageCircle, CalendarClock } from "lucide-react";
 import { dealService } from "@/services/dealService";
+import { automationService } from "@/services/automationService";
 import { formatPKR } from "@/lib/calculator";
 import { formatDateOnly } from "@/lib/date";
 import { whatsappUrlFor } from "@/lib/site";
@@ -16,6 +17,16 @@ export default async function OverduePaymentsPage() {
   let loadError: string | null = null;
   try {
     rows = await dealService.listOverduePayments();
+    // Marketing Automation (STEP 21) — no background job runner exists
+    // in this deployment (same pattern as followUpService.markOverdue),
+    // so PAYMENT_OVERDUE fires opportunistically the next time this page
+    // is viewed; automation_logs' dedup key means it only actually runs
+    // once per deal, never repeatedly on every page load.
+    await Promise.all(
+      rows
+        .filter((r) => r.deal.leadId)
+        .map((r) => automationService.executeTrigger("PAYMENT_OVERDUE", { leadId: r.deal.leadId!, dealId: r.deal.id, dealNumber: r.deal.dealNumber }).catch(() => {}))
+    );
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load overdue payments.";
   }

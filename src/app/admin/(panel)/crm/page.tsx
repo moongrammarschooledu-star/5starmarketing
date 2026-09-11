@@ -16,6 +16,8 @@ import {
   List,
 } from "lucide-react";
 import { leadService } from "@/services/leadService";
+import { automationService } from "@/services/automationService";
+import { leadScoringService } from "@/services/leadScoringService";
 import { StatCard } from "@/components/admin/StatCard";
 import { FollowUpWhatsAppButton } from "@/components/admin/FollowUpWhatsAppButton";
 import { formatDateOnlyShort } from "@/lib/date";
@@ -43,6 +45,12 @@ export default async function CrmDashboardPage() {
   let loadError: string | null = null;
 
   try {
+    // Marketing Automation (STEP 21) — no background job runner exists in
+    // this deployment, so queued NEW_LEAD automation and SLA-breach
+    // alerts are drained opportunistically here (same established
+    // pattern as followUpService.markOverdue()).
+    await Promise.all([automationService.processQueuedEvents().catch(() => {}), leadScoringService.sweepSlaBreaches().catch(() => {})]);
+
     const [s, today, upcoming] = await Promise.all([
       leadService.crmDashboardStats(),
       leadService.todaysFollowUps(),

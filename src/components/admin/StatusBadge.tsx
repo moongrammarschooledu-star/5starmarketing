@@ -54,6 +54,15 @@ const palette: Record<string, string> = {
   EXPIRED: "bg-primary/10 text-primary",
   ARCHIVED: "bg-muted/20 text-muted",
   SUPERSEDED: "bg-muted/20 text-muted",
+  // Marketing Automation (STEP 21)
+  SUCCESS: "bg-success/10 text-success",
+  FAILED: "bg-primary/15 text-primary",
+  SKIPPED: "bg-muted/20 text-muted",
+  RUNNING: "bg-amber-500/10 text-amber-600",
+  COLD: "bg-ink/10 text-ink",
+  WARM: "bg-amber-500/10 text-amber-600",
+  HOT: "bg-primary/15 text-primary",
+  VERY_HOT: "bg-primary/25 text-primary",
 };
 
 export function StatusBadge({ status }: { status: string }) {

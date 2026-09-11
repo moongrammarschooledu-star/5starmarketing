@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   try {
     const leads = await leadService.searchAll(filters);
     csv = toCsv(
-      ["Lead ID", "Name", "Phone", "WhatsApp", "Email", "Status", "Priority", "Lead Type", "Source", "Property", "Project", "Agent", "Purpose", "Budget Min", "Budget Max", "Next Follow-Up", "Created"],
+      ["Lead ID", "Name", "Phone", "WhatsApp", "Email", "Status", "Priority", "Score", "Score Level", "Lead Type", "Source", "Property", "Project", "Agent", "Purpose", "Budget Min", "Budget Max", "Next Follow-Up", "Created"],
       leads.map((l) => [
         l.id,
         l.name,
@@ -35,6 +35,8 @@ export async function GET(request: Request) {
         l.email ?? "",
         crmStatusLabel(l.status),
         l.priority,
+        l.score,
+        l.scoreLevel,
         l.leadType,
         l.source,
         l.propertyTitle ?? "",

@@ -18,6 +18,8 @@ import { paymentPlanService } from "./paymentPlanService";
 import { inventoryService } from "./inventoryService";
 import { settingsService } from "./settingsService";
 import { documentService } from "./documentService";
+import { automationService } from "./automationService";
+import { leadScoringService } from "./leadScoringService";
 
 const SELECT_WITH_JOINS =
   "*, agent:admin_profiles!deals_agent_id_fkey(name), creator:admin_profiles!deals_created_by_fkey(name), leads(name), projects(name), property_inventory(unit_number)";
@@ -370,6 +372,22 @@ export const dealService = {
     }
     const deal = await enrich(mapRowToDeal(data));
     await activityService.log("Deal Created", `${deal.dealNumber} created`, "deal", deal.id, { dealType: deal.dealType, status: deal.status });
+
+    // Marketing Automation (STEP 21) — best-effort, never blocks deal
+    // creation. Scoring/automation only make sense when a deal traces
+    // back to a real lead (walk-in/manual deals often don't have one).
+    if (deal.leadId) {
+      try {
+        const scoreChange = await leadScoringService.applyEvent(deal.leadId, "DEAL_CREATED");
+        await automationService.executeTrigger("DEAL_CREATED", { leadId: deal.leadId, dealId: deal.id, dealNumber: deal.dealNumber });
+        if (scoreChange && scoreChange.newLevel !== scoreChange.previousLevel) {
+          await automationService.executeTrigger("LEAD_SCORE_CHANGED", { leadId: deal.leadId, scoreLevel: scoreChange.newLevel, previousScoreLevel: scoreChange.previousLevel });
+        }
+        await automationService.scheduleFollowUpsFor("DEAL_CREATED", deal.leadId);
+      } catch (e) {
+        console.error("dealService.create: marketing automation failed:", e);
+      }
+    }
     return deal;
   },
 
@@ -467,6 +485,25 @@ export const dealService = {
       console.error("dealService.updateStatus: property availability sync failed:", e);
     }
     await syncInventoryAvailability(deal, nextStatus);
+
+    // Marketing Automation (STEP 21) — best-effort, never blocks the
+    // deal's status transition itself.
+    if (deal.leadId) {
+      try {
+        if (nextStatus === "Booked") {
+          await automationService.executeTrigger("DEAL_BOOKED", { leadId: deal.leadId, dealId: deal.id, dealNumber: deal.dealNumber });
+          await automationService.scheduleFollowUpsFor("DEAL_BOOKED", deal.leadId);
+        }
+        if (nextStatus === "Completed") {
+          const scoreChange = await leadScoringService.applyEvent(deal.leadId, "DEAL_COMPLETED");
+          if (scoreChange && scoreChange.newLevel !== scoreChange.previousLevel) {
+            await automationService.executeTrigger("LEAD_SCORE_CHANGED", { leadId: deal.leadId, scoreLevel: scoreChange.newLevel, previousScoreLevel: scoreChange.previousLevel });
+          }
+        }
+      } catch (e) {
+        console.error("dealService.updateStatus: marketing automation failed:", e);
+      }
+    }
     return deal;
   },
 

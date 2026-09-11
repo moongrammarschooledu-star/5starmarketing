@@ -6,11 +6,20 @@ export interface Customer {
   whatsapp?: string;
   profileImage?: string;
   disabled: boolean;
+  // Communication Consent (STEP 21, section 32) — default true (an
+  // existing customer already has an active relationship with the
+  // business); a customer can opt out from their own profile.
+  emailOptIn: boolean;
+  whatsappOptIn: boolean;
+  smsOptIn: boolean;
+  marketingOptIn: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export type CustomerProfileInput = Pick<Customer, "fullName" | "phone" | "whatsapp" | "profileImage">;
+
+export type CustomerConsentInput = Pick<Customer, "emailOptIn" | "whatsappOptIn" | "smsOptIn" | "marketingOptIn">;
 
 export interface Favorite {
   id: string;

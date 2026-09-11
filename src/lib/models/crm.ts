@@ -1,4 +1,5 @@
 import type { Lead, LeadStatus, LeadPriority, LeadSource, LeadType, LeadPurpose } from "./lead";
+import type { ScoreLevel } from "./leadScoring";
 
 export const DEFAULT_LEAD_PAGE_SIZE = 20;
 export const MAX_LEAD_PAGE_SIZE = 100;
@@ -23,6 +24,9 @@ export interface LeadSearchFilters {
   followUpDue?: FollowUpDueFilter;
   dateFrom?: string;
   dateTo?: string;
+  // Lead Scoring / Tagging (STEP 21).
+  scoreLevel?: ScoreLevel;
+  tagId?: string;
   page?: number;
   pageSize?: number;
 }

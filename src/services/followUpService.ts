@@ -25,6 +25,8 @@ function mapRow(row: any): FollowUp {
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    source: row.source === "automation" ? "automation" : "manual",
+    automationGroupKey: row.automation_group_key ?? undefined,
     leadName: lead?.name ?? undefined,
     leadPhone: lead?.phone ?? undefined,
     propertyTitle: lead?.property_title ?? undefined,
@@ -46,6 +48,8 @@ export const followUpService = {
         follow_up_time: input.followUpTime || null,
         type: input.type,
         note: input.note || "",
+        source: input.source ?? "manual",
+        automation_group_key: input.automationGroupKey || null,
       })
       .select(SELECT_WITH_CONTEXT)
       .single();
@@ -128,11 +132,26 @@ export const followUpService = {
     return (data ?? []).map(mapRow);
   },
 
+  /** Completing one follow-up in an automation cascade (section 18-19)
+   *  auto-cancels the other pending, not-yet-due tasks in the same
+   *  cascade (same lead + trigger event) — the closest safe equivalent
+   *  to "stop escalating once contact is made" without a background
+   *  scheduler in this deployment to check that partway through. */
   async complete(id: string): Promise<void> {
     const supabase = await createClient();
+    const { data: current } = await supabase.from("follow_ups").select("automation_group_key").eq("id", id).maybeSingle();
     const { error } = await supabase.from("follow_ups").update({ status: "Completed" }).eq("id", id);
     if (error) throw new Error("Could not complete this follow-up.");
     await activityService.log("Follow-Up Completed", "Marked as completed", "follow_up", id);
+
+    if (current?.automation_group_key) {
+      await supabase
+        .from("follow_ups")
+        .update({ status: "Cancelled" })
+        .eq("automation_group_key", current.automation_group_key)
+        .eq("status", "Pending")
+        .neq("id", id);
+    }
   },
 
   async reschedule(id: string, date: string, time?: string): Promise<void> {

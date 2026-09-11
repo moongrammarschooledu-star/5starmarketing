@@ -55,6 +55,9 @@ function mapRowToSettings(row: any): WebsiteSettings {
     marketingDefaultLandingPage: row.marketing_default_landing_page ?? undefined,
     defaultCommissionRate: row.default_commission_rate ?? undefined,
     requireDocumentsForDealCompletion: !!row.require_documents_for_deal_completion,
+    leadScoreThresholdWarm: row.lead_score_threshold_warm ?? 20,
+    leadScoreThresholdHot: row.lead_score_threshold_hot ?? 40,
+    leadScoreThresholdVeryHot: row.lead_score_threshold_very_hot ?? 70,
     updatedAt: row.updated_at,
   };
 }
@@ -122,6 +125,9 @@ export const settingsService = {
     if (input.marketingDefaultLandingPage !== undefined) row.marketing_default_landing_page = input.marketingDefaultLandingPage || null;
     if (input.defaultCommissionRate !== undefined) row.default_commission_rate = input.defaultCommissionRate ?? null;
     if (input.requireDocumentsForDealCompletion !== undefined) row.require_documents_for_deal_completion = input.requireDocumentsForDealCompletion;
+    if (input.leadScoreThresholdWarm !== undefined) row.lead_score_threshold_warm = input.leadScoreThresholdWarm;
+    if (input.leadScoreThresholdHot !== undefined) row.lead_score_threshold_hot = input.leadScoreThresholdHot;
+    if (input.leadScoreThresholdVeryHot !== undefined) row.lead_score_threshold_very_hot = input.leadScoreThresholdVeryHot;
 
     const { data, error } = await supabase
       .from("website_settings")

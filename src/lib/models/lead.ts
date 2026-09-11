@@ -51,6 +51,8 @@ export type LostReason =
   | "Invalid Lead"
   | "Other";
 
+import type { ScoreLevel } from "./leadScoring";
+
 export interface Lead {
   id: string;
   name: string;
@@ -104,6 +106,14 @@ export interface Lead {
   convertedByName?: string;
   archived: boolean;
   archivedAt?: string;
+  // Lead Scoring (STEP 21) — score/scoreLevel are system-computed (see
+  // leadScoringService), never set directly by a form. autoPriority is
+  // the system's own suggestion, kept separate from the manual `priority`
+  // above so one never silently overwrites the other.
+  score: number;
+  scoreLevel: ScoreLevel;
+  autoPriority?: LeadPriority;
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -125,6 +135,10 @@ export type LeadInput = Omit<
   | "convertedByName"
   | "archived"
   | "archivedAt"
+  | "score"
+  | "scoreLevel"
+  | "autoPriority"
+  | "tags"
 > & {
   status?: LeadStatus;
   consent?: boolean;

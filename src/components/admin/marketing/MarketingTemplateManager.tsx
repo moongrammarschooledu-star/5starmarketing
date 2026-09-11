@@ -3,9 +3,15 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Copy, Power, Save } from "lucide-react";
-import type { MarketingTemplate, MarketingTemplateChannel, MarketingTemplateCategory } from "@/lib/models/marketingTemplate";
-import { marketingTemplateCategories, MARKETING_TEMPLATE_VARIABLES } from "@/lib/models/marketingTemplate";
-import { createMarketingTemplateAction, updateMarketingTemplateAction, duplicateMarketingTemplateAction, setMarketingTemplateActiveAction } from "@/lib/actions/marketingAutomation.actions";
+import type { MarketingTemplate, MarketingTemplateChannel, MarketingTemplateCategory, TemplateProviderStatus } from "@/lib/models/marketingTemplate";
+import { marketingTemplateCategories, templateProviderStatuses, MARKETING_TEMPLATE_VARIABLES } from "@/lib/models/marketingTemplate";
+import {
+  createMarketingTemplateAction,
+  updateMarketingTemplateAction,
+  duplicateMarketingTemplateAction,
+  setMarketingTemplateActiveAction,
+  updateTemplateProviderInfoAction,
+} from "@/lib/actions/marketingAutomation.actions";
 import { useToast } from "@/components/admin/ToastProvider";
 
 export function MarketingTemplateManager({ templates, channel }: { templates: MarketingTemplate[]; channel: MarketingTemplateChannel }) {
@@ -15,6 +21,9 @@ export function MarketingTemplateManager({ templates, channel }: { templates: Ma
   const [category, setCategory] = useState<MarketingTemplateCategory>("Other");
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
+  const [providerStatus, setProviderStatus] = useState<TemplateProviderStatus>("DRAFT");
+  const [providerTemplateId, setProviderTemplateId] = useState("");
+  const [language, setLanguage] = useState("en");
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const toast = useToast();
@@ -26,6 +35,9 @@ export function MarketingTemplateManager({ templates, channel }: { templates: Ma
     setCategory(t?.category ?? "Other");
     setSubject(t?.subject ?? "");
     setContent(t?.content ?? "");
+    setProviderStatus(t?.providerStatus ?? "DRAFT");
+    setProviderTemplateId(t?.providerTemplateId ?? "");
+    setLanguage(t?.language ?? "en");
   }
 
   function startCreate() {
@@ -73,6 +85,19 @@ export function MarketingTemplateManager({ templates, channel }: { templates: Ma
       await setMarketingTemplateActiveAction(t.id, !t.active);
       toast.show(t.active ? "Deactivated." : "Activated.");
       router.refresh();
+    });
+  }
+
+  function saveProviderInfo() {
+    if (!selected) return;
+    startTransition(async () => {
+      try {
+        await updateTemplateProviderInfoAction(selected.id, { providerStatus, providerTemplateId: providerTemplateId || undefined, language });
+        toast.show("Provider status saved.");
+        router.refresh();
+      } catch (e) {
+        toast.show(e instanceof Error ? e.message : "Could not save provider status.");
+      }
     });
   }
 
@@ -136,6 +161,38 @@ export function MarketingTemplateManager({ templates, channel }: { templates: Ma
               <span className="font-semibold text-ink">Content</span>
               <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={10} placeholder="Write the message here, using {{variables}} for real data..." className="rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-xs text-ink outline-none focus:border-primary" />
             </label>
+
+            {channel === "WhatsApp" && selected && (
+              <div className="rounded-2xl border border-dashed border-border p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">WhatsApp Business API Approval</p>
+                <p className="mt-1 text-xs text-muted">
+                  Only meaningful once a real WhatsApp Business API connection exists — record the status Meta reports in its own dashboard; nothing here fabricates approval.
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <label className="flex flex-col gap-1.5 text-xs">
+                    <span className="font-semibold text-ink">Status</span>
+                    <select value={providerStatus} onChange={(e) => setProviderStatus(e.target.value as TemplateProviderStatus)} className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary">
+                      {templateProviderStatuses.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-xs">
+                    <span className="font-semibold text-ink">Provider Template ID</span>
+                    <input type="text" value={providerTemplateId} onChange={(e) => setProviderTemplateId(e.target.value)} placeholder="From Meta Business Manager" className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary" />
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-xs">
+                    <span className="font-semibold text-ink">Language</span>
+                    <input type="text" value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="en" className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary" />
+                  </label>
+                </div>
+                <button type="button" onClick={saveProviderInfo} disabled={isPending} className="mt-3 rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-50">
+                  Save Provider Status
+                </button>
+              </div>
+            )}
 
             <div className="rounded-lg bg-surface-muted p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Available Variables</p>

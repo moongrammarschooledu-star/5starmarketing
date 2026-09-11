@@ -11,7 +11,7 @@ import { profileService } from "@/services/profileService";
 import { canAccess, canManageMarketingAutomation } from "@/lib/permissions";
 import type { ScoreLevel, ScoringEventType, LeadScoringRuleInput } from "@/lib/models/leadScoring";
 import type { MarketingWorkflowInput, WorkflowActionInput, FollowUpRuleInput } from "@/lib/models/automation";
-import type { MarketingTemplateInput } from "@/lib/models/marketingTemplate";
+import type { MarketingTemplateInput, TemplateProviderInfoInput } from "@/lib/models/marketingTemplate";
 import type { MarketingTagInput, MarketingSegmentInput } from "@/lib/models/marketingTag";
 
 async function requireMarketingAccess() {
@@ -147,6 +147,13 @@ export async function setMarketingTemplateActiveAction(id: string, active: boole
   await requireMarketingAutomationAccess();
   await marketingTemplateService.setActive(id, active);
   revalidatePath("/admin/marketing/templates");
+}
+
+export async function updateTemplateProviderInfoAction(id: string, input: TemplateProviderInfoInput) {
+  await requireMarketingAutomationAccess();
+  await marketingTemplateService.updateProviderInfo(id, input);
+  revalidatePath("/admin/marketing/templates");
+  revalidatePath("/admin/communications/templates");
 }
 
 // ---- Tags ----

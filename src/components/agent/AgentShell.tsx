@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { X, Menu, LayoutDashboard, Users, LogOut, ExternalLink, UserCircle } from "lucide-react";
+import { X, Menu, LayoutDashboard, Users, LogOut, ExternalLink, UserCircle, MessageSquare, CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -13,6 +13,8 @@ import { logoutAction } from "@/lib/actions/auth.actions";
 const NAV = [
   { href: "/agent/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/agent/leads", label: "My Leads", icon: Users },
+  { href: "/agent/communications", label: "Messages", icon: MessageSquare },
+  { href: "/agent/communications/followups", label: "Follow-Ups", icon: CalendarClock },
 ];
 
 export function AgentShell({ agentId, agentName, children }: { agentId: string; agentName: string; children: ReactNode }) {

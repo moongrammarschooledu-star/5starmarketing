@@ -1,5 +1,6 @@
 import { AlertTriangle, CalendarClock, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { appointmentService } from "@/services/appointmentService";
+import { sweepSiteVisitReminders } from "@/services/communicationReminderService";
 import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
 import { AppointmentsTable } from "@/components/admin/AppointmentsTable";
@@ -13,6 +14,10 @@ export default async function AdminAppointmentsPage() {
   let loadError: string | null = null;
   try {
     appointments = await appointmentService.listAll();
+    // Communication Center (STEP 22) — 24-hour-ahead WhatsApp reminders
+    // for tomorrow's confirmed site visits, swept opportunistically on
+    // this page load (no background job runner in this deployment).
+    await sweepSiteVisitReminders().catch(() => {});
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load appointments.";
   }

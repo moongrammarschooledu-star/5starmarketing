@@ -2,27 +2,14 @@ import { NextResponse } from "next/server";
 import { leadService } from "@/services/leadService";
 import { notificationService } from "@/services/notificationService";
 import { createClient } from "@/lib/supabase/server";
+import { isRateLimited } from "@/lib/rateLimit";
 import type { LeadSource, LeadType } from "@/lib/models/lead";
 import { leadTypes } from "@/lib/models/lead";
 
 const ALLOWED_SOURCES: LeadSource[] = ["Website", "Property Page"];
 const MAX_MESSAGE_LENGTH = 2000;
-
-// Best-effort in-memory rate limiting (per serverless instance). It resets
-// whenever the function cold-starts, so it isn't a hard guarantee on
-// Vercel — for durable, multi-instance limiting, swap this map for a
-// shared store (e.g. Upstash Redis) keyed the same way.
-const submissionsByIp = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (submissionsByIp.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  recent.push(now);
-  submissionsByIp.set(ip, recent);
-  return recent.length > RATE_LIMIT_MAX;
-}
 
 // Validates contact-form / property-inquiry submissions and saves them as
 // a real lead (Supabase `leads` table) visible in the admin CRM. It does
@@ -31,7 +18,7 @@ function isRateLimited(ip: string): boolean {
 // chosen; the lead is still captured here either way.
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  if (isRateLimited(ip)) {
+  if (isRateLimited(`contact:${ip}`, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)) {
     return NextResponse.json(
       { ok: false, error: "Too many submissions. Please try again in a minute." },
       { status: 429 }

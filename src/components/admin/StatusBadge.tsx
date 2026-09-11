@@ -63,6 +63,21 @@ const palette: Record<string, string> = {
   WARM: "bg-amber-500/10 text-amber-600",
   HOT: "bg-primary/15 text-primary",
   VERY_HOT: "bg-primary/25 text-primary",
+  // Communication Center (STEP 22)
+  QUEUED: "bg-amber-500/10 text-amber-600",
+  SCHEDULED: "bg-primary/10 text-primary",
+  SENDING: "bg-amber-500/10 text-amber-600",
+  SENT: "bg-success/10 text-success",
+  DELIVERED: "bg-success/15 text-success",
+  READ: "bg-success/20 text-success",
+  CANCELLED: "bg-muted/20 text-muted",
+  PROCESSING: "bg-amber-500/10 text-amber-600",
+  OPEN: "bg-primary/10 text-primary",
+  CLOSED: "bg-muted/20 text-muted",
+  LOW: "bg-muted/20 text-muted",
+  NORMAL: "bg-ink/10 text-ink",
+  HIGH: "bg-amber-500/10 text-amber-600",
+  URGENT: "bg-primary/15 text-primary",
 };
 
 export function StatusBadge({ status }: { status: string }) {

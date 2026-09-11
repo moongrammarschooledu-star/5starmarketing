@@ -5,6 +5,8 @@ import { followUpService } from "./followUpService";
 import { followUpRuleService } from "./followUpRuleService";
 import { staffNotificationService } from "./staffNotificationService";
 import { marketingTagService } from "./marketingTagService";
+import { marketingTemplateService } from "./marketingTemplateService";
+import { communicationService } from "./communicationService";
 import { emailProvider, whatsappProvider, smsProvider } from "@/lib/marketing/providers";
 import type { Lead } from "@/lib/models/lead";
 import type {
@@ -228,17 +230,41 @@ async function executeAction(action: WorkflowAction, lead: Lead, context: Trigge
       }
       return;
     }
-    case "SEND_EMAIL": {
-      if (!emailProvider().isConfigured) throw new Error("Email provider not configured.");
-      throw new Error("Email sending is not implemented in this deployment.");
-    }
-    case "SEND_WHATSAPP": {
-      if (!whatsappProvider().isConfigured) throw new Error("WhatsApp Business API not configured.");
-      throw new Error("WhatsApp API sending is not implemented in this deployment.");
-    }
+    case "SEND_EMAIL":
+    case "SEND_WHATSAPP":
     case "SEND_SMS": {
-      if (!smsProvider().isConfigured) throw new Error("SMS provider not configured.");
-      throw new Error("SMS sending is not implemented in this deployment.");
+      const channel = action.actionType === "SEND_EMAIL" ? "EMAIL" : action.actionType === "SEND_WHATSAPP" ? "WHATSAPP" : "SMS";
+      const provider = channel === "EMAIL" ? emailProvider() : channel === "WHATSAPP" ? whatsappProvider() : smsProvider();
+      if (!provider.isConfigured) throw new Error(`${provider.name} not configured.`);
+
+      const recipientPhone = lead.whatsapp || lead.phone;
+      const recipientEmail = lead.email;
+      if (channel === "EMAIL" && !recipientEmail) throw new Error("Lead has no email address on file.");
+      if (channel !== "EMAIL" && !recipientPhone) throw new Error("Lead has no phone number on file.");
+
+      const vars = templateVars(lead, context);
+      let body = config.message ? interpolate(config.message, vars) : "";
+      let subject: string | undefined = config.subject ? interpolate(config.subject, vars) : undefined;
+      if (config.templateId) {
+        const template = await marketingTemplateService.getById(config.templateId);
+        if (template) {
+          body = interpolate(template.content, vars);
+          subject = template.subject ? interpolate(template.subject, vars) : subject;
+        }
+      }
+      if (!body) throw new Error("No message content configured for this action.");
+
+      const conversation = await communicationService.findOrCreateForLead(lead.id, channel, {
+        counterpartName: lead.name,
+        counterpartPhone: recipientPhone,
+        counterpartEmail: recipientEmail,
+      });
+      const sent = await communicationService.composeAndSend(
+        { conversationId: conversation.id, channel, direction: "OUTBOUND", body, subject, templateId: config.templateId, isMarketing: true, recipientPhone, recipientEmail },
+        { name: `Automation: ${workflow.name}` }
+      );
+      if (sent.status === "FAILED") throw new Error(sent.failureReason || `${channel} send failed.`);
+      return;
     }
     case "UPDATE_STATUS": {
       if (config.status) await leadService.updateStatus(lead.id, config.status);

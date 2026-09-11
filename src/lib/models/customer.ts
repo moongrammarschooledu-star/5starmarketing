@@ -13,6 +13,10 @@ export interface Customer {
   whatsappOptIn: boolean;
   smsOptIn: boolean;
   marketingOptIn: boolean;
+  // Do-Not-Contact (STEP 22, section 61) — stronger than marketing_opt_in:
+  // blocks non-essential (marketing-classified) sends entirely.
+  // Transactional deal/payment/document communications are unaffected.
+  doNotContact: boolean;
   createdAt: string;
   updatedAt: string;
 }

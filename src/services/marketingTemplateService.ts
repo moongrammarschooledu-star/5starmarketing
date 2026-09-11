@@ -1,6 +1,9 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { MarketingTemplate, MarketingTemplateInput, MarketingTemplateChannel } from "@/lib/models/marketingTemplate";
+import type { MarketingTemplate, MarketingTemplateInput, MarketingTemplateChannel, TemplateProviderInfoInput } from "@/lib/models/marketingTemplate";
+import { interpolateTemplate } from "@/lib/templateInterpolation";
+
+export { interpolateTemplate };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(row: any): MarketingTemplate {
@@ -13,18 +16,14 @@ function mapRow(row: any): MarketingTemplate {
     content: row.content,
     version: row.version,
     active: !!row.active,
+    providerStatus: row.provider_status ?? "DRAFT",
+    providerTemplateId: row.provider_template_id ?? undefined,
+    language: row.language ?? "en",
     createdBy: row.created_by ?? undefined,
     updatedBy: row.updated_by ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-/** {{variable}} interpolation (section 26) — unmatched keys are left as
- *  literal visible text (never silently blanked), same discipline as the
- *  STEP 20 document-template interpolator. */
-export function interpolateTemplate(content: string, vars: Record<string, string>): string {
-  return content.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key) => (key in vars ? vars[key] : match));
 }
 
 export const marketingTemplateService = {
@@ -96,5 +95,18 @@ export const marketingTemplateService = {
     const supabase = await createClient();
     const { error } = await supabase.from("marketing_templates").update({ active }).eq("id", id);
     if (error) throw new Error("Could not update this template's status.");
+  },
+
+  /** WhatsApp provider-approval tracking (section 15) — this deployment
+   *  has no live Business API connection to auto-confirm approval, so an
+   *  admin records the real status Meta reports in its own dashboard;
+   *  nothing here fabricates an APPROVED state. */
+  async updateProviderInfo(id: string, input: TemplateProviderInfoInput): Promise<void> {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("marketing_templates")
+      .update({ provider_status: input.providerStatus, provider_template_id: input.providerTemplateId || null, language: input.language })
+      .eq("id", id);
+    if (error) throw new Error("Could not update this template's provider status.");
   },
 };

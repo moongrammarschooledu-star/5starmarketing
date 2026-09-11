@@ -16,6 +16,7 @@ function mapRow(row: any): Customer {
     whatsappOptIn: row.whatsapp_opt_in ?? true,
     smsOptIn: row.sms_opt_in ?? true,
     marketingOptIn: row.marketing_opt_in ?? true,
+    doNotContact: !!row.do_not_contact,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -145,5 +146,14 @@ export const customerService = {
       console.error("customerService.setDisabled failed:", error);
       throw new Error("Could not update this customer's account.");
     }
+  },
+
+  /** Admin-side Do-Not-Contact toggle (section 61) — blocks non-
+   *  essential outbound communication entirely; transactional deal/
+   *  payment/document messages are unaffected. */
+  async setDoNotContact(id: string, doNotContact: boolean): Promise<void> {
+    const supabase = await createClient();
+    const { error } = await supabase.from("customer_profiles").update({ do_not_contact: doNotContact }).eq("id", id);
+    if (error) throw new Error("Could not update this customer's Do-Not-Contact status.");
   },
 };

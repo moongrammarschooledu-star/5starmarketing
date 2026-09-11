@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, MessageCircle, CalendarClock } from "lucide-react";
 import { dealService } from "@/services/dealService";
 import { automationService } from "@/services/automationService";
+import { sweepPaymentReminders } from "@/services/communicationReminderService";
 import { formatPKR } from "@/lib/calculator";
 import { formatDateOnly } from "@/lib/date";
 import { whatsappUrlFor } from "@/lib/site";
@@ -27,6 +28,11 @@ export default async function OverduePaymentsPage() {
         .filter((r) => r.deal.leadId)
         .map((r) => automationService.executeTrigger("PAYMENT_OVERDUE", { leadId: r.deal.leadId!, dealId: r.deal.id, dealNumber: r.deal.dealNumber }).catch(() => {}))
     );
+    // Communication Center (STEP 22) — a real WhatsApp reminder per
+    // overdue deal, at most once per calendar day, only when a
+    // provider is actually configured (otherwise composeAndSend logs a
+    // clear FAILED reason rather than pretending to have sent anything).
+    await sweepPaymentReminders().catch(() => {});
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load overdue payments.";
   }

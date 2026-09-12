@@ -78,6 +78,22 @@ const palette: Record<string, string> = {
   NORMAL: "bg-ink/10 text-ink",
   HIGH: "bg-amber-500/10 text-amber-600",
   URGENT: "bg-primary/15 text-primary",
+  // Accounting (STEP 23)
+  SUBMITTED: "bg-amber-500/10 text-amber-600",
+  PENDING: "bg-amber-500/10 text-amber-600",
+  CONFIRMED: "bg-success/10 text-success",
+  REVERSED: "bg-muted/20 text-muted",
+  PAID: "bg-success/15 text-success",
+  PARTIALLY_PAID: "bg-amber-500/10 text-amber-600",
+  OVERDUE: "bg-primary/15 text-primary",
+  CALCULATED: "bg-ink/10 text-ink",
+  PENDING_APPROVAL: "bg-amber-500/10 text-amber-600",
+  MATCHED: "bg-success/10 text-success",
+  UNMATCHED: "bg-muted/20 text-muted",
+  IGNORED: "bg-muted/20 text-muted",
+  ADJUSTMENT_REQUIRED: "bg-primary/15 text-primary",
+  CURRENT: "bg-success/10 text-success",
+  DUE_SOON: "bg-amber-500/10 text-amber-600",
 };
 
 export function StatusBadge({ status }: { status: string }) {

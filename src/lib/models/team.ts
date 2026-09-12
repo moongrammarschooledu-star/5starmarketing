@@ -49,7 +49,13 @@ export type StaffNotificationType =
   | "inventory_sold"
   // STEP 21 — Marketing Automation
   | "sla_breached"
-  | "automation_alert";
+  | "automation_alert"
+  // STEP 23 — Accounting
+  | "expense_submitted"
+  | "expense_approved"
+  | "expense_rejected"
+  | "commission_approved"
+  | "commission_paid";
 
 export interface StaffNotification {
   id: string;

@@ -23,7 +23,8 @@ export type AdminSection =
   | "deals"
   | "inventory"
   | "documents"
-  | "communications";
+  | "communications"
+  | "accounting";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -49,8 +50,9 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "inventory",
     "documents",
     "communications",
+    "accounting",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
   sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications"],
 };
@@ -77,6 +79,25 @@ export function canManageDealFinancials(role: AdminRole): boolean {
  *  role-based (not a granular ACL) philosophy as the rest of this app. */
 export function canManageMarketingAutomation(role: AdminRole): boolean {
   return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
+/** Accounting (STEP 23) — approve/confirm/reconcile/export/manage-
+ *  commission/process-refund actions, same three-role gate as every
+ *  other finance-adjacent capability in this codebase. Consolidates
+ *  the spec's nine listed permissions (approve_expense, confirm_
+ *  transaction, manage_commission, approve_commission, process_refund,
+ *  reconcile_transactions, export_financial_reports, view_financials)
+ *  into one check — this app's RBAC is role-based throughout, not a
+ *  granular per-action ACL, so nine near-identical functions would add
+ *  no real distinction (deliberate simplification, disclosed here). */
+export function canManageFinance(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
+/** A sales_agent may submit (not approve) their own expenses — the
+ *  only accounting action available below the canManageFinance tier. */
+export function canSubmitExpense(role: AdminRole): boolean {
+  return canManageFinance(role) || role === "sales_agent";
 }
 
 export function canAccess(role: AdminRole, section: AdminSection): boolean {

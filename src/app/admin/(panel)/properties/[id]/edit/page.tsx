@@ -9,7 +9,10 @@ import { projectService } from "@/services/projectService";
 import { paymentPlanService } from "@/services/paymentPlanService";
 import { dealService } from "@/services/dealService";
 import { documentService } from "@/services/documentService";
+import { profileService } from "@/services/profileService";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { PropertyFinancialPanel } from "@/components/admin/accounting/PropertyFinancialPanel";
+import { canManageFinance } from "@/lib/permissions";
 import { formatPKR } from "@/lib/calculator";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +33,8 @@ export default async function EditPropertyPage({
   const scheduleItems = plan ? await paymentPlanService.listScheduleItems(plan.id) : [];
   const deals = await dealService.listByProperty(id).catch(() => []);
   const documents = await documentService.listByProperty(id).catch(() => []);
+  const admin = await profileService.getCurrentAdmin();
+  const canSeeFinancials = admin ? canManageFinance(admin.role) : false;
 
   const boundAction = updatePropertyAction.bind(null, id);
 
@@ -70,6 +75,8 @@ export default async function EditPropertyPage({
           </div>
         </div>
       )}
+
+      {canSeeFinancials && <PropertyFinancialPanel propertyId={id} />}
 
       <div className="mt-6">
         <PropertyForm action={boundAction} initialValues={property} submitLabel="Save Changes" projects={projects} />

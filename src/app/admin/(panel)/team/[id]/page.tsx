@@ -5,11 +5,13 @@ import { teamService } from "@/services/teamService";
 import { leadService } from "@/services/leadService";
 import { appointmentService } from "@/services/appointmentService";
 import { activityService } from "@/services/activityService";
+import { profileService } from "@/services/profileService";
 import { requireSection } from "@/lib/guard";
-import { roleLabels } from "@/lib/permissions";
+import { roleLabels, canManageFinance } from "@/lib/permissions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { TeamStatusToggle } from "@/components/admin/TeamStatusToggle";
 import { TeamMemberTabs } from "@/components/admin/TeamMemberTabs";
+import { AgentFinancialPanel } from "@/components/admin/accounting/AgentFinancialPanel";
 import { formatDateOnly } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
@@ -21,12 +23,14 @@ export default async function AdminTeamMemberPage({ params }: { params: Promise<
   const member = await teamService.getById(id);
   if (!member) notFound();
 
-  const [leads, appointments, performance, activity] = await Promise.all([
+  const [leads, appointments, performance, activity, viewer] = await Promise.all([
     leadService.listByAgent(id),
     appointmentService.listByAgent(id),
     teamService.performanceFor(id),
     activityService.listByEntity("team", id),
+    profileService.getCurrentAdmin(),
   ]);
+  const canSeeFinancials = viewer ? canManageFinance(viewer.role) : false;
 
   return (
     <div>
@@ -175,6 +179,7 @@ export default async function AdminTeamMemberPage({ params }: { params: Promise<
               ))}
             </div>
           }
+          financials={canSeeFinancials ? <AgentFinancialPanel agentId={member.id} agentName={member.name} /> : undefined}
         />
       </div>
     </div>

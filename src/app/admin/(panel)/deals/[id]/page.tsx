@@ -14,6 +14,7 @@ import { DealDocumentsPanel } from "@/components/admin/deals/DealDocumentsPanel"
 import { DealNotesPanel } from "@/components/admin/deals/DealNotesPanel";
 import { DealActivityTimeline } from "@/components/admin/deals/DealActivityTimeline";
 import { DealCommissionPanel } from "@/components/admin/deals/DealCommissionPanel";
+import { DealAccountingPanel } from "@/components/admin/accounting/DealAccountingPanel";
 import { DealStatusActionsPanel } from "@/components/admin/deals/DealStatusActionsPanel";
 import { canManageDealFinancials } from "@/lib/permissions";
 import { requireSection } from "@/lib/guard";
@@ -140,6 +141,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
             </div>
           </div>
           <DealCommissionPanel deal={deal} canManage={canManage} />
+          <DealAccountingPanel dealId={deal.id} />
           <DealNotesPanel dealId={deal.id} notes={notes} />
           <DealActivityTimeline activity={activity} />
         </div>

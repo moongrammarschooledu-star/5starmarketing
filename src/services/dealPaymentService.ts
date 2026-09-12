@@ -1,6 +1,41 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { financialTransactionService } from "./financialTransactionService";
 import type { DealPayment, DealPaymentInput, DealPaymentRefund } from "@/lib/models/deal";
+import type { FinancePaymentMethod } from "@/lib/models/accounting";
+
+/** STEP 23 accounting integration (section 13) — best-effort, mirrors
+ *  every other cross-cutting side effect in this codebase (notifications,
+ *  communication triggers): a failure here is logged but never blocks
+ *  the payment/refund workflow itself. */
+async function recordAccountingEntry(
+  transactionType: "INCOME" | "REFUND",
+  dealId: string,
+  paymentId: string,
+  amount: number,
+  paymentMethod: string,
+  description: string
+): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { data: deal } = await supabase.from("deals").select("customer_id, property_id, project_id, agent_id, deal_number").eq("id", dealId).maybeSingle();
+    await financialTransactionService.create({
+      transactionType,
+      dealId,
+      customerId: deal?.customer_id ?? undefined,
+      propertyId: deal?.property_id ?? undefined,
+      projectId: deal?.project_id ?? undefined,
+      agentId: deal?.agent_id ?? undefined,
+      paymentId,
+      amount,
+      paymentMethod: paymentMethod as FinancePaymentMethod,
+      description: `${description}${deal?.deal_number ? ` (deal ${deal.deal_number})` : ""}`,
+      status: "CONFIRMED",
+    });
+  } catch (e) {
+    console.error("dealPaymentService: accounting entry failed (payment/refund itself is unaffected):", e);
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(row: any): DealPayment {
@@ -109,7 +144,11 @@ export const dealPaymentService = {
       console.error("dealPaymentService.setStatus failed:", error);
       throw new Error("Could not update this payment's status.");
     }
-    return data ? mapRow(data) : undefined;
+    const payment = data ? mapRow(data) : undefined;
+    if (payment && status === "Verified") {
+      await recordAccountingEntry("INCOME", payment.dealId, payment.id, payment.amount, payment.paymentMethod, `${payment.paymentType} payment`);
+    }
+    return payment;
   },
 
   async listRefunds(dealId: string): Promise<DealPaymentRefund[]> {
@@ -157,6 +196,8 @@ export const dealPaymentService = {
       console.error("dealPaymentService.refund failed:", error);
       throw new Error("Could not record this refund.");
     }
-    return mapRefundRow(data);
+    const refund = mapRefundRow(data);
+    await recordAccountingEntry("REFUND", dealId, paymentId, refund.amount, payment.paymentMethod, "Payment refund");
+    return refund;
   },
 };

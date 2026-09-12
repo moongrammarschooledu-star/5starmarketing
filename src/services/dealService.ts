@@ -20,6 +20,7 @@ import { settingsService } from "./settingsService";
 import { documentService } from "./documentService";
 import { automationService } from "./automationService";
 import { leadScoringService } from "./leadScoringService";
+import { propertyPriceHistoryService } from "./propertyPriceHistoryService";
 
 const SELECT_WITH_JOINS =
   "*, agent:admin_profiles!deals_agent_id_fkey(name), creator:admin_profiles!deals_created_by_fkey(name), leads(name), projects(name), property_inventory(unit_number)";
@@ -502,6 +503,17 @@ export const dealService = {
         }
       } catch (e) {
         console.error("dealService.updateStatus: marketing automation failed:", e);
+      }
+    }
+
+    // STEP 24 — records the deal's confirmed booking/transaction price
+    // against the property, distinct from its own listed/asking price.
+    // Best-effort, never blocks this status transition.
+    if (deal.propertyId) {
+      if (nextStatus === "Booked") {
+        await propertyPriceHistoryService.record(deal.propertyId, "BOOKING", deal.finalAmount, "deal_booking", deal.id);
+      } else if (nextStatus === "Completed") {
+        await propertyPriceHistoryService.record(deal.propertyId, "TRANSACTION", deal.finalAmount, "deal_completed", deal.id);
       }
     }
     return deal;

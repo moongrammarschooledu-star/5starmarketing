@@ -188,6 +188,10 @@ export default async function ProjectDetailsPage({
 
             <PublicInventorySummary summary={inventorySummary} />
 
+            <Link href={`/projects/${project.slug}/investment`} className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline">
+              View Investment Analysis →
+            </Link>
+
             {project.images.length > 0 && (
               <div>
                 <h2 className="font-heading text-base font-bold text-ink">Gallery</h2>

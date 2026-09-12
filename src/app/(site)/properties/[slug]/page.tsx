@@ -206,6 +206,9 @@ export default async function PropertyDetailsPage({
             {property.priceValue && (
               <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
                 <InvestmentCalculator purchasePrice={property.priceValue} compact />
+                <Link href={`/properties/${property.slug}/investment`} className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline">
+                  <Calculator className="h-4 w-4" /> View Full Investment Analysis
+                </Link>
               </div>
             )}
 

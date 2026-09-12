@@ -95,7 +95,9 @@ export type NotificationType =
   | "signature_required"
   | "agreement_signed"
   | "payment_receipt_available"
-  | "document_expiring";
+  | "document_expiring"
+  // STEP 24 — Property Valuation & Investment Intelligence
+  | "investment_alert_triggered";
 
 export interface CustomerNotification {
   id: string;

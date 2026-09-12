@@ -8,6 +8,8 @@ import type { Property } from "@/lib/models/property";
 import { whatsappLink } from "@/lib/site";
 import { useCompare } from "@/components/customer/CompareProvider";
 import { getComparePropertiesAction } from "@/lib/actions/compare.actions";
+import { getInvestmentComparisonAction, type InvestmentComparisonRow } from "@/lib/actions/investment.actions";
+import { formatPKR } from "@/lib/calculator";
 
 const ROWS: { label: string; render: (p: Property) => string }[] = [
   { label: "Type", render: (p) => p.type },
@@ -22,19 +24,22 @@ const ROWS: { label: string; render: (p: Property) => string }[] = [
 export function ComparePageClient() {
   const { ids, toggle } = useCompare();
   const [properties, setProperties] = useState<Property[]>([]);
+  const [investmentData, setInvestmentData] = useState<Map<string, InvestmentComparisonRow>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (ids.length === 0) {
       setProperties([]);
+      setInvestmentData(new Map());
       setLoading(false);
       return;
     }
     setLoading(true);
-    getComparePropertiesAction(ids).then((result) => {
+    Promise.all([getComparePropertiesAction(ids), getInvestmentComparisonAction(ids)]).then(([result, investment]) => {
       // Preserve selection order.
       const byId = new Map(result.map((p) => [p.id, p]));
       setProperties(ids.map((id) => byId.get(id)).filter((p): p is Property => !!p));
+      setInvestmentData(new Map(investment.map((row) => [row.propertyId, row])));
       setLoading(false);
     });
   }, [ids]);
@@ -102,6 +107,51 @@ export function ComparePageClient() {
                 ))}
               </tr>
             ))}
+            <tr className="border-b border-border bg-surface-muted/40">
+              <td colSpan={properties.length + 1} className="px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                Investment Intelligence — estimates from real, saved data only
+              </td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="p-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Price / Sq Ft</td>
+              {properties.map((p) => (
+                <td key={p.id} className="p-3 text-ink">
+                  {investmentData.get(p.id)?.pricePerSqft != null ? formatPKR(investmentData.get(p.id)!.pricePerSqft!) : "Data unavailable"}
+                </td>
+              ))}
+            </tr>
+            <tr className="border-b border-border">
+              <td className="p-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Price / Marla</td>
+              {properties.map((p) => (
+                <td key={p.id} className="p-3 text-ink">
+                  {investmentData.get(p.id)?.pricePerMarla != null ? formatPKR(investmentData.get(p.id)!.pricePerMarla!) : "Data unavailable"}
+                </td>
+              ))}
+            </tr>
+            <tr className="border-b border-border">
+              <td className="p-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Admin Estimated Value</td>
+              {properties.map((p) => (
+                <td key={p.id} className="p-3 font-bold text-primary">
+                  {investmentData.get(p.id)?.estimatedValue != null ? formatPKR(investmentData.get(p.id)!.estimatedValue!) : "Data unavailable"}
+                </td>
+              ))}
+            </tr>
+            <tr className="border-b border-border">
+              <td className="p-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Valuation Confidence</td>
+              {properties.map((p) => (
+                <td key={p.id} className="p-3 text-muted">
+                  {investmentData.get(p.id)?.confidenceScore ?? "Data unavailable"}
+                </td>
+              ))}
+            </tr>
+            <tr className="border-b border-border">
+              <td className="p-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Gross Rental Yield (est.)</td>
+              {properties.map((p) => (
+                <td key={p.id} className="p-3 text-muted">
+                  {investmentData.get(p.id)?.grossRentalYieldPercent != null ? `${investmentData.get(p.id)!.grossRentalYieldPercent!.toFixed(2)}%` : "Data unavailable"}
+                </td>
+              ))}
+            </tr>
             <tr className="border-b border-border">
               <td className="p-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Features</td>
               {properties.map((p) => (

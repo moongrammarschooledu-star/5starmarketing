@@ -17,6 +17,7 @@ import {
   Receipt,
   FileStack,
   Mail,
+  TrendingUp,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/customer/payments", label: "My Payments", icon: Receipt },
   { href: "/customer/documents", label: "My Documents", icon: FileStack },
   { href: "/customer/messages", label: "Messages", icon: Mail },
+  { href: "/customer/investments", label: "My Investments", icon: TrendingUp },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

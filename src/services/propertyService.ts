@@ -10,6 +10,7 @@ import {
   deleteStorageDocuments,
   type StoredDocument,
 } from "./storage";
+import { propertyPriceHistoryService } from "./propertyPriceHistoryService";
 
 const BUCKET = "property-images";
 
@@ -17,13 +18,17 @@ const BUCKET = "property-images";
 // lowercase enum shape. Every UI component keeps working with the
 // friendly "House" / "For Sale" labels defined in lib/models/property.ts.
 
-const TYPE_TO_DB: Record<PropertyType, string> = {
+// Exported for other services (e.g. propertyValuationService's
+// comparable search) that need to query `properties.property_type`
+// directly by DB value rather than pulling the whole table through
+// this file's own mapped methods.
+export const TYPE_TO_DB: Record<PropertyType, string> = {
   House: "house",
   Flat: "flat",
   "Residential Plot": "residential_plot",
   "Commercial Property": "commercial",
 };
-const TYPE_FROM_DB: Record<string, PropertyType> = {
+export const TYPE_FROM_DB: Record<string, PropertyType> = {
   house: "House",
   flat: "Flat",
   residential_plot: "Residential Plot",
@@ -454,6 +459,8 @@ export const propertyService = {
       patch.documents = await resolveStorageDocuments(input.documents);
     }
 
+    const previousPriceValue = input.priceValue !== undefined ? (await this.getById(id))?.priceValue : undefined;
+
     const { data, error } = await supabase
       .from("properties")
       .update(patch)
@@ -465,6 +472,13 @@ export const propertyService = {
       console.error("propertyService.update failed:", error);
       throw new Error("Could not update this property.");
     }
+
+    // STEP 24 — record a price-history entry whenever the listed price
+    // actually changes; best-effort, never blocks this update.
+    if (input.priceValue !== undefined && input.priceValue !== previousPriceValue && input.priceValue != null) {
+      await propertyPriceHistoryService.record(id, previousPriceValue == null ? "LISTING" : "UPDATED", input.priceValue, "admin_update");
+    }
+
     return data ? mapRowToProperty(data) : undefined;
   },
 

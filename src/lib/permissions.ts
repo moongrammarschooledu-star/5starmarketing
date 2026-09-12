@@ -24,7 +24,8 @@ export type AdminSection =
   | "inventory"
   | "documents"
   | "communications"
-  | "accounting";
+  | "accounting"
+  | "investment";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -51,8 +52,9 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "documents",
     "communications",
     "accounting",
+    "investment",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
   sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications"],
 };

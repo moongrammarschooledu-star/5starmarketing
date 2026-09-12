@@ -12,7 +12,8 @@ import { documentService } from "@/services/documentService";
 import { profileService } from "@/services/profileService";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { PropertyFinancialPanel } from "@/components/admin/accounting/PropertyFinancialPanel";
-import { canManageFinance } from "@/lib/permissions";
+import { PropertyInvestmentPanel } from "@/components/admin/investment/PropertyInvestmentPanel";
+import { canManageFinance, canAccess } from "@/lib/permissions";
 import { formatPKR } from "@/lib/calculator";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +78,7 @@ export default async function EditPropertyPage({
       )}
 
       {canSeeFinancials && <PropertyFinancialPanel propertyId={id} />}
+      {admin && canAccess(admin.role, "investment") && <PropertyInvestmentPanel propertyId={id} />}
 
       <div className="mt-6">
         <PropertyForm action={boundAction} initialValues={property} submitLabel="Save Changes" projects={projects} />

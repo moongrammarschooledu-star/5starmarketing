@@ -42,11 +42,24 @@ export function hashBytes(bytes: Buffer): string {
  *  also what the customer-upload storage RLS policy checks against
  *  (customers/{auth.uid()}/...), so this exact shape is load-bearing,
  *  not just organizational. */
-export function buildStoragePath(scope: { customerId?: string; dealId?: string; propertyId?: string; projectId?: string; paymentId?: string }, documentId: string, extension: string): string {
+export function buildStoragePath(
+  scope: { customerId?: string; dealId?: string; propertyId?: string; projectId?: string; paymentId?: string; inspectionId?: string; workOrderId?: string; assetId?: string; vendorId?: string; maintenanceRequestId?: string },
+  documentId: string,
+  extension: string
+): string {
   const safeName = `${randomUUID()}.${extension}`;
+  // Customer-uploaded maintenance request photos MUST stay under this
+  // exact customers/{auth.uid()}/... prefix — it is what the existing
+  // secure_documents_customer_insert storage policy checks against.
+  if (scope.customerId && scope.maintenanceRequestId) return `customers/${scope.customerId}/maintenance-requests/${scope.maintenanceRequestId}/${documentId}/${safeName}`;
   if (scope.customerId) return `customers/${scope.customerId}/documents/${documentId}/${safeName}`;
   if (scope.dealId) return `deals/${scope.dealId}/documents/${documentId}/${safeName}`;
   if (scope.paymentId) return `payments/${scope.paymentId}/receipts/${documentId}/${safeName}`;
+  if (scope.inspectionId) return `inspections/${scope.inspectionId}/photos/${documentId}/${safeName}`;
+  if (scope.workOrderId) return `work-orders/${scope.workOrderId}/photos/${documentId}/${safeName}`;
+  if (scope.maintenanceRequestId) return `maintenance-requests/${scope.maintenanceRequestId}/photos/${documentId}/${safeName}`;
+  if (scope.assetId) return `assets/${scope.assetId}/documents/${documentId}/${safeName}`;
+  if (scope.vendorId) return `vendors/${scope.vendorId}/documents/${documentId}/${safeName}`;
   if (scope.propertyId) return `properties/${scope.propertyId}/documents/${documentId}/${safeName}`;
   if (scope.projectId) return `projects/${scope.projectId}/documents/${documentId}/${safeName}`;
   return `general/documents/${documentId}/${safeName}`;

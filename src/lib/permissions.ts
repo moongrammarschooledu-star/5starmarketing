@@ -25,7 +25,8 @@ export type AdminSection =
   | "documents"
   | "communications"
   | "accounting"
-  | "investment";
+  | "investment"
+  | "maintenance";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -53,10 +54,11 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "communications",
     "accounting",
     "investment",
+    "maintenance",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance"],
 };
 
 /** Communications (STEP 22) — assigning/transferring conversations and
@@ -100,6 +102,15 @@ export function canManageFinance(role: AdminRole): boolean {
  *  only accounting action available below the canManageFinance tier. */
 export function canSubmitExpense(role: AdminRole): boolean {
   return canManageFinance(role) || role === "sales_agent";
+}
+
+/** Maintenance (STEP 25) — managing vendors/assets/schedules and
+ *  approving work-order costs is restricted the same way accounting/
+ *  investment management already is; any staff (sales_agent included)
+ *  may still create/update requests and work orders they're assigned
+ *  to, per the section-level "maintenance" gate above. */
+export function canManageMaintenance(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
 }
 
 export function canAccess(role: AdminRole, section: AdminSection): boolean {

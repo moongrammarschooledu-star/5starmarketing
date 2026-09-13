@@ -55,7 +55,13 @@ export type StaffNotificationType =
   | "expense_approved"
   | "expense_rejected"
   | "commission_approved"
-  | "commission_paid";
+  | "commission_paid"
+  // STEP 25 — Property Inspection + Maintenance + Facility Management
+  | "maintenance_request_new"
+  | "maintenance_request_assigned"
+  | "work_order_assigned"
+  | "warranty_expiring"
+  | "preventive_maintenance_due";
 
 export interface StaffNotification {
   id: string;

@@ -97,7 +97,15 @@ export type NotificationType =
   | "payment_receipt_available"
   | "document_expiring"
   // STEP 24 — Property Valuation & Investment Intelligence
-  | "investment_alert_triggered";
+  | "investment_alert_triggered"
+  // STEP 25 — Property Inspection + Maintenance + Facility Management
+  | "maintenance_request_received"
+  | "maintenance_visit_scheduled"
+  | "maintenance_work_started"
+  | "maintenance_work_completed"
+  | "maintenance_verification_required"
+  | "maintenance_request_closed"
+  | "maintenance_request_reopened";
 
 export interface CustomerNotification {
   id: string;

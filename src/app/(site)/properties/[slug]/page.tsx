@@ -9,6 +9,7 @@ import { paymentPlanService } from "@/services/paymentPlanService";
 import { brochureService } from "@/services/brochureService";
 import { calculatePaymentPlan, formatPKR } from "@/lib/calculator";
 import { InvestmentCalculator } from "@/components/InvestmentCalculator";
+import { MaintenanceConsultationCta } from "@/components/MaintenanceConsultationCta";
 import { site, whatsappUrlFor } from "@/lib/site";
 import { MediaGallery } from "@/components/MediaGallery";
 import { PropertyInquiryForm } from "@/components/PropertyInquiryForm";
@@ -211,6 +212,8 @@ export default async function PropertyDetailsPage({
                 </Link>
               </div>
             )}
+
+            <MaintenanceConsultationCta propertyId={property.id} propertyTitle={property.title} />
 
             <PropertyDocuments documents={property.documents} />
 

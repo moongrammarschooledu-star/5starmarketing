@@ -13,6 +13,7 @@ import { profileService } from "@/services/profileService";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { PropertyFinancialPanel } from "@/components/admin/accounting/PropertyFinancialPanel";
 import { PropertyInvestmentPanel } from "@/components/admin/investment/PropertyInvestmentPanel";
+import { PropertyMaintenancePanel } from "@/components/admin/maintenance/PropertyMaintenancePanel";
 import { canManageFinance, canAccess } from "@/lib/permissions";
 import { formatPKR } from "@/lib/calculator";
 
@@ -79,6 +80,7 @@ export default async function EditPropertyPage({
 
       {canSeeFinancials && <PropertyFinancialPanel propertyId={id} />}
       {admin && canAccess(admin.role, "investment") && <PropertyInvestmentPanel propertyId={id} />}
+      {admin && canAccess(admin.role, "maintenance") && <PropertyMaintenancePanel propertyId={id} />}
 
       <div className="mt-6">
         <PropertyForm action={boundAction} initialValues={property} submitLabel="Save Changes" projects={projects} />

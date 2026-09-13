@@ -43,7 +43,20 @@ export function hashBytes(bytes: Buffer): string {
  *  (customers/{auth.uid()}/...), so this exact shape is load-bearing,
  *  not just organizational. */
 export function buildStoragePath(
-  scope: { customerId?: string; dealId?: string; propertyId?: string; projectId?: string; paymentId?: string; inspectionId?: string; workOrderId?: string; assetId?: string; vendorId?: string; maintenanceRequestId?: string },
+  scope: {
+    customerId?: string;
+    dealId?: string;
+    propertyId?: string;
+    projectId?: string;
+    paymentId?: string;
+    inspectionId?: string;
+    workOrderId?: string;
+    assetId?: string;
+    vendorId?: string;
+    maintenanceRequestId?: string;
+    constructionProjectId?: string;
+    constructionDocumentProjectId?: string;
+  },
   documentId: string,
   extension: string
 ): string {
@@ -57,6 +70,8 @@ export function buildStoragePath(
   if (scope.paymentId) return `payments/${scope.paymentId}/receipts/${documentId}/${safeName}`;
   if (scope.inspectionId) return `inspections/${scope.inspectionId}/photos/${documentId}/${safeName}`;
   if (scope.workOrderId) return `work-orders/${scope.workOrderId}/photos/${documentId}/${safeName}`;
+  if (scope.constructionProjectId) return `construction-projects/${scope.constructionProjectId}/media/${documentId}/${safeName}`;
+  if (scope.constructionDocumentProjectId) return `construction-projects/${scope.constructionDocumentProjectId}/documents/${documentId}/${safeName}`;
   if (scope.maintenanceRequestId) return `maintenance-requests/${scope.maintenanceRequestId}/photos/${documentId}/${safeName}`;
   if (scope.assetId) return `assets/${scope.assetId}/documents/${documentId}/${safeName}`;
   if (scope.vendorId) return `vendors/${scope.vendorId}/documents/${documentId}/${safeName}`;

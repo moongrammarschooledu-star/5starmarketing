@@ -26,7 +26,8 @@ export type AdminSection =
   | "communications"
   | "accounting"
   | "investment"
-  | "maintenance";
+  | "maintenance"
+  | "construction";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -55,10 +56,11 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "accounting",
     "investment",
     "maintenance",
+    "construction",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction"],
 };
 
 /** Communications (STEP 22) — assigning/transferring conversations and
@@ -110,6 +112,15 @@ export function canSubmitExpense(role: AdminRole): boolean {
  *  may still create/update requests and work orders they're assigned
  *  to, per the section-level "maintenance" gate above. */
 export function canManageMaintenance(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
+/** Construction (STEP 26) — budget/BOQ/purchase-order/contractor-
+ *  contract/change-order/expense management is restricted the same way
+ *  accounting/investment/maintenance management already is; any staff
+ *  may still create/update phases, tasks, site reports, quality/safety
+ *  records, etc. per the section-level "construction" gate above. */
+export function canManageConstruction(role: AdminRole): boolean {
   return role === "super_admin" || role === "admin" || role === "sales_manager";
 }
 

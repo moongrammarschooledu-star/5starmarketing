@@ -19,6 +19,7 @@ import {
   Mail,
   TrendingUp,
   Hammer,
+  HardHat,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -36,6 +37,7 @@ const navItems = [
   { href: "/customer/messages", label: "Messages", icon: Mail },
   { href: "/customer/investments", label: "My Investments", icon: TrendingUp },
   { href: "/customer/maintenance", label: "Maintenance", icon: Hammer },
+  { href: "/customer/construction", label: "Construction Progress", icon: HardHat },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

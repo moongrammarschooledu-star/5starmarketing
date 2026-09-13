@@ -32,6 +32,7 @@ import {
   Wallet,
   TrendingUp,
   Hammer,
+  HardHat,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -51,6 +52,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/accounting", label: "Accounting", icon: Wallet, section: "accounting" },
   { href: "/admin/investment", label: "Investment", icon: TrendingUp, section: "investment" },
   { href: "/admin/maintenance", label: "Maintenance", icon: Hammer, section: "maintenance" },
+  { href: "/admin/construction", label: "Construction", icon: HardHat, section: "construction" },
   { href: "/admin/customers", label: "Customers", icon: Users2, section: "customers" },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarClock, section: "appointments" },
   { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, section: "appointments" },

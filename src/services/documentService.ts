@@ -33,6 +33,7 @@ function mapRow(row: any): DocumentRecord {
     leadId: row.lead_id ?? undefined,
     propertyId: row.property_id ?? undefined,
     projectId: row.project_id ?? undefined,
+    constructionProjectId: row.construction_project_id ?? undefined,
     dealId: row.deal_id ?? undefined,
     paymentId: row.payment_id ?? undefined,
     installmentId: row.installment_id ?? undefined,
@@ -154,6 +155,7 @@ export const documentService = {
     if (filters.customerId) query = query.eq("customer_id", filters.customerId);
     if (filters.propertyId) query = query.eq("property_id", filters.propertyId);
     if (filters.projectId) query = query.eq("project_id", filters.projectId);
+    if (filters.constructionProjectId) query = query.eq("construction_project_id", filters.constructionProjectId);
     if (filters.dealId) query = query.eq("deal_id", filters.dealId);
     if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
     if (filters.dateTo) query = query.lt("created_at", filters.dateTo);
@@ -215,6 +217,11 @@ export const documentService = {
     return documents;
   },
 
+  async listByConstructionProject(constructionProjectId: string): Promise<DocumentRecord[]> {
+    const { documents } = await this.search({ constructionProjectId, pageSize: MAX_DOCUMENT_PAGE_SIZE });
+    return documents;
+  },
+
   // ---- Upload / versioning ----
   async upload(input: DocumentInput, actor: { adminId?: string; customerId?: string; name: string }): Promise<DocumentRecord> {
     const parsed = parseUploadDataUri(input.dataUri);
@@ -232,6 +239,7 @@ export const documentService = {
         lead_id: input.leadId || null,
         property_id: input.propertyId || null,
         project_id: input.projectId || null,
+        construction_project_id: input.constructionProjectId || null,
         deal_id: input.dealId || null,
         payment_id: input.paymentId || null,
         installment_id: input.installmentId || null,
@@ -256,7 +264,11 @@ export const documentService = {
     }
 
     const documentId = inserted.id;
-    const path = buildStoragePath({ customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId }, documentId, parsed.extension);
+    const path = buildStoragePath(
+      { customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId },
+      documentId,
+      parsed.extension
+    );
 
     try {
       await uploadDocumentFile(path, parsed.bytes, parsed.mimeType);
@@ -307,6 +319,7 @@ export const documentService = {
         lead_id: input.leadId || null,
         property_id: input.propertyId || null,
         project_id: input.projectId || null,
+        construction_project_id: input.constructionProjectId || null,
         deal_id: input.dealId || null,
         payment_id: input.paymentId || null,
         installment_id: input.installmentId || null,
@@ -329,7 +342,11 @@ export const documentService = {
     }
 
     const documentId = inserted.id;
-    const path = buildStoragePath({ customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId }, documentId, "pdf");
+    const path = buildStoragePath(
+      { customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId },
+      documentId,
+      "pdf"
+    );
     await uploadDocumentFile(path, input.bytes, input.mimeType);
     await supabase.from("documents").update({ storage_path: path, status: "UPLOADED" }).eq("id", documentId);
     await supabase.from("document_versions").insert({
@@ -359,7 +376,11 @@ export const documentService = {
     const fileHash = hashBytes(parsed.bytes);
     const supabase = await createClient();
 
-    const path = buildStoragePath({ customerId: current.customerId, dealId: current.dealId, propertyId: current.propertyId, projectId: current.projectId, paymentId: current.paymentId }, documentId, parsed.extension);
+    const path = buildStoragePath(
+      { customerId: current.customerId, dealId: current.dealId, propertyId: current.propertyId, projectId: current.projectId, paymentId: current.paymentId, constructionDocumentProjectId: current.constructionProjectId },
+      documentId,
+      parsed.extension
+    );
     await uploadDocumentFile(path, parsed.bytes, parsed.mimeType);
 
     const nextVersion = current.currentVersion + 1;

@@ -15,6 +15,7 @@ import { PropertyFinancialPanel } from "@/components/admin/accounting/PropertyFi
 import { PropertyInvestmentPanel } from "@/components/admin/investment/PropertyInvestmentPanel";
 import { PropertyMaintenancePanel } from "@/components/admin/maintenance/PropertyMaintenancePanel";
 import { PropertyLegalPanel } from "@/components/admin/legal/PropertyLegalPanel";
+import { PropertySupportPanel } from "@/components/support/PropertySupportPanel";
 import { canManageFinance, canAccess } from "@/lib/permissions";
 import { formatPKR } from "@/lib/calculator";
 
@@ -83,6 +84,7 @@ export default async function EditPropertyPage({
       {admin && canAccess(admin.role, "investment") && <PropertyInvestmentPanel propertyId={id} />}
       {admin && canAccess(admin.role, "maintenance") && <PropertyMaintenancePanel propertyId={id} />}
       {admin && canAccess(admin.role, "legal") && <PropertyLegalPanel propertyId={id} />}
+      {admin && canAccess(admin.role, "support") && <PropertySupportPanel propertyId={id} />}
 
       <div className="mt-6">
         <PropertyForm action={boundAction} initialValues={property} submitLabel="Save Changes" projects={projects} />

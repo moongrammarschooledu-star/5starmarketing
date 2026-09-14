@@ -73,7 +73,16 @@ export type StaffNotificationType =
   | "legal_approval_requested"
   | "legal_risk_flagged"
   | "legal_contract_expiring"
-  | "compliance_review_due";
+  | "compliance_review_due"
+  // STEP 29 — Customer Support, Complaint & Service Desk
+  | "support_ticket_created"
+  | "support_ticket_assigned"
+  | "support_ticket_customer_reply"
+  | "support_ticket_sla_warning"
+  | "support_ticket_sla_breached"
+  | "support_ticket_escalated"
+  | "support_complaint_filed"
+  | "support_complaint_escalated";
 
 export interface StaffNotification {
   id: string;

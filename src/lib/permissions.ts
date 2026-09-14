@@ -29,7 +29,8 @@ export type AdminSection =
   | "maintenance"
   | "construction"
   | "rentals"
-  | "legal";
+  | "legal"
+  | "support";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -61,10 +62,11 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "construction",
     "rentals",
     "legal",
+    "support",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal", "support"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support"],
 };
 
 /** Communications (STEP 22) — assigning/transferring conversations and
@@ -149,6 +151,15 @@ export function canManageRentals(role: AdminRole): boolean {
  *  can be assigned as one per-record via a nullable legalOfficerId,
  *  mirroring construction's project_manager_id pattern. */
 export function canManageLegal(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
+/** Support Desk (STEP 29) — department/category/SLA/knowledge-base
+ *  configuration is restricted the same way every other module's
+ *  settings already are. Any staff (sales_agent included) may still
+ *  work tickets assigned to them or their department, per the
+ *  section-level "support" gate above and this module's own RLS. */
+export function canManageSupport(role: AdminRole): boolean {
   return role === "super_admin" || role === "admin" || role === "sales_manager";
 }
 

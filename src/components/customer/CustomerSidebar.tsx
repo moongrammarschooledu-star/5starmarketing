@@ -23,6 +23,7 @@ import {
   KeyRound,
   Home,
   Gavel,
+  Headset,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -44,6 +45,7 @@ const navItems = [
   { href: "/customer/rentals", label: "My Rental", icon: KeyRound },
   { href: "/customer/landlord", label: "Landlord Portal", icon: Home },
   { href: "/customer/legal", label: "Legal & Documents", icon: Gavel },
+  { href: "/customer/support", label: "Support", icon: Headset },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

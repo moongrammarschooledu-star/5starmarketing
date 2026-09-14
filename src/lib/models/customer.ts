@@ -105,7 +105,15 @@ export type NotificationType =
   | "maintenance_work_completed"
   | "maintenance_verification_required"
   | "maintenance_request_closed"
-  | "maintenance_request_reopened";
+  | "maintenance_request_reopened"
+  // STEP 29 — Customer Support, Complaint & Service Desk
+  | "support_ticket_received"
+  | "support_ticket_staff_reply"
+  | "support_ticket_status_changed"
+  | "support_ticket_resolved"
+  | "support_ticket_closed"
+  | "support_ticket_satisfaction_request"
+  | "support_complaint_acknowledged";
 
 export interface CustomerNotification {
   id: string;

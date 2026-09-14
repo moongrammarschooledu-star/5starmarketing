@@ -69,6 +69,7 @@ export interface DocumentRecord {
   propertyId?: string;
   projectId?: string;
   constructionProjectId?: string;
+  leaseId?: string;
   dealId?: string;
   paymentId?: string;
   installmentId?: string;
@@ -115,6 +116,7 @@ export interface DocumentInput {
   propertyId?: string;
   projectId?: string;
   constructionProjectId?: string;
+  leaseId?: string;
   dealId?: string;
   paymentId?: string;
   installmentId?: string;
@@ -289,6 +291,7 @@ export interface DocumentSearchFilters {
   propertyId?: string;
   projectId?: string;
   constructionProjectId?: string;
+  leaseId?: string;
   dealId?: string;
   agentId?: string;
   dateFrom?: string;

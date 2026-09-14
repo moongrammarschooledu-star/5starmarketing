@@ -42,9 +42,25 @@ function mapRow(row: any): MaintenanceWorkOrder {
     notes: row.notes ?? undefined,
     status: row.status,
     expenseId: row.expense_id ?? undefined,
+    landlordApprovalStatus: row.landlord_approval_status ?? "NOT_REQUIRED",
+    landlordApprovedBy: row.landlord_approved_by ?? undefined,
+    landlordApprovedAt: row.landlord_approved_at ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/** landlord_approved_by references auth.users, not customer_profiles
+ *  directly (same reason STEP 24/26's customer_id fields need a
+ *  separate lookup) — batch-resolve names in one extra query rather
+ *  than an unreliable embedded-join. */
+async function attachLandlordApproverNames(orders: MaintenanceWorkOrder[]): Promise<MaintenanceWorkOrder[]> {
+  const ids = Array.from(new Set(orders.map((o) => o.landlordApprovedBy).filter((id): id is string => !!id)));
+  if (ids.length === 0) return orders;
+  const supabase = await createClient();
+  const { data } = await supabase.from("customer_profiles").select("id, full_name").in("id", ids);
+  const names = new Map((data ?? []).map((c) => [c.id, c.full_name as string]));
+  return orders.map((o) => (o.landlordApprovedBy ? { ...o, landlordApprovedByName: names.get(o.landlordApprovedBy) } : o));
 }
 
 function assertTransition(from: WorkOrderStatus, to: WorkOrderStatus) {
@@ -88,14 +104,15 @@ export const maintenanceWorkOrderService = {
       console.error("maintenanceWorkOrderService.list failed:", error);
       return [];
     }
-    return (data ?? []).map(mapRow);
+    return attachLandlordApproverNames((data ?? []).map(mapRow));
   },
 
   async getById(id: string): Promise<MaintenanceWorkOrder | undefined> {
     const supabase = await createClient();
     const { data, error } = await supabase.from("maintenance_work_orders").select(SELECT).eq("id", id).maybeSingle();
     if (error || !data) return undefined;
-    return mapRow(data);
+    const [order] = await attachLandlordApproverNames([mapRow(data)]);
+    return order;
   },
 
   async listByRequest(requestId: string): Promise<MaintenanceWorkOrder[]> {
@@ -311,5 +328,28 @@ export const maintenanceWorkOrderService = {
     const { data, error } = await supabase.from("maintenance_photos").select("storage_path").eq("id", photoId).maybeSingle();
     if (error || !data) throw new Error("You are not authorized to view this photo.");
     return createSignedDocumentUrl(data.storage_path);
+  },
+
+  // ---- Rental landlord approval (STEP 27, section 27) — admin decides
+  // per work order whether landlord sign-off is required by moving this
+  // gate to PENDING; the landlord may then only move PENDING ->
+  // APPROVED/REJECTED (enforced again at the RLS layer). ----
+  async requireLandlordApproval(workOrderId: string, actorId: string, actorName: string): Promise<void> {
+    const supabase = await createClient();
+    const { error } = await supabase.from("maintenance_work_orders").update({ landlord_approval_status: "PENDING" }).eq("id", workOrderId);
+    if (error) throw new Error("Could not request landlord approval for this work order.");
+    await maintenanceAuditService.log({ entityType: "work_order", entityId: workOrderId, action: "Landlord approval requested", actorId, actorName });
+  },
+
+  async recordLandlordApproval(workOrderId: string, decision: "APPROVED" | "REJECTED", landlordCustomerId: string): Promise<void> {
+    const supabase = await createClient();
+    const { data: existing } = await supabase.from("maintenance_work_orders").select("landlord_approval_status").eq("id", workOrderId).maybeSingle();
+    if (!existing || existing.landlord_approval_status !== "PENDING") throw new Error("This work order is not awaiting landlord approval.");
+    const { error } = await supabase
+      .from("maintenance_work_orders")
+      .update({ landlord_approval_status: decision, landlord_approved_by: landlordCustomerId, landlord_approved_at: new Date().toISOString() })
+      .eq("id", workOrderId);
+    if (error) throw new Error("Could not record your decision.");
+    await maintenanceAuditService.log({ entityType: "work_order", entityId: workOrderId, action: `Landlord ${decision === "APPROVED" ? "approved" : "rejected"}`, actorId: undefined });
   },
 };

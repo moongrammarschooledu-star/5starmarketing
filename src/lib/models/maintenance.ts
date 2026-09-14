@@ -452,6 +452,11 @@ export interface MaintenanceWorkOrder {
   notes?: string;
   status: WorkOrderStatus;
   expenseId?: string;
+  // STEP 27 — optional rental landlord-approval gate (additive; NOT_REQUIRED for every non-rental work order).
+  landlordApprovalStatus: "NOT_REQUIRED" | "PENDING" | "APPROVED" | "REJECTED";
+  landlordApprovedBy?: string;
+  landlordApprovedByName?: string;
+  landlordApprovedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

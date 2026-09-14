@@ -20,6 +20,8 @@ import {
   TrendingUp,
   Hammer,
   HardHat,
+  KeyRound,
+  Home,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -38,6 +40,8 @@ const navItems = [
   { href: "/customer/investments", label: "My Investments", icon: TrendingUp },
   { href: "/customer/maintenance", label: "Maintenance", icon: Hammer },
   { href: "/customer/construction", label: "Construction Progress", icon: HardHat },
+  { href: "/customer/rentals", label: "My Rental", icon: KeyRound },
+  { href: "/customer/landlord", label: "Landlord Portal", icon: Home },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

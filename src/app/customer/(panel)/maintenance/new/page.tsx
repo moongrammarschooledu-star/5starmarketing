@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { customerService } from "@/services/customerService";
 import { dealService } from "@/services/dealService";
+import { tenantService } from "@/services/tenantService";
+import { leaseService } from "@/services/leaseService";
 import { NewCustomerMaintenanceRequestForm } from "@/components/customer/maintenance/NewCustomerMaintenanceRequestForm";
 
 export const metadata = { title: "New Maintenance Request" };
@@ -12,7 +14,19 @@ export default async function NewCustomerMaintenanceRequestPage() {
   if (!customer) return null;
 
   const deals = await dealService.listByCustomer(customer.id);
-  const properties = [...new Map(deals.filter((d) => d.propertyId).map((d) => [d.propertyId!, { id: d.propertyId!, title: d.propertyTitle ?? "Property", unitId: d.inventoryId }])).values()];
+  const dealProperties = deals.filter((d) => d.propertyId).map((d) => [d.propertyId!, { id: d.propertyId!, title: d.propertyTitle ?? "Property", unitId: d.inventoryId }] as const);
+
+  // STEP 27 — a tenant renting a property (never having "bought" it via a
+  // deal) still needs to submit maintenance requests for it; reuses the
+  // EXISTING maintenance_requests flow, just widening where its property
+  // list comes from.
+  const tenant = await tenantService.getByCustomerId(customer.id);
+  const leases = tenant ? await leaseService.list({ tenantId: tenant.id, status: "ACTIVE" }) : [];
+  const leaseProperties = leases
+    .filter((l) => l.propertyId)
+    .map((l) => [l.propertyId!, { id: l.propertyId!, title: l.propertyTitle ?? "Property", unitId: l.unitId }] as const);
+
+  const properties = [...new Map([...dealProperties, ...leaseProperties]).values()];
 
   return (
     <div>

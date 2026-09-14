@@ -27,7 +27,8 @@ export type AdminSection =
   | "accounting"
   | "investment"
   | "maintenance"
-  | "construction";
+  | "construction"
+  | "rentals";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -57,10 +58,11 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "investment",
     "maintenance",
     "construction",
+    "rentals",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals"],
 };
 
 /** Communications (STEP 22) — assigning/transferring conversations and
@@ -121,6 +123,16 @@ export function canManageMaintenance(role: AdminRole): boolean {
  *  may still create/update phases, tasks, site reports, quality/safety
  *  records, etc. per the section-level "construction" gate above. */
 export function canManageConstruction(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
+/** Rentals (STEP 27) — landlord/tenant/lease/rent-payment/deposit/
+ *  statement management is restricted the same way accounting/
+ *  investment/maintenance/construction management already is; any
+ *  staff may still create/update rental properties, applications,
+ *  notices and move records per the section-level "rentals" gate
+ *  above. */
+export function canManageRentals(role: AdminRole): boolean {
   return role === "super_admin" || role === "admin" || role === "sales_manager";
 }
 

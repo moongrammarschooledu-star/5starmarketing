@@ -34,6 +34,7 @@ function mapRow(row: any): DocumentRecord {
     propertyId: row.property_id ?? undefined,
     projectId: row.project_id ?? undefined,
     constructionProjectId: row.construction_project_id ?? undefined,
+    leaseId: row.lease_id ?? undefined,
     dealId: row.deal_id ?? undefined,
     paymentId: row.payment_id ?? undefined,
     installmentId: row.installment_id ?? undefined,
@@ -156,6 +157,7 @@ export const documentService = {
     if (filters.propertyId) query = query.eq("property_id", filters.propertyId);
     if (filters.projectId) query = query.eq("project_id", filters.projectId);
     if (filters.constructionProjectId) query = query.eq("construction_project_id", filters.constructionProjectId);
+    if (filters.leaseId) query = query.eq("lease_id", filters.leaseId);
     if (filters.dealId) query = query.eq("deal_id", filters.dealId);
     if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
     if (filters.dateTo) query = query.lt("created_at", filters.dateTo);
@@ -222,6 +224,11 @@ export const documentService = {
     return documents;
   },
 
+  async listByLease(leaseId: string): Promise<DocumentRecord[]> {
+    const { documents } = await this.search({ leaseId, pageSize: MAX_DOCUMENT_PAGE_SIZE });
+    return documents;
+  },
+
   // ---- Upload / versioning ----
   async upload(input: DocumentInput, actor: { adminId?: string; customerId?: string; name: string }): Promise<DocumentRecord> {
     const parsed = parseUploadDataUri(input.dataUri);
@@ -240,6 +247,7 @@ export const documentService = {
         property_id: input.propertyId || null,
         project_id: input.projectId || null,
         construction_project_id: input.constructionProjectId || null,
+        lease_id: input.leaseId || null,
         deal_id: input.dealId || null,
         payment_id: input.paymentId || null,
         installment_id: input.installmentId || null,
@@ -265,7 +273,7 @@ export const documentService = {
 
     const documentId = inserted.id;
     const path = buildStoragePath(
-      { customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId },
+      { customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId, leaseId: input.leaseId },
       documentId,
       parsed.extension
     );
@@ -320,6 +328,7 @@ export const documentService = {
         property_id: input.propertyId || null,
         project_id: input.projectId || null,
         construction_project_id: input.constructionProjectId || null,
+        lease_id: input.leaseId || null,
         deal_id: input.dealId || null,
         payment_id: input.paymentId || null,
         installment_id: input.installmentId || null,
@@ -343,7 +352,7 @@ export const documentService = {
 
     const documentId = inserted.id;
     const path = buildStoragePath(
-      { customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId },
+      { customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId, leaseId: input.leaseId },
       documentId,
       "pdf"
     );
@@ -377,7 +386,7 @@ export const documentService = {
     const supabase = await createClient();
 
     const path = buildStoragePath(
-      { customerId: current.customerId, dealId: current.dealId, propertyId: current.propertyId, projectId: current.projectId, paymentId: current.paymentId, constructionDocumentProjectId: current.constructionProjectId },
+      { customerId: current.customerId, dealId: current.dealId, propertyId: current.propertyId, projectId: current.projectId, paymentId: current.paymentId, constructionDocumentProjectId: current.constructionProjectId, leaseId: current.leaseId },
       documentId,
       parsed.extension
     );

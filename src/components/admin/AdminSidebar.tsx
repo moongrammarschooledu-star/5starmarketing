@@ -34,6 +34,7 @@ import {
   Hammer,
   HardHat,
   KeyRound,
+  Scale,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -55,6 +56,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/maintenance", label: "Maintenance", icon: Hammer, section: "maintenance" },
   { href: "/admin/construction", label: "Construction", icon: HardHat, section: "construction" },
   { href: "/admin/rentals", label: "Rentals", icon: KeyRound, section: "rentals" },
+  { href: "/admin/legal", label: "Legal & Compliance", icon: Scale, section: "legal" },
   { href: "/admin/customers", label: "Customers", icon: Users2, section: "customers" },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarClock, section: "appointments" },
   { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, section: "appointments" },

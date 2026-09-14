@@ -28,7 +28,8 @@ export type AdminSection =
   | "investment"
   | "maintenance"
   | "construction"
-  | "rentals";
+  | "rentals"
+  | "legal";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -59,10 +60,11 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "maintenance",
     "construction",
     "rentals",
+    "legal",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal"],
 };
 
 /** Communications (STEP 22) — assigning/transferring conversations and
@@ -133,6 +135,20 @@ export function canManageConstruction(role: AdminRole): boolean {
  *  notices and move records per the section-level "rentals" gate
  *  above. */
 export function canManageRentals(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
+/** Legal & Compliance (STEP 28) — ownership/document-verification/
+ *  due-diligence/compliance/case/notice/contract/approval/risk
+ *  management is restricted the same way every other financially- or
+ *  legally-sensitive module already is. A sales_agent still sees the
+ *  section-level "legal" read-only status views (per the section-level
+ *  gate above and this module's own RLS agent-read policies) for
+ *  properties tied to their own deals, but can never create/edit a
+ *  legal record — there is no "LEGAL OFFICER" role; any admin/manager
+ *  can be assigned as one per-record via a nullable legalOfficerId,
+ *  mirroring construction's project_manager_id pattern. */
+export function canManageLegal(role: AdminRole): boolean {
   return role === "super_admin" || role === "admin" || role === "sales_manager";
 }
 

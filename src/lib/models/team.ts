@@ -61,7 +61,19 @@ export type StaffNotificationType =
   | "maintenance_request_assigned"
   | "work_order_assigned"
   | "warranty_expiring"
-  | "preventive_maintenance_due";
+  | "preventive_maintenance_due"
+  // STEP 28 — Legal, Compliance & Due-Diligence
+  | "legal_officer_assigned"
+  | "legal_document_verification_requested"
+  | "legal_document_expiring"
+  | "legal_document_expired"
+  | "due_diligence_deadline_approaching"
+  | "legal_case_hearing_reminder"
+  | "legal_notice_response_due"
+  | "legal_approval_requested"
+  | "legal_risk_flagged"
+  | "legal_contract_expiring"
+  | "compliance_review_due";
 
 export interface StaffNotification {
   id: string;

@@ -18,6 +18,8 @@ import { paymentPlanService } from "./paymentPlanService";
 import { inventoryService } from "./inventoryService";
 import { settingsService } from "./settingsService";
 import { documentService } from "./documentService";
+import { legalSettingsService } from "./legalSettingsService";
+import { legalReportService } from "./legalReportService";
 import { automationService } from "./automationService";
 import { leadScoringService } from "./leadScoringService";
 import { propertyPriceHistoryService } from "./propertyPriceHistoryService";
@@ -457,6 +459,17 @@ export const dealService = {
         const complete = await documentService.isDealDocumentationComplete(id, current.dealType, current.propertyType);
         if (!complete) {
           throw new Error("This deal cannot be completed until all mandatory documents are approved.");
+        }
+      }
+
+      // STEP 28, section 36 — legal-clearance gate. Admin-configurable,
+      // defaults OFF so existing/in-flight deals are never retroactively
+      // blocked. Mirrors the documents gate immediately above exactly.
+      const legalSettings = await legalSettingsService.get().catch(() => null);
+      if (legalSettings?.requireLegalClearanceForDealCompletion && current.propertyId) {
+        const { clear, reasons } = await legalReportService.isPropertyClearForDealCompletion(current.propertyId);
+        if (!clear) {
+          throw new Error(`This deal cannot be completed until this property's legal clearance is resolved: ${reasons.join(" ")}`);
         }
       }
     }

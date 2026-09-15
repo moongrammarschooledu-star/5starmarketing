@@ -94,6 +94,17 @@ dashboard). Create your login in the Supabase dashboard:
 
 To add a second admin later, repeat the same steps with another email.
 
+**Already on STEP 29?** Also run
+[`supabase/migrations/2026-09-19-step30-ai-assistant-automation.sql`](supabase/migrations/2026-09-19-step30-ai-assistant-automation.sql)
+once — it adds the AI Assistant + Automation tables (`ai_conversations`,
+`ai_messages`, `ai_assistant_configs`, `ai_tool_logs`, `ai_action_requests`,
+`ai_automation_rules`/`ai_automation_runs`, `ai_insights`,
+`ai_knowledge_sources`, `ai_usage_records`). Fresh installs already get
+these from `schema.sql`. The AI feature ships **disabled by default**
+(the `GLOBAL` row in `ai_assistant_configs` has `enabled = false`) — an
+Admin/Super Admin/Sales Manager turns it on from `/admin/ai/settings`
+once an AI Gateway key is configured (see section 3 below).
+
 ## 3. Environment variables required
 
 Only two are **required** for the site to work at all, both safe to
@@ -120,6 +131,17 @@ The `service_role` key is never used anywhere in this codebase.
 Leaving any of these blank does not break the site — each feature they
 gate simply stays off (no analytics script loads, no verification meta
 tag is rendered, etc).
+
+**AI Assistant (STEP 30)** — one more optional variable:
+
+| Variable | Purpose |
+|---|---|
+| `AI_GATEWAY_API_KEY` | Vercel AI Gateway key — powers `/admin/ai/*` and `/customer/assistant`. Get one from your Vercel team's **AI Gateway → API Keys** page (may require enabling the AI Gateway product for your team first — a one-time dashboard step). On Vercel deployments, an AI Gateway key is often not needed at all: OIDC auto-authenticates. |
+
+Without this key set, the AI Settings page shows every assistant as
+unavailable and the chat routes return a clean "AI provider is not
+configured" message instead of crashing — nothing else in the app is
+affected.
 
 ## 4. Storage buckets
 

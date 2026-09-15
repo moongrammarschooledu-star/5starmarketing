@@ -24,6 +24,7 @@ import {
   Home,
   Gavel,
   Headset,
+  Bot,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -46,6 +47,7 @@ const navItems = [
   { href: "/customer/landlord", label: "Landlord Portal", icon: Home },
   { href: "/customer/legal", label: "Legal & Documents", icon: Gavel },
   { href: "/customer/support", label: "Support", icon: Headset },
+  { href: "/customer/assistant", label: "AI Assistant", icon: Bot },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
 ];

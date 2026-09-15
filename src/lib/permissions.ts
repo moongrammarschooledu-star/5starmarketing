@@ -30,7 +30,8 @@ export type AdminSection =
   | "construction"
   | "rentals"
   | "legal"
-  | "support";
+  | "support"
+  | "ai";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -63,11 +64,40 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "rentals",
     "legal",
     "support",
+    "ai",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal", "support"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal", "support", "ai"],
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support", "ai"],
 };
+
+/** AI Settings (STEP 30) — enabling/disabling assistants, editing tool
+ *  permissions, and approval-queue review is restricted the same way
+ *  every other module's admin settings already are (sales_agent may
+ *  still use the chat/insights views per the section-level "ai" gate
+ *  above, but cannot change configuration). */
+export function canManageAiSettings(role: AdminRole): boolean {
+  return role === "super_admin" || role === "admin" || role === "sales_manager";
+}
+
+/** Maps an AI assistant type to the AdminSection whose access decides
+ *  whether an admin user may use that assistant at all. */
+export function assistantSectionFor(assistantType: string): AdminSection {
+  switch (assistantType) {
+    case "SALES":
+      return "leads";
+    case "SUPPORT":
+      return "support";
+    case "RENTAL":
+      return "rentals";
+    case "CONSTRUCTION":
+      return "construction";
+    case "ACCOUNTING":
+      return "accounting";
+    default:
+      return "ai";
+  }
+}
 
 /** Communications (STEP 22) — assigning/transferring conversations and
  *  editing provider/business-hours settings is restricted the same way

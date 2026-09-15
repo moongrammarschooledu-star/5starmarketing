@@ -1,6 +1,6 @@
 import "server-only";
 import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from "ai";
-import { isGatewayConfigured, DEFAULT_AI_MODEL, buildSystemPrompt, ASSISTANT_PERSONAS } from "./gateway";
+import { isGatewayConfigured, resolveModel, DEFAULT_AI_MODEL, buildSystemPrompt, ASSISTANT_PERSONAS } from "./gateway";
 import { buildToolSet } from "./tools";
 import { aiConfigService } from "@/services/aiConfigService";
 import { aiConversationService } from "@/services/aiConversationService";
@@ -58,7 +58,7 @@ export async function runAiChat(params: {
   let errorCount = 0;
 
   const result = streamText({
-    model: config.model || DEFAULT_AI_MODEL,
+    model: resolveModel(config.model || DEFAULT_AI_MODEL),
     system,
     messages: await convertToModelMessages(messages),
     tools: toolSet,

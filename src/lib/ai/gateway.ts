@@ -1,21 +1,57 @@
 import "server-only";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import type { LanguageModel } from "ai";
 
-/** STEP 30 — AI Gateway wiring.
+/** STEP 30 — AI provider wiring.
  *
- * Uses the Vercel AI Gateway through the AI SDK's plain "provider/model"
- * string form (see the ai-sdk/ai-gateway skills) — no provider-specific
- * package needed. Requires AI_GATEWAY_API_KEY (or, on Vercel, OIDC) to
- * actually reach a model; see .env.local.example.
+ * Two supported ways to reach a model, checked in this order:
+ *  1. ANTHROPIC_API_KEY — a direct key from the Anthropic Console
+ *     (platform.claude.com/dashboard). Simplest for local dev / a non-
+ *     Vercel deploy.
+ *  2. AI_GATEWAY_API_KEY (or Vercel OIDC when deployed on Vercel) — the
+ *     Vercel AI Gateway, via the AI SDK's plain "provider/model" string
+ *     form. Adds multi-provider routing/observability if you want it
+ *     later; not required.
  *
  * `isGatewayConfigured()` is the single place every caller checks before
- * attempting a real model call, so an unconfigured Gateway degrades to a
- * clean "AI is not configured yet" response instead of crashing — the
+ * attempting a real model call, so an unconfigured provider degrades to
+ * a clean "AI is not configured yet" response instead of crashing — the
  * same pattern this repo already uses for unconfigured Supabase. */
 export function isGatewayConfigured(): boolean {
-  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL);
+  return Boolean(
+    process.env.ANTHROPIC_API_KEY ||
+      process.env.AI_GATEWAY_API_KEY ||
+      process.env.VERCEL_OIDC_TOKEN ||
+      process.env.VERCEL
+  );
 }
 
 export const DEFAULT_AI_MODEL = "anthropic/claude-sonnet-4.5";
+
+/** Resolves a config `model` string (e.g. "anthropic/claude-sonnet-4.5")
+ *  to an actual callable model for `streamText`. Prefers a direct
+ *  Anthropic key when present; otherwise falls back to passing the
+ *  provider/model string straight through (resolved via the AI Gateway). */
+export function resolveModel(modelId: string): LanguageModel {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (anthropicKey) {
+    const anthropic = createAnthropic({ apiKey: anthropicKey });
+    return anthropic(mapToCurrentAnthropicModelId(modelId));
+  }
+  return modelId;
+}
+
+/** Config rows store a stable "provider/model" label (e.g.
+ *  "anthropic/claude-sonnet-4.5") meant for the AI Gateway. When calling
+ *  Anthropic directly, map that label to a real, currently-valid
+ *  Anthropic API model id instead of passing it through as-is. */
+function mapToCurrentAnthropicModelId(modelId: string): string {
+  const label = (modelId.includes("/") ? modelId.split("/").slice(1).join("/") : modelId).toLowerCase();
+  if (label.includes("opus")) return "claude-opus-5";
+  if (label.includes("haiku")) return "claude-haiku-4-5-20251001";
+  if (label.includes("fable")) return "claude-fable-5-1";
+  return "claude-sonnet-5";
+}
 
 /** Builds the system prompt with the SYSTEM / RETRIEVED-DATA / TOOL-OUTPUT
  *  separation the spec's prompt-injection defense requires. `persona` is

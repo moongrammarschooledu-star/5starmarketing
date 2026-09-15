@@ -9,6 +9,7 @@
     "lint": "node node_modules/eslint/bin/eslint.js ."
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.53",
     "@ai-sdk/react": "^4.0.104",
     "@react-pdf/renderer": "^4.9.0",
     "@supabase/ssr": "^0.5.2",

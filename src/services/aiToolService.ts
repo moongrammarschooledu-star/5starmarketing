@@ -259,7 +259,7 @@ export const aiToolService = {
 
   async search_knowledge_base(ctx: ToolContext, query: string) {
     return withLog(ctx, "search_knowledge_base", { query }, async () => {
-      const articles = ctx.actor.kind === "customer" ? await kbService.listPublished(query) : await kbService.listPublished(query);
+      const articles = await kbService.listPublished(query);
       return {
         items: articles.slice(0, MAX_LIST).map((a) => ({ id: a.id, title: a.title, question: a.question, answer: a.answer })),
         note: articles.length === 0 ? "No approved knowledge-base article matched this question." : undefined,

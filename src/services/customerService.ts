@@ -124,6 +124,46 @@ export const customerService = {
     }));
   },
 
+  /** Scoped customer list for the Agent Mobile App (STEP 31, section
+   *  16/39) — an agent must only ever see customers connected to their
+   *  OWN assigned leads, never the full customer directory admin sees
+   *  via listAll(). */
+  async listForAgent(agentId: string): Promise<CustomerSummary[]> {
+    const supabase = await createClient();
+    const { data: leadRows, error: leadErr } = await supabase
+      .from("leads")
+      .select("customer_id")
+      .eq("assigned_agent_id", agentId)
+      .not("customer_id", "is", null);
+    if (leadErr) {
+      console.error("customerService.listForAgent (leads) failed:", leadErr);
+      return [];
+    }
+    const customerIds = [...new Set((leadRows ?? []).map((r) => r.customer_id as string))];
+    if (customerIds.length === 0) return [];
+
+    const [{ data: customers, error: cErr }, { data: favorites }, { data: leads }] = await Promise.all([
+      supabase.from("customer_profiles").select("*").in("id", customerIds).order("created_at", { ascending: false }),
+      supabase.from("favorites").select("user_id").in("user_id", customerIds),
+      supabase.from("leads").select("customer_id").in("customer_id", customerIds),
+    ]);
+    if (cErr) {
+      console.error("customerService.listForAgent (customers) failed:", cErr);
+      return [];
+    }
+    const favCounts = new Map<string, number>();
+    for (const f of favorites ?? []) favCounts.set(f.user_id, (favCounts.get(f.user_id) ?? 0) + 1);
+    const inquiryCounts = new Map<string, number>();
+    for (const l of leads ?? []) {
+      if (l.customer_id) inquiryCounts.set(l.customer_id, (inquiryCounts.get(l.customer_id) ?? 0) + 1);
+    }
+    return (customers ?? []).map((row) => ({
+      ...mapRow(row),
+      savedPropertiesCount: favCounts.get(row.id) ?? 0,
+      inquiryCount: inquiryCounts.get(row.id) ?? 0,
+    }));
+  },
+
   async getByIdForAdmin(id: string): Promise<CustomerSummary | undefined> {
     const supabase = await createClient();
     const { data, error } = await supabase.from("customer_profiles").select("*").eq("id", id).maybeSingle();

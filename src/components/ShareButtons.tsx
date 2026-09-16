@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { MessageCircle, Facebook, Link as LinkIcon, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MessageCircle, Facebook, Link as LinkIcon, Check, Share2 } from "lucide-react";
 
 export function ShareButtons({ url, text }: { url: string; text: string }) {
   const [copied, setCopied] = useState(false);
+  const [canNativeShare, setCanNativeShare] = useState(false);
+
+  useEffect(() => {
+    setCanNativeShare(typeof navigator !== "undefined" && !!navigator.share);
+  }, []);
 
   async function copyLink() {
     try {
@@ -17,9 +22,31 @@ export function ShareButtons({ url, text }: { url: string; text: string }) {
     }
   }
 
+  /** STEP 31 section 35 — the OS-level share sheet (Messages,
+   *  Instagram, Mail, etc.) is only available on supporting
+   *  browsers/devices; only public title/text/url are ever shared. */
+  async function nativeShare() {
+    try {
+      await navigator.share({ title: text, url });
+    } catch {
+      // User cancelled the share sheet, or the call failed — no error
+      // state needed either way, the other share buttons stay available.
+    }
+  }
+
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Share:</span>
+      {canNativeShare && (
+        <button
+          type="button"
+          onClick={nativeShare}
+          aria-label="Share"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/10 text-ink hover:bg-ink/15"
+        >
+          <Share2 className="h-4 w-4" />
+        </button>
+      )}
       <a
         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${text}\n\n${url}`)}`}
         target="_blank"

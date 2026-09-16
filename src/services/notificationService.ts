@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { CustomerNotification, NotificationType } from "@/lib/models/customer";
+import { sendPushToActor } from "@/lib/push/provider";
+import { categoryForNotificationType, resolveNotificationLink } from "@/lib/notificationLinks";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(row: any): CustomerNotification {
@@ -49,6 +51,11 @@ export const notificationService = {
     await supabase.from("customer_notifications").update({ read: true }).eq("id", id);
   },
 
+  async markAllRead(userId: string): Promise<void> {
+    const supabase = await createClient();
+    await supabase.from("customer_notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
+  },
+
   /** Called from admin actions (e.g. a lead status change) to notify the
    *  customer who owns that lead, if any. Best-effort — never blocks the
    *  admin action it's attached to. No email/WhatsApp is sent; this only
@@ -71,6 +78,12 @@ export const notificationService = {
         entity_type: entityType ?? null,
         entity_id: entityId ?? null,
       });
+      sendPushToActor("CUSTOMER", userId, categoryForNotificationType(type), {
+        title,
+        body: message,
+        url: resolveNotificationLink("customer", entityType, entityId) ?? undefined,
+        tag: type,
+      }).catch(() => {});
     } catch (e) {
       console.error("notificationService.notify failed:", e);
     }

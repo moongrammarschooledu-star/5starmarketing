@@ -54,7 +54,9 @@ export default async function CustomerPanelLayout({ children }: { children: Reac
   return (
     <FavoritesProvider initialFavoriteIds={favoriteIds} isLoggedIn>
       <CompareProvider>
-        <CustomerShell customerName={customer.fullName}>{children}</CustomerShell>
+        <CustomerShell customerId={customer.id} customerName={customer.fullName}>
+          {children}
+        </CustomerShell>
       </CompareProvider>
     </FavoritesProvider>
   );

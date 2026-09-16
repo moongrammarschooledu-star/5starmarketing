@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import { site } from "@/lib/site";
@@ -7,6 +7,13 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JsonLd } from "@/components/JsonLd";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { AttributionTracker } from "@/components/AttributionTracker";
+import { PwaRuntime } from "@/components/pwa/PwaRuntime";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#e01e26",
+};
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -41,6 +48,10 @@ export const metadata: Metadata = {
   authors: [{ name: site.director }],
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: site.name },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
@@ -117,6 +128,7 @@ export default async function RootLayout({
         <JsonLd data={websiteJsonLd} />
         <AttributionTracker attributionWindowDays={settings?.marketingAttributionWindowDays ?? 30} />
         {children}
+        <PwaRuntime />
         <GoogleAnalytics />
       </body>
     </html>

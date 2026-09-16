@@ -5,32 +5,32 @@ import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import clsx from "clsx";
 import {
-  getUnreadStaffNotificationCountAction,
-  listStaffNotificationsAction,
-  markAllStaffNotificationsReadAction,
-  markStaffNotificationReadAction,
-} from "@/lib/actions/staffNotification.actions";
-import type { StaffNotification } from "@/lib/models/team";
+  getUnreadNotificationCountAction,
+  listNotificationsAction,
+  markAllNotificationsReadAction,
+  markNotificationReadAction,
+} from "@/lib/actions/customer.actions";
+import type { CustomerNotification } from "@/lib/models/customer";
 import { resolveNotificationLink } from "@/lib/notificationLinks";
 
 const POLL_INTERVAL_MS = 30_000;
 
-function entityHref(portal: "admin" | "agent", n: StaffNotification): string | null {
-  return resolveNotificationLink(portal, n.entityType, n.entityId);
-}
-
-export function StaffNotificationBell({ userId, portal = "admin" }: { userId: string; portal?: "admin" | "agent" }) {
+/** The customer-portal counterpart to StaffNotificationBell.tsx —
+ *  this genuinely didn't exist before STEP 31 (customer_notifications
+ *  has been written to since STEP 11, but nothing in the customer
+ *  portal ever displayed them). */
+export function CustomerNotificationBell({ userId }: { userId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [items, setItems] = useState<StaffNotification[]>([]);
+  const [items, setItems] = useState<CustomerNotification[]>([]);
   const [loaded, setLoaded] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    getUnreadStaffNotificationCountAction(userId).then(setUnread).catch(() => {});
+    getUnreadNotificationCountAction(userId).then(setUnread).catch(() => {});
     const id = setInterval(() => {
-      getUnreadStaffNotificationCountAction(userId).then(setUnread).catch(() => {});
+      getUnreadNotificationCountAction(userId).then(setUnread).catch(() => {});
     }, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [userId]);
@@ -47,25 +47,25 @@ export function StaffNotificationBell({ userId, portal = "admin" }: { userId: st
     const next = !open;
     setOpen(next);
     if (next && !loaded) {
-      const list = await listStaffNotificationsAction(userId);
+      const list = await listNotificationsAction(userId);
       setItems(list);
       setLoaded(true);
     }
   }
 
-  async function handleItemClick(n: StaffNotification) {
+  async function handleItemClick(n: CustomerNotification) {
     if (!n.read) {
-      await markStaffNotificationReadAction(n.id);
+      await markNotificationReadAction(n.id);
       setItems((prev) => prev.map((i) => (i.id === n.id ? { ...i, read: true } : i)));
       setUnread((c) => Math.max(0, c - 1));
     }
-    const href = entityHref(portal, n);
+    const href = resolveNotificationLink("customer", n.entityType, n.entityId);
     setOpen(false);
     if (href) router.push(href);
   }
 
   async function handleMarkAllRead() {
-    await markAllStaffNotificationsReadAction(userId);
+    await markAllNotificationsReadAction(userId);
     setItems((prev) => prev.map((i) => ({ ...i, read: true })));
     setUnread(0);
   }

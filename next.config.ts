@@ -15,6 +15,8 @@ const csp = [
   "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com wss://*.supabase.co",
   "form-action 'self'",
   "base-uri 'self'",
+  // STEP 31 — the service worker registers as a same-origin worker.
+  "worker-src 'self'",
 ].join("; ");
 
 const nextConfig: NextConfig = {
@@ -37,7 +39,10 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // STEP 31 — the property map's "use my current location" is an
+          // explicit, user-initiated opt-in (never auto-requested); this
+          // just lets the browser's own permission prompt run at all.
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
           { key: "Content-Security-Policy", value: csp },
         ],
       },

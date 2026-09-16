@@ -20,6 +20,16 @@ const statusBadgeStyle: Record<string, string> = {
   Inactive: "bg-ink/80 text-white",
 };
 
+const NEW_WINDOW_DAYS = 14;
+
+/** Derived from the real createdAt timestamp — never a guessed or
+ *  editable flag (STEP 31 section 8: "only show badges when supported
+ *  by actual database status"). */
+function isRecentlyListed(createdAt: string): boolean {
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  return ageMs >= 0 && ageMs <= NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export function PropertyCard({
   property,
   selected,
@@ -71,11 +81,16 @@ export function PropertyCard({
         <div onClickCapture={() => trackSearchClick("favorite_from_search")} className="absolute right-3 top-3">
           <FavoriteButton propertyId={property.id} />
         </div>
-        {property.featured && (
-          <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-primary shadow">
-            <Star className="h-3 w-3 fill-primary text-primary" /> Featured
-          </span>
-        )}
+        <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-1.5">
+          {property.featured && (
+            <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-primary shadow">
+              <Star className="h-3 w-3 fill-primary text-primary" /> Featured
+            </span>
+          )}
+          {isRecentlyListed(property.createdAt) && (
+            <span className="rounded-full bg-success px-2.5 py-1 text-[11px] font-bold text-white shadow">New</span>
+          )}
+        </div>
         {property.status !== "Available" && (
           <span
             className={`absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold ${statusBadgeStyle[property.status]}`}

@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { StaffNotification, StaffNotificationType } from "@/lib/models/team";
+import { sendPushToActor } from "@/lib/push/provider";
+import { categoryForNotificationType, resolveNotificationLink } from "@/lib/notificationLinks";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(row: any): StaffNotification {
@@ -75,6 +77,12 @@ export const staffNotificationService = {
         entity_type: entityType ?? null,
         entity_id: entityId ?? null,
       });
+      sendPushToActor("ADMIN", userId, categoryForNotificationType(type), {
+        title,
+        body: message,
+        url: resolveNotificationLink("admin", entityType, entityId) ?? undefined,
+        tag: type,
+      }).catch(() => {});
     } catch (e) {
       console.error("staffNotificationService.notify failed:", e);
     }

@@ -25,6 +25,7 @@ import {
   Gavel,
   Headset,
   Bot,
+  Settings,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { customerLogoutAction } from "@/lib/actions/customerAuth.actions";
@@ -50,6 +51,7 @@ const navItems = [
   { href: "/customer/assistant", label: "AI Assistant", icon: Bot },
   { href: "/customer/saved-searches", label: "Saved Searches", icon: BookmarkCheck },
   { href: "/customer/profile", label: "Profile", icon: UserCircle },
+  { href: "/customer/settings", label: "Settings", icon: Settings },
 ];
 
 export function CustomerSidebar({ onNavigate }: { onNavigate?: () => void }) {

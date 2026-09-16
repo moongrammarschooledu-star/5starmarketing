@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Paperclip, Download, Lock } from "lucide-react";
+import { Paperclip, Download, Lock, WifiOff } from "lucide-react";
 import type { CommMessage } from "@/lib/models/communication";
 import { uploadMessageAttachmentAction, getAttachmentSignedUrlAction, getPortalAttachmentSignedUrlAction } from "@/lib/actions/communications.actions";
 import { useToast } from "@/components/admin/ToastProvider";
+import { saveOfflineDraft, readOfflineDraft, clearOfflineDraft, onReconnect } from "@/lib/offlineDraftQueue";
 
 const ACCEPT = "application/pdf,image/jpeg,image/png,image/webp";
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -29,13 +30,44 @@ export function TicketConversation({
   canReply: boolean;
   onReply: (body: string, isPrivateNote: boolean) => Promise<unknown>;
 }) {
+  const draftKey = `support-reply:${conversationId}`;
   const [body, setBody] = useState("");
   const [isPrivateNote, setIsPrivateNote] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queuedOffline, setQueuedOffline] = useState(false);
   const [isPending, startTransition] = useTransition();
   const fileInput = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const toast = useToast();
+
+  // Restore an offline-queued reply (STEP 31 section 27) and retry it
+  // automatically the moment connectivity returns — replaying through
+  // the SAME onReply() any online send would call.
+  useEffect(() => {
+    const draft = readOfflineDraft<{ body: string; isPrivateNote: boolean }>(draftKey);
+    if (draft) {
+      setBody(draft.body);
+      setIsPrivateNote(draft.isPrivateNote);
+      setQueuedOffline(true);
+    }
+    return onReconnect(() => {
+      const pending = readOfflineDraft<{ body: string; isPrivateNote: boolean }>(draftKey);
+      if (!pending) return;
+      startTransition(async () => {
+        try {
+          await onReply(pending.body, pending.isPrivateNote);
+          clearOfflineDraft(draftKey);
+          setBody("");
+          setIsPrivateNote(false);
+          setQueuedOffline(false);
+          router.refresh();
+        } catch {
+          // Stays queued — the user can still retry manually with Send.
+        }
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function send() {
     if (!body.trim()) {
@@ -43,11 +75,20 @@ export function TicketConversation({
       return;
     }
     setError(null);
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      saveOfflineDraft(draftKey, { body: body.trim(), isPrivateNote });
+      setQueuedOffline(true);
+      return;
+    }
+
     startTransition(async () => {
       try {
         await onReply(body.trim(), isPrivateNote);
+        clearOfflineDraft(draftKey);
         setBody("");
         setIsPrivateNote(false);
+        setQueuedOffline(false);
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not send this message.");
@@ -132,6 +173,11 @@ export function TicketConversation({
         <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} placeholder="Type your reply…" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary" />
           {error && <p className="mt-1 text-xs font-semibold text-primary">{error}</p>}
+          {queuedOffline && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-amber-600">
+              <WifiOff className="h-3.5 w-3.5" /> You&apos;re offline — this will send automatically once you&apos;re back online.
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
             {isStaff && (
               <label className="flex items-center gap-1.5 text-xs font-semibold text-ink">

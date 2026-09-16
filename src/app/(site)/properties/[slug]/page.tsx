@@ -23,6 +23,7 @@ import { PropertyCTASection } from "@/components/PropertyCTASection";
 import { PropertyDocuments } from "@/components/PropertyDocuments";
 import { RelatedProperties } from "@/components/RelatedProperties";
 import { ShareButtons } from "@/components/ShareButtons";
+import { PropertyMobileActionBar } from "@/components/properties/PropertyMobileActionBar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/JsonLd";
 import { PropertyViewTracker } from "@/components/PropertyViewTracker";
@@ -136,12 +137,16 @@ export default async function PropertyDetailsPage({
     };
   }
 
+  const whatsappHref = settings?.whatsapp
+    ? whatsappUrlFor(settings.whatsapp, whatsappMessage)
+    : whatsappUrlFor(site.whatsappNumber, whatsappMessage);
+
   return (
     <main className="bg-surface">
       <JsonLd data={productJsonLd} />
       <PropertyViewTracker propertyId={property.id} propertyType={property.type} locationArea={property.locationArea} />
 
-      <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
+      <div className="mx-auto max-w-7xl px-4 py-10 pb-28 lg:px-8 lg:py-14 lg:pb-14">
         <Breadcrumbs
           items={[
             { label: "Properties", href: "/properties" },
@@ -286,9 +291,7 @@ export default async function PropertyDetailsPage({
 
         <div className="mt-14">
           <PropertyCTASection
-            whatsappHref={
-              settings?.whatsapp ? whatsappUrlFor(settings.whatsapp, whatsappMessage) : whatsappUrlFor(site.whatsappNumber, whatsappMessage)
-            }
+            whatsappHref={whatsappHref}
             callHref={`tel:${site.phoneHref}`}
             bookVisitHref={`/book-visit/${property.slug}`}
             propertyId={property.id}
@@ -301,6 +304,12 @@ export default async function PropertyDetailsPage({
           </div>
         )}
       </div>
+
+      <PropertyMobileActionBar
+        whatsappHref={whatsappHref}
+        bookVisitHref={`/book-visit/${property.slug}`}
+        phoneHref={site.phoneHref}
+      />
     </main>
   );
 }

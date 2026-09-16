@@ -238,3 +238,15 @@ export async function markNotificationReadAction(id: string) {
   await notificationService.markRead(id);
   revalidatePath("/customer/dashboard");
 }
+
+export async function listNotificationsAction(userId: string) {
+  return notificationService.list(userId, 30);
+}
+
+export async function getUnreadNotificationCountAction(userId: string) {
+  return notificationService.unreadCount(userId);
+}
+
+export async function markAllNotificationsReadAction(userId: string) {
+  await notificationService.markAllRead(userId);
+}

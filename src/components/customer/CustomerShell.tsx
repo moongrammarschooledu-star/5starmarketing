@@ -4,9 +4,19 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Menu, X, ExternalLink, UserCircle } from "lucide-react";
 import { CustomerSidebar } from "./CustomerSidebar";
+import { CustomerBottomNav } from "./CustomerBottomNav";
+import { CustomerNotificationBell } from "./CustomerNotificationBell";
 import { ToastProvider } from "@/components/admin/ToastProvider";
 
-export function CustomerShell({ customerName, children }: { customerName: string; children: ReactNode }) {
+export function CustomerShell({
+  customerId,
+  customerName,
+  children,
+}: {
+  customerId: string;
+  customerName: string;
+  children: ReactNode;
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -54,6 +64,7 @@ export function CustomerShell({ customerName, children }: { customerName: string
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Back to Website</span>
             </Link>
+            <CustomerNotificationBell userId={customerId} />
             <Link
               href="/customer/profile"
               className="flex items-center gap-2 rounded-full bg-surface-muted px-3 py-2 text-xs font-bold text-ink"
@@ -63,8 +74,9 @@ export function CustomerShell({ customerName, children }: { customerName: string
             </Link>
           </div>
         </header>
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
+      <CustomerBottomNav />
     </div>
     </ToastProvider>
   );

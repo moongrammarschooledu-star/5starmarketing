@@ -1,20 +1,44 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { X, Menu, LayoutDashboard, Users, LogOut, ExternalLink, UserCircle, MessageSquare, CalendarClock } from "lucide-react";
+import {
+  X,
+  Menu,
+  LayoutDashboard,
+  Users,
+  LogOut,
+  ExternalLink,
+  UserCircle,
+  MessageSquare,
+  CalendarClock,
+  Building2,
+  CalendarCheck,
+  Handshake,
+  ListChecks,
+  TrendingUp,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { Logo } from "@/components/Logo";
 import { ToastProvider } from "@/components/admin/ToastProvider";
 import { StaffNotificationBell } from "@/components/admin/StaffNotificationBell";
+import { AgentBottomNav } from "./AgentBottomNav";
 import { logoutAction } from "@/lib/actions/auth.actions";
 
 const NAV = [
   { href: "/agent/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/agent/leads", label: "My Leads", icon: Users },
+  { href: "/agent/tasks", label: "Tasks", icon: ListChecks },
+  { href: "/agent/appointments", label: "Site Visits", icon: CalendarCheck },
+  { href: "/agent/deals", label: "Deals", icon: Handshake },
+  { href: "/agent/properties", label: "Properties", icon: Building2 },
+  { href: "/agent/customers", label: "Customers", icon: Users },
   { href: "/agent/communications", label: "Messages", icon: MessageSquare },
   { href: "/agent/communications/followups", label: "Follow-Ups", icon: CalendarClock },
+  { href: "/agent/performance", label: "Performance", icon: TrendingUp },
+  { href: "/admin/ai/chat", label: "AI Assistant", icon: Sparkles },
 ];
 
 export function AgentShell({ agentId, agentName, children }: { agentId: string; agentName: string; children: ReactNode }) {
@@ -74,9 +98,10 @@ export function AgentShell({ agentId, agentName, children }: { agentId: string; 
               </div>
             </div>
           </header>
-          <main className="flex-1 p-4 lg:p-8">{children}</main>
+          <main className="flex-1 p-4 pb-24 lg:p-8 lg:pb-8">{children}</main>
         </div>
       </div>
+      <AgentBottomNav />
     </ToastProvider>
   );
 }
@@ -111,6 +136,13 @@ function Sidebar({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
         </ul>
       </nav>
       <div className="border-t border-white/10 p-3">
+        <Link
+          href="/admin/profile"
+          className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <UserCircle className="h-4.5 w-4.5 shrink-0" />
+          Profile
+        </Link>
         <form action={logoutAction}>
           <button
             type="submit"

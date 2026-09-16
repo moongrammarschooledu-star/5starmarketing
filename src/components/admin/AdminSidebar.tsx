@@ -18,6 +18,7 @@ import {
   ClipboardList,
   History,
   Users2,
+  Smartphone,
   CalendarClock,
   CalendarDays,
   FileText,
@@ -75,6 +76,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/activity", label: "Activity Log", icon: History, section: "activity" },
   { href: "/admin/seo", label: "SEO", icon: Search, section: "seo" },
   { href: "/admin/settings", label: "Website Settings", icon: Settings, section: "settings" },
+  { href: "/admin/mobile", label: "Mobile App & PWA", icon: Smartphone, section: "settings" },
   { href: "/admin/profile", label: "Admin Profile", icon: UserCircle, section: "profile" },
 ];
 

@@ -68,6 +68,11 @@ export interface Property {
   projectId?: string;
   paymentPlan: PropertyPaymentPlan;
   documents: PropertyDocument[];
+  // STEP 32 — optional admin-editable SEO overrides; every render path
+  // falls back to the property's own title/description when unset.
+  seoTitle?: string;
+  seoDescription?: string;
+  ogImage?: string;
   createdAt: string;
   updatedAt: string;
 }

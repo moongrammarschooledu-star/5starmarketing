@@ -94,6 +94,8 @@ export function BookVisitForm({
     <form action={formAction} className="space-y-5 rounded-2xl border border-border bg-surface p-6 sm:p-8">
       <input type="hidden" name="appointmentDate" value={date} />
       <input type="hidden" name="appointmentTime" value={selectedTime ?? ""} />
+      {/* Honeypot — hidden from real visitors, bots that auto-fill every field trip it. */}
+      <input type="text" name="company" tabIndex={-1} autoComplete="off" className="absolute -left-[9999px] h-0 w-0 opacity-0" aria-hidden="true" />
 
       {state.error && (
         <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">

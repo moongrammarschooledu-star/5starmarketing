@@ -15,7 +15,8 @@ export type AnalyticsEvent =
   | "project_inquiry"
   | "callback_request"
   | "investment_consultation_request"
-  | "brochure_download";
+  | "brochure_download"
+  | "landing_page_inquiry";
 
 declare global {
   interface Window {

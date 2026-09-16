@@ -51,10 +51,14 @@ export async function generateMetadata({
   const property = await propertyService.getBySlug(slug);
   if (!property) return { title: "Property Not Found" };
 
-  const title = seoTitle(property);
+  // STEP 32 — an admin-set SEO override always wins; everything else
+  // falls back to the same derived-from-real-fields values as before.
+  const title = property.seoTitle || seoTitle(property);
   const description =
-    property.description || `${title}. Contact 5STAR.M Estate & Builders for complete details and payment plans.`;
-  const image = property.images[0];
+    property.seoDescription ||
+    property.description ||
+    `${title}. Contact 5STAR.M Estate & Builders for complete details and payment plans.`;
+  const image = property.ogImage || property.images[0];
 
   return {
     title,

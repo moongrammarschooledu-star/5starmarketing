@@ -220,6 +220,21 @@ export function PropertyForm({
         </div>
       </section>
 
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <h2 className="font-heading text-base font-bold text-ink">SEO Overrides (optional)</h2>
+        <p className="mt-1 text-xs text-muted">
+          Leave blank to use the property&apos;s own title/description — these only override what search
+          engines and social shares see.
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="SEO Title" name="seoTitle" defaultValue={initialValues?.seoTitle} />
+          <Field label="Social Share Image URL" name="ogImage" defaultValue={initialValues?.ogImage} />
+        </div>
+        <div className="mt-4">
+          <Field label="SEO Description" name="seoDescription" defaultValue={initialValues?.seoDescription} className="w-full" />
+        </div>
+      </section>
+
       <div className="flex items-center gap-3">
         <button
           type="submit"

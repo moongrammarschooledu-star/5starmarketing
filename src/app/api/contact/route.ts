@@ -3,8 +3,10 @@ import { leadService } from "@/services/leadService";
 import { notificationService } from "@/services/notificationService";
 import { createClient } from "@/lib/supabase/server";
 import { isRateLimited } from "@/lib/rateLimit";
-import type { LeadSource, LeadType } from "@/lib/models/lead";
+import type { LeadSource, LeadType, PreferredContactMethod } from "@/lib/models/lead";
 import { leadTypes } from "@/lib/models/lead";
+
+const CONTACT_METHODS: PreferredContactMethod[] = ["Phone", "WhatsApp", "Email"];
 
 const ALLOWED_SOURCES: LeadSource[] = ["Website", "Property Page"];
 const MAX_MESSAGE_LENGTH = 2000;
@@ -43,6 +45,9 @@ export async function POST(request: Request) {
     projectId,
     leadType,
     preferredTime,
+    preferredContactMethod,
+    budgetMin,
+    budgetMax,
     consent,
     source,
     company,
@@ -127,6 +132,11 @@ export async function POST(request: Request) {
   // visitor-supplied context.
   const preferredTimeStr = typeof preferredTime === "string" && preferredTime.trim() ? preferredTime.trim() : undefined;
   const fullMessage = preferredTimeStr ? `${message.trim()}\n\nPreferred callback time: ${preferredTimeStr}` : message.trim();
+  const resolvedContactMethod: PreferredContactMethod | undefined = CONTACT_METHODS.includes(preferredContactMethod as PreferredContactMethod)
+    ? (preferredContactMethod as PreferredContactMethod)
+    : undefined;
+  const resolvedBudgetMin = typeof budgetMin === "number" && Number.isFinite(budgetMin) && budgetMin >= 0 ? budgetMin : undefined;
+  const resolvedBudgetMax = typeof budgetMax === "number" && Number.isFinite(budgetMax) && budgetMax >= 0 ? budgetMax : undefined;
 
   try {
     await leadService.create({
@@ -142,6 +152,10 @@ export async function POST(request: Request) {
       customerId,
       message: fullMessage,
       source: resolvedSource,
+      preferredContactMethod: resolvedContactMethod,
+      preferredContactTime: preferredTimeStr,
+      budgetMin: resolvedBudgetMin,
+      budgetMax: resolvedBudgetMax,
       consent: consent === true || consent === "on" || consent === "true",
       firstTouchSource: str(firstTouchSource),
       firstTouchMedium: str(firstTouchMedium),

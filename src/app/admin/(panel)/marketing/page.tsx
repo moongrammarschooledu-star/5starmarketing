@@ -54,9 +54,14 @@ export default async function AdminMarketingDashboardPage({
           <h1 className="font-heading text-2xl font-extrabold text-ink">Marketing Command Center</h1>
           <p className="mt-1 text-sm text-muted">Real campaign, lead-source and funnel data — nothing here is invented.</p>
         </div>
-        <Link href="/admin/marketing/campaigns/create" className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
-          New Campaign
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/marketing/public-portal" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+            Public Portal Analytics
+          </Link>
+          <Link href="/admin/marketing/campaigns/create" className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+            New Campaign
+          </Link>
+        </div>
       </div>
 
       {loadError && (

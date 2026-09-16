@@ -6,6 +6,7 @@ import { Projects } from "@/components/Projects";
 import { WhyChooseUs } from "@/components/WhyChooseUs";
 import { InvestmentSection } from "@/components/InvestmentSection";
 import { ConstructionSection } from "@/components/ConstructionSection";
+import { Testimonials } from "@/components/Testimonials";
 import { Contact } from "@/components/Contact";
 
 // Featured properties/projects/services come from the in-memory
@@ -24,6 +25,7 @@ export default function Home() {
       <WhyChooseUs />
       <InvestmentSection />
       <ConstructionSection />
+      <Testimonials />
       <Contact />
     </main>
   );

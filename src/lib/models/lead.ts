@@ -37,7 +37,15 @@ export type LeadType =
   | "Investment Inquiry"
   | "Project Inquiry"
   | "Price Request"
-  | "Payment Plan Request";
+  | "Payment Plan Request"
+  // STEP 32 — public portal inquiry types the site didn't have a
+  // distinct capture point for before (rental/seller/construction
+  // inquiries previously had to be filed as "General Inquiry").
+  | "Rental Inquiry"
+  | "Seller Inquiry"
+  | "Construction Inquiry";
+
+export type PreferredContactMethod = "Phone" | "WhatsApp" | "Email";
 
 export type LeadPurpose = "Buy" | "Rent" | "Invest";
 
@@ -99,6 +107,9 @@ export interface Lead {
   preferredLocation?: string;
   preferredPropertyType?: string;
   preferredBedrooms?: number;
+  // STEP 32 — captured directly from the public inquiry form, optional.
+  preferredContactMethod?: PreferredContactMethod;
+  preferredContactTime?: string;
   lastContactedAt?: string;
   lostReason?: LostReason;
   convertedAt?: string;
@@ -114,6 +125,11 @@ export interface Lead {
   scoreLevel: ScoreLevel;
   autoPriority?: LeadPriority;
   tags?: string[];
+  // STEP 32 — set by the flag_possible_duplicate_lead DB trigger at
+  // insert time, never directly by a form or service call (the same
+  // "system-computed" treatment as score/scoreLevel above).
+  possibleDuplicate: boolean;
+  duplicateOfLeadId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -139,6 +155,8 @@ export type LeadInput = Omit<
   | "scoreLevel"
   | "autoPriority"
   | "tags"
+  | "possibleDuplicate"
+  | "duplicateOfLeadId"
 > & {
   status?: LeadStatus;
   consent?: boolean;
@@ -209,6 +227,9 @@ export const leadTypes: LeadType[] = [
   "Project Inquiry",
   "Price Request",
   "Payment Plan Request",
+  "Rental Inquiry",
+  "Seller Inquiry",
+  "Construction Inquiry",
 ];
 
 export const leadPurposes: LeadPurpose[] = ["Buy", "Rent", "Invest"];

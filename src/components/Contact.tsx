@@ -15,9 +15,21 @@ const interests = [
   "Flat",
   "Residential Plot",
   "Commercial Property",
+  "Rental Property",
   "Construction Services",
+  "Selling My Property",
   "Other",
 ];
+
+// STEP 32 section 14 — maps the existing "Property Interest" selector to
+// a distinct CRM leadType so Rental/Seller/Construction inquiries are
+// reportable separately from a plain General Inquiry, without adding a
+// second form.
+const INTEREST_TO_LEAD_TYPE: Record<string, string> = {
+  "Rental Property": "Rental Inquiry",
+  "Selling My Property": "Seller Inquiry",
+  "Construction Services": "Construction Inquiry",
+};
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -57,7 +69,12 @@ export function Contact() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, source: "Website", ...getAttributionPayload() }),
+        body: JSON.stringify({
+          ...data,
+          source: "Website",
+          leadType: INTEREST_TO_LEAD_TYPE[String(data.interest ?? "")] || "General Inquiry",
+          ...getAttributionPayload(),
+        }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Request failed");

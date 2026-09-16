@@ -110,6 +110,18 @@ export function PropertyInquiryForm({
           type="tel"
         />
         <Field label="Email" name="email" placeholder="you@example.com" type="email" />
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-semibold text-ink">Preferred Contact Method</span>
+            <select name="preferredContactMethod" defaultValue="" className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-primary">
+              <option value="">No preference</option>
+              <option value="Phone">Phone</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Email">Email</option>
+            </select>
+          </label>
+          <Field label="Preferred Time to Call" name="preferredTime" placeholder="e.g. Evenings" />
+        </div>
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-semibold text-ink">Message</span>
           <textarea

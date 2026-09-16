@@ -1,8 +1,13 @@
 "use server";
 
+import { headers } from "next/headers";
 import { appointmentService } from "@/services/appointmentService";
 import { customerService } from "@/services/customerService";
+import { isRateLimited } from "@/lib/rateLimit";
 import type { TimeSlot } from "@/lib/models/appointment";
+
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
 
 export async function getAvailabilityAction(dateISO: string): Promise<TimeSlot[]> {
   return appointmentService.getAvailability(dateISO);
@@ -26,6 +31,19 @@ export async function createAppointmentAction(
   _prevState: BookVisitState,
   formData: FormData
 ): Promise<BookVisitState> {
+  // Honeypot: a hidden field real visitors never fill in. Bots that
+  // auto-fill every field trip it — respond as if it worked so they
+  // don't learn to avoid the trap, but never actually book anything.
+  const honeypot = String(formData.get("company") ?? "").trim();
+  if (honeypot) {
+    return { success: { appointmentId: "", propertyTitle: "", appointmentDate: "", appointmentTime: "" } };
+  }
+
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (isRateLimited(`book-visit:${ip}`, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)) {
+    return { error: "Too many requests. Please try again in a minute." };
+  }
+
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const whatsapp = String(formData.get("whatsapp") ?? "").trim();

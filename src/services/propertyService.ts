@@ -107,6 +107,9 @@ function mapRowToProperty(row: any): Property {
       installmentsCount: row.payment_installments_count ?? undefined,
     },
     documents: (row.documents ?? []) as StoredDocument[],
+    seoTitle: row.seo_title ?? undefined,
+    seoDescription: row.seo_description ?? undefined,
+    ogImage: row.og_image ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -146,6 +149,9 @@ function mapPropertyToRow(input: Partial<PropertyInput>) {
     row.payment_installments_count = input.paymentPlan.installmentsCount ?? null;
   }
   if (input.documents !== undefined) row.documents = input.documents;
+  if (input.seoTitle !== undefined) row.seo_title = input.seoTitle || null;
+  if (input.seoDescription !== undefined) row.seo_description = input.seoDescription || null;
+  if (input.ogImage !== undefined) row.og_image = input.ogImage || null;
   return row;
 }
 

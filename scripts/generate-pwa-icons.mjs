@@ -1,31 +1,44 @@
-// One-off generator for PWA icons from the existing brand mark
-// (src/app/icon.svg) — run with `node scripts/generate-pwa-icons.mjs`.
+// One-off generator for PWA icons from the REAL brand logo
+// (public/images/logo.png) — run with `node scripts/generate-pwa-icons.mjs`.
 // Not part of the build; output is committed to public/icons/ like any
 // other static asset.
+//
+// Previously sourced from a hand-drawn SVG recreation (src/app/icon.svg)
+// that didn't actually match the real logo closely enough — the
+// business flagged this as "the wrong logo" showing up on PWA install.
+// Every icon below is now derived directly from the actual logo file.
 import sharp from "sharp";
-import { readFileSync, mkdirSync, writeFileSync } from "fs";
+import { mkdirSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const svgPath = path.join(root, "src/app/icon.svg");
+const logoPath = path.join(root, "public/images/logo.png");
 const outDir = path.join(root, "public/icons");
 mkdirSync(outDir, { recursive: true });
 
-const svg = readFileSync(svgPath);
-const BRAND_BG = "#ffffff";
+const BRAND_BG = { r: 255, g: 255, b: 255, alpha: 1 };
 
+/** logo.png is a wide (1774x887) flat export with a near-white
+ *  background already baked in — "contain" fit pads it to a square on
+ *  the same white, so there's no visible seam. */
 async function plainIcon(size, filename) {
-  await sharp(svg).resize(size, size).png().toFile(path.join(outDir, filename));
+  await sharp(logoPath)
+    .resize(size, size, { fit: "contain", background: BRAND_BG })
+    .flatten({ background: BRAND_BG })
+    .png()
+    .toFile(path.join(outDir, filename));
 }
 
-/** Maskable icons need real padding (~20%) since Android/iOS crop to a
- *  shape (circle/squircle) that would otherwise clip the full-bleed
- *  artwork in icon.svg. */
+/** Maskable icons need extra padding (~20%) since Android/iOS crop to a
+ *  shape (circle/squircle) that would otherwise clip the logo. */
 async function maskableIcon(size, filename) {
-  const inner = Math.round(size * 0.6);
-  const mark = await sharp(svg).resize(inner, inner).png().toBuffer();
+  const inner = Math.round(size * 0.7);
+  const mark = await sharp(logoPath)
+    .resize(inner, inner, { fit: "contain", background: BRAND_BG })
+    .png()
+    .toBuffer();
   await sharp({
     create: { width: size, height: size, channels: 4, background: BRAND_BG },
   })
@@ -43,7 +56,13 @@ async function main() {
   // A couple of standard shortcut icon sizes for manifest "shortcuts".
   await plainIcon(96, "shortcut-search.png");
   await plainIcon(96, "shortcut-favorites.png");
-  console.log("PWA icons written to public/icons/");
+  // Browser-tab favicon (replaces the old hand-drawn src/app/icon.svg).
+  await sharp(logoPath)
+    .resize(32, 32, { fit: "contain", background: BRAND_BG })
+    .flatten({ background: BRAND_BG })
+    .png()
+    .toFile(path.join(root, "src/app/icon.png"));
+  console.log("PWA icons written to public/icons/, favicon written to src/app/icon.png");
 }
 
 main().catch((e) => {

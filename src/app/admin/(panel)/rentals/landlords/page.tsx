@@ -4,10 +4,12 @@ import { landlordService } from "@/services/landlordService";
 import { profileService } from "@/services/profileService";
 import { canManageRentals } from "@/lib/permissions";
 import { LandlordManager } from "@/components/admin/rentals/LandlordManager";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function RentalLandlordsPage() {
+  await requireSection("rentals");
   const [landlords, admin] = await Promise.all([landlordService.list(), profileService.getCurrentAdmin()]);
   const canManage = admin ? canManageRentals(admin.role) : false;
 

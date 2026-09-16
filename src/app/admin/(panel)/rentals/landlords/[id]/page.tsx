@@ -8,10 +8,12 @@ import { profileService } from "@/services/profileService";
 import { canManageRentals } from "@/lib/permissions";
 import { LandlordStatementManager } from "@/components/admin/rentals/LandlordStatementManager";
 import { formatPKR } from "@/lib/calculator";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function LandlordDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSection("rentals");
   const { id } = await params;
   const [landlord, statements, rentalProperties, admin] = await Promise.all([
     landlordService.getById(id),

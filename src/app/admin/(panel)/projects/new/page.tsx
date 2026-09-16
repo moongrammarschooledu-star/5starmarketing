@@ -1,7 +1,11 @@
 import { ProjectForm } from "@/components/admin/ProjectForm";
 import { createProjectAction } from "@/lib/actions/projects.actions";
+import { requireSection } from "@/lib/guard";
 
-export default function NewProjectPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewProjectPage() {
+  await requireSection("projects");
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="font-heading text-2xl font-extrabold text-ink">Add Project</h1>

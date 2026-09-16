@@ -1,10 +1,12 @@
 import { PropertyForm } from "@/components/admin/PropertyForm";
 import { createPropertyAction } from "@/lib/actions/properties.actions";
 import { projectService } from "@/services/projectService";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewPropertyPage() {
+  await requireSection("properties");
   const projects = await projectService.list().catch(() => []);
 
   return (

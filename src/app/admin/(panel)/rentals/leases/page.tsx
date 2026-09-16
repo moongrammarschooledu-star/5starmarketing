@@ -3,10 +3,12 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { leaseService } from "@/services/leaseService";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatPKR } from "@/lib/calculator";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function RentalLeasesPage() {
+  await requireSection("rentals");
   const leases = await leaseService.list();
 
   return (

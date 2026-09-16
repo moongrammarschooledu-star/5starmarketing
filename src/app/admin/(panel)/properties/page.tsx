@@ -2,10 +2,12 @@ import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { PropertiesTable } from "@/components/admin/PropertiesTable";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPropertiesPage() {
+  await requireSection("properties");
   const properties = await propertyService.list();
 
   return (

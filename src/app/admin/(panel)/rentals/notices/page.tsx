@@ -3,10 +3,12 @@ import { ArrowLeft } from "lucide-react";
 import { rentalNoticeService } from "@/services/rentalNoticeService";
 import { leaseService } from "@/services/leaseService";
 import { NoticeManager } from "@/components/admin/rentals/NoticeManager";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function RentalNoticesPage() {
+  await requireSection("rentals");
   const [notices, leases] = await Promise.all([rentalNoticeService.list(), leaseService.list()]);
 
   return (

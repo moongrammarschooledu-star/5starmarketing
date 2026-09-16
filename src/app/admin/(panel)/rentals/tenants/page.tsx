@@ -4,10 +4,12 @@ import { tenantService } from "@/services/tenantService";
 import { rentalApplicationService } from "@/services/rentalApplicationService";
 import { TenantManager } from "@/components/admin/rentals/TenantManager";
 import { ApplicationManager } from "@/components/admin/rentals/ApplicationManager";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function RentalTenantsPage() {
+  await requireSection("rentals");
   const [tenants, applications] = await Promise.all([tenantService.list(), rentalApplicationService.list()]);
 
   return (

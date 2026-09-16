@@ -3,10 +3,12 @@ import { ArrowLeft } from "lucide-react";
 import { depositService } from "@/services/depositService";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatPKR } from "@/lib/calculator";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function RentalDepositsPage() {
+  await requireSection("rentals");
   const deposits = await depositService.list();
 
   return (

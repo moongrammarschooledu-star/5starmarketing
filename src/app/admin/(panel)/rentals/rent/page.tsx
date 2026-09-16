@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatPKR } from "@/lib/calculator";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ type Row = {
 };
 
 export default async function RentCollectionPage() {
+  await requireSection("rentals");
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
   const weekEnd = new Date();

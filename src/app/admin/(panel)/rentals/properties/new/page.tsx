@@ -3,10 +3,12 @@ import { ArrowLeft } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { landlordService } from "@/services/landlordService";
 import { NewRentalPropertyForm } from "@/components/admin/rentals/NewRentalPropertyForm";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewRentalPropertyPage() {
+  await requireSection("rentals");
   const [properties, landlords] = await Promise.all([propertyService.list(), landlordService.list()]);
 
   return (

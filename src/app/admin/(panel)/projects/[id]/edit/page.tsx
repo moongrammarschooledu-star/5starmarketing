@@ -6,6 +6,7 @@ import { updateProjectAction } from "@/lib/actions/projects.actions";
 import { projectService } from "@/services/projectService";
 import { documentService } from "@/services/documentService";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export default async function EditProjectPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireSection("projects");
   const { id } = await params;
   const project = await projectService.getById(id);
   if (!project) notFound();

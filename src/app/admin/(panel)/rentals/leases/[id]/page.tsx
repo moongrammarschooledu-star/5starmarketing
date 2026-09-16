@@ -18,12 +18,14 @@ import { LeaseRenewalManager } from "@/components/admin/rentals/LeaseRenewalMana
 import { MoveRecordPanel } from "@/components/admin/rentals/MoveRecordPanel";
 import { LeaseDocumentManager } from "@/components/admin/rentals/LeaseDocumentManager";
 import { formatPKR } from "@/lib/calculator";
+import { requireSection } from "@/lib/guard";
 
 const LEASE_DOCUMENT_TYPE_CODES = ["RENTAL_AGREEMENT", "LEASE_ADDENDUM", "LEASE_RENEWAL_AGREEMENT", "MOVE_IN_REPORT", "MOVE_OUT_REPORT", "RENTAL_NOTICE_DOCUMENT", "RENTAL_APPLICATION_DOCUMENT"];
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSection("rentals");
   const { id } = await params;
   const lease = await leaseService.getById(id);
   if (!lease) notFound();

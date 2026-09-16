@@ -5,10 +5,12 @@ import { maintenanceWorkOrderService } from "@/services/maintenanceWorkOrderServ
 import { RentalMaintenanceApprovalControl } from "@/components/admin/rentals/RentalMaintenanceApprovalControl";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatPKR } from "@/lib/calculator";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function RentalMaintenancePage() {
+  await requireSection("rentals");
   const supabase = await createClient();
   const { data: rentalProps } = await supabase.from("rental_properties").select("property_id");
   const propertyIds = Array.from(new Set((rentalProps ?? []).map((r) => r.property_id)));

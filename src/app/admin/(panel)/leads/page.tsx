@@ -12,6 +12,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { leadService } from "@/services/leadService";
+import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
 import { LeadsViewSwitcher } from "@/components/admin/LeadsViewSwitcher";
 import { LeadCharts } from "@/components/admin/LeadCharts";
@@ -21,6 +22,7 @@ import { formatDateOnlyShort } from "@/lib/date";
 export const dynamic = "force-dynamic";
 
 export default async function AdminLeadsPage() {
+  await requireSection("leads");
   let stats = {
     total: 0,
     new: 0,

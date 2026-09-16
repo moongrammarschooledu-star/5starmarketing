@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, User, Building2, Info, MessageSquareText, AlertTriangle, Megaphone } from "lucide-react";
 import { leadService } from "@/services/leadService";
+import { requireSection } from "@/lib/guard";
 import { whatsappService } from "@/services/whatsappService";
 import { settingsService } from "@/services/settingsService";
 import { profileService } from "@/services/profileService";
@@ -22,6 +23,7 @@ export default async function AdminLeadDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireSection("leads");
   const { id } = await params;
   const lead = await leadService.getById(id);
   if (!lead) notFound();

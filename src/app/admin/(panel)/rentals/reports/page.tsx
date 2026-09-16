@@ -3,6 +3,7 @@ import { ArrowLeft, Download } from "lucide-react";
 import { rentalReportService } from "@/services/rentalReportService";
 import { CountBucketChart } from "@/components/admin/charts/CountBucketChart";
 import { formatPKR } from "@/lib/calculator";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ const exports = [
 ];
 
 export default async function RentalReportsPage() {
+  await requireSection("rentals");
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);

@@ -4,10 +4,12 @@ import { rentalPropertyService } from "@/services/rentalPropertyService";
 import { landlordService } from "@/services/landlordService";
 import { tenantService } from "@/services/tenantService";
 import { NewLeaseForm } from "@/components/admin/rentals/NewLeaseForm";
+import { requireSection } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewLeasePage() {
+  await requireSection("rentals");
   const [rentalProperties, landlords, tenants] = await Promise.all([rentalPropertyService.list(), landlordService.list(), tenantService.list()]);
 
   return (

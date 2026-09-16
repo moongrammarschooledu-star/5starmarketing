@@ -10,6 +10,7 @@ import { paymentPlanService } from "@/services/paymentPlanService";
 import { dealService } from "@/services/dealService";
 import { documentService } from "@/services/documentService";
 import { profileService } from "@/services/profileService";
+import { requireSection } from "@/lib/guard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { PropertyFinancialPanel } from "@/components/admin/accounting/PropertyFinancialPanel";
 import { PropertyInvestmentPanel } from "@/components/admin/investment/PropertyInvestmentPanel";
@@ -26,6 +27,7 @@ export default async function EditPropertyPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireSection("properties");
   const { id } = await params;
   const [property, projects] = await Promise.all([
     propertyService.getById(id),

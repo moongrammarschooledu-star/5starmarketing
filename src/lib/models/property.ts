@@ -57,6 +57,10 @@ export interface Property {
   status: PropertyStatus;
   featured: boolean;
   images: string[];
+  /** Optional single walkthrough video, uploaded directly from the
+   *  admin's browser to Supabase Storage (never routed through a
+   *  server action's body — video files are far too large for that). */
+  videoUrl?: string;
   description: string;
   features: string[];
   amenities: string[];

@@ -13,6 +13,7 @@ import {
 import { propertyPriceHistoryService } from "./propertyPriceHistoryService";
 
 const BUCKET = "property-images";
+const VIDEO_BUCKET = "property-videos";
 
 // This file is the one place that knows the database's snake_case /
 // lowercase enum shape. Every UI component keeps working with the
@@ -92,6 +93,7 @@ function mapRowToProperty(row: any): Property {
     status: STATUS_FROM_DB[row.status] ?? "Available",
     featured: row.featured,
     images: row.images ?? [],
+    videoUrl: row.video_url ?? undefined,
     description: row.description ?? "",
     features: row.features ?? [],
     amenities: row.amenities ?? [],
@@ -137,6 +139,7 @@ function mapPropertyToRow(input: Partial<PropertyInput>) {
   if (input.features !== undefined) row.features = input.features;
   if (input.amenities !== undefined) row.amenities = input.amenities;
   if (input.images !== undefined) row.images = input.images;
+  if (input.videoUrl !== undefined) row.video_url = input.videoUrl || null;
   if (input.mapsQuery !== undefined) row.maps_url = input.mapsQuery || null;
   if (input.latitude !== undefined) row.latitude = input.latitude ?? null;
   if (input.longitude !== undefined) row.longitude = input.longitude ?? null;
@@ -501,6 +504,7 @@ export const propertyService = {
     if (existing) {
       await deletePropertyImages(existing.images);
       await deleteStorageDocuments(existing.documents);
+      if (existing.videoUrl) await deleteStorageImages([existing.videoUrl], VIDEO_BUCKET);
     }
     return true;
   },

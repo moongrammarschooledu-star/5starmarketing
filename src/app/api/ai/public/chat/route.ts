@@ -46,7 +46,15 @@ export async function POST(request: Request) {
         console.error("Public AI chat stream error:", err);
       },
     });
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      // TEMPORARY diagnostic — production was returning a generic "An
+      // error occurred." with no way to see the real cause (no server
+      // log access from this session). Surfaces the real error text to
+      // the client so it can be read from a browser network tab. Revert
+      // to the SDK's default generic message once the real cause is
+      // identified and fixed.
+      onError: (err) => (err instanceof Error ? `${err.name}: ${err.message}` : String(err)),
+    });
   } catch (err) {
     console.error("Public AI chat error:", err);
     return NextResponse.json({ error: "The assistant hit an unexpected error. Please try again or use WhatsApp." }, { status: 500 });

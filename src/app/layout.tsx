@@ -87,7 +87,7 @@ export default async function RootLayout({
   const city = settings?.city || "Lahore";
   const country = settings?.country || "Pakistan";
   const phone = settings?.phone || site.phoneDisplay;
-  const email = settings?.email || site.email;
+  const email = settings?.email || site.displayEmail;
 
   // Organization + LocalBusiness — only real, admin-entered fields go in.
   // No invented opening hours, reviews, ratings or years-in-business.

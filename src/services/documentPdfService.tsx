@@ -56,7 +56,7 @@ async function businessInfo() {
     businessName: settings?.businessName ?? site.fullName,
     businessAddress: settings?.address ?? site.address,
     businessPhone: settings?.phone ?? site.phoneDisplay,
-    businessEmail: settings?.email ?? site.email,
+    businessEmail: settings?.email ?? site.displayEmail,
   };
 }
 

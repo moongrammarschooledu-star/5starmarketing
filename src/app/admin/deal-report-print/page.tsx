@@ -55,7 +55,7 @@ export default async function DealReportPrintPage({ searchParams }: { searchPara
       <Section title="By Deal Type" columns={["Type", "Deals", "Deal Value"]} rows={summary.byDealType.map((r) => [r.dealType, r.deals, formatPKR(r.dealValue)])} />
 
       <p className="mt-10 text-[11px] text-black/40">
-        {site.fullName} — {site.phoneDisplay} — {site.email}
+        {site.fullName} — {site.phoneDisplay} — {site.displayEmail}
       </p>
     </div>
   );

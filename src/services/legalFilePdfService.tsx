@@ -50,7 +50,7 @@ export const legalFilePdfService = {
         completionScores={completionScores}
         compliance={compliance}
         riskIndicator={riskIndicator}
-        business={{ name: site.fullName, phone: site.phoneDisplay, email: site.email }}
+        business={{ name: site.fullName, phone: site.phoneDisplay, email: site.displayEmail }}
       />
     );
 

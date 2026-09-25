@@ -81,9 +81,9 @@ export function Hero() {
                 <Phone className="h-4 w-4 shrink-0 text-primary" />
                 <span className="font-semibold">{site.phoneDisplay}</span>
               </a>
-              <a href={`mailto:${site.email}`} className="flex items-center gap-2.5 py-3 sm:justify-center sm:px-4 sm:py-0">
+              <a href={`mailto:${site.displayEmail}`} className="flex items-center gap-2.5 py-3 sm:justify-center sm:px-4 sm:py-0">
                 <Mail className="h-4 w-4 shrink-0 text-primary" />
-                <span className="truncate font-semibold">{site.email}</span>
+                <span className="truncate font-semibold">{site.displayEmail}</span>
               </a>
               <div className="flex items-center gap-2.5 pt-3 sm:justify-center sm:pt-0">
                 <MapPin className="h-4 w-4 shrink-0 text-primary" />

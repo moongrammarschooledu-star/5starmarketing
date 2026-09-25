@@ -10,7 +10,7 @@ import { site } from "@/lib/site";
 import { formatPKR } from "@/lib/calculator";
 import type { DocumentRecord } from "@/lib/models/document";
 
-const business = { businessName: site.fullName, businessAddress: site.address, businessPhone: site.phoneDisplay, businessEmail: site.email };
+const business = { businessName: site.fullName, businessAddress: site.address, businessPhone: site.phoneDisplay, businessEmail: site.displayEmail };
 
 export const constructionPdfService = {
   /** BOQ PDF (section 36) — internal cost document, never customer-

@@ -23,7 +23,7 @@ export const inspectionReportPdfService = {
     ]);
 
     const buffer = await renderToBuffer(
-      <InspectionReportDocument inspection={inspection} results={results} defects={defects} disclaimerText={settings.disclaimerText} business={{ name: site.fullName, phone: site.phoneDisplay, email: site.email }} />
+      <InspectionReportDocument inspection={inspection} results={results} defects={defects} disclaimerText={settings.disclaimerText} business={{ name: site.fullName, phone: site.phoneDisplay, email: site.displayEmail }} />
     );
 
     const document = await documentService.createGeneratedDocument(

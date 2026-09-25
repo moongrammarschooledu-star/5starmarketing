@@ -190,7 +190,7 @@ export const brochureService = {
       name: businessName,
       address: settings?.address || site.address,
       phone: settings?.phone || site.phoneDisplay,
-      email: settings?.email || site.email,
+      email: settings?.email || site.displayEmail,
       whatsappNumber,
       whatsappUrl: whatsappUrlFor(whatsappNumber),
     };

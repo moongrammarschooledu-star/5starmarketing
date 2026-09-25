@@ -73,7 +73,10 @@ export function Footer() {
               <Phone className="h-4 w-4 shrink-0 text-primary" /> {site.phoneDisplay}
             </li>
             <li className="flex items-center gap-2.5">
-              <Mail className="h-4 w-4 shrink-0 text-primary" /> {site.email}
+              <Phone className="h-4 w-4 shrink-0 text-primary" /> {site.phoneDisplay2}
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Mail className="h-4 w-4 shrink-0 text-primary" /> {site.displayEmail}
             </li>
             <li className="flex items-start gap-2.5">
               <MapPin className="h-4 w-4 shrink-0 text-primary" /> {site.address}

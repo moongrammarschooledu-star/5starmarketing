@@ -71,7 +71,7 @@ export default async function DealReceiptPrintPage({ params }: { params: Promise
       </div>
 
       <p className="mt-10 text-[11px] text-black/40">
-        {site.fullName} — {site.phoneDisplay} — {site.email}
+        {site.fullName} — {site.phoneDisplay} — {site.displayEmail}
       </p>
     </div>
   );

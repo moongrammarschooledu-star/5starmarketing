@@ -45,8 +45,15 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
           >
             <Phone className="h-3.5 w-3.5" /> {site.phoneDisplay}
           </a>
-          <a href={`mailto:${site.email}`} className="hover:text-white">
-            {site.email}
+          <a
+            href={`tel:${site.phoneHref2}`}
+            onClick={() => trackEvent("phone_click", { context: "navbar_topbar" })}
+            className="hidden items-center gap-1.5 hover:text-white md:flex"
+          >
+            <Phone className="h-3.5 w-3.5" /> {site.phoneDisplay2}
+          </a>
+          <a href={`mailto:${site.displayEmail}`} className="hover:text-white">
+            {site.displayEmail}
           </a>
         </div>
         <div>{site.addressShort}</div>

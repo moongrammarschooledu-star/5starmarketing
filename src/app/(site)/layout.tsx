@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloatButton } from "@/components/WhatsAppButton";
-import { PublicAiChatWidget } from "@/components/PublicAiChatWidget";
 import { FavoritesProvider } from "@/components/customer/FavoritesProvider";
 import { CompareProvider } from "@/components/customer/CompareProvider";
 import { CompareBar } from "@/components/customer/CompareBar";
@@ -33,7 +32,10 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         {children}
         <Footer />
         <WhatsAppFloatButton />
-        <PublicAiChatWidget />
+        {/* PublicAiChatWidget hidden until ANTHROPIC_API_KEY in Vercel
+            Production is fixed (currently contains an invalid character,
+            breaking the x-api-key header). Component/API untouched — just
+            re-add the import + <PublicAiChatWidget /> line to bring it back. */}
         <CompareBar />
       </CompareProvider>
     </FavoritesProvider>

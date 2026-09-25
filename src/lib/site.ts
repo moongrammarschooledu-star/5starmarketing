@@ -12,9 +12,15 @@ export const site = {
   directorTitle: "Director",
   phoneDisplay: "+92 319 8430458",
   phoneHref: "+923198430458",
+  phoneDisplay2: "0308-6010310",
+  phoneHref2: "+923086010310",
   whatsappNumber: "923198430458",
   whatsappHref: "https://wa.me/923198430458",
+  // Kept for the geocode API's required contact identification only
+  // (OpenStreetMap/Nominatim usage policy) — never shown to visitors.
+  // Use `displayEmail` for anything public-facing.
   email: "maos.edu@gmail.com",
+  displayEmail: "5star.marketing.2233@gmail.com",
   address: "1037-E-1 Johar Town, Lahore, Pakistan",
   addressShort: "1037-E-1 Johar Town, Lahore",
   mapsQuery: "1037-E-1 Johar Town, Lahore, Pakistan",

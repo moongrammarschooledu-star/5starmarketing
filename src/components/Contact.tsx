@@ -117,6 +117,16 @@ export function Contact() {
                   {site.phoneDisplay}
                 </a>
                 <a
+                  href={`tel:${site.phoneHref2}`}
+                  onClick={() => trackEvent("phone_click", { context: "contact_section" })}
+                  className="flex items-center gap-3 text-ink/85 hover:text-primary"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Phone className="h-4 w-4" />
+                  </span>
+                  {site.phoneDisplay2}
+                </a>
+                <a
                   href={whatsappLink("Hi 5STAR.M, I'd like to get in touch.")}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -128,11 +138,11 @@ export function Contact() {
                   </span>
                   WhatsApp: {site.phoneDisplay}
                 </a>
-                <a href={`mailto:${site.email}`} className="flex items-center gap-3 text-ink/85 hover:text-primary">
+                <a href={`mailto:${site.displayEmail}`} className="flex items-center gap-3 text-ink/85 hover:text-primary">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Mail className="h-4 w-4" />
                   </span>
-                  {site.email}
+                  {site.displayEmail}
                 </a>
                 <div className="flex items-start gap-3 text-ink/85">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">

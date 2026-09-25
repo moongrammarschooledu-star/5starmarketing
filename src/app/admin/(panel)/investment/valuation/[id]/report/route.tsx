@@ -21,7 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const comparables = await propertyValuationService.listComparables(id, true);
 
   const buffer = await renderToBuffer(
-    <ValuationReportDocument valuation={valuation} comparables={comparables} settings={settings} business={{ name: site.fullName, phone: site.phoneDisplay, email: site.email }} />
+    <ValuationReportDocument valuation={valuation} comparables={comparables} settings={settings} business={{ name: site.fullName, phone: site.phoneDisplay, email: site.displayEmail }} />
   );
 
   await investmentEventService.track({ eventType: "report_downloaded", propertyId: valuation.propertyId }, undefined);

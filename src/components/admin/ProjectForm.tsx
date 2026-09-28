@@ -5,6 +5,7 @@ import { AlertCircle } from "lucide-react";
 import { projectStatuses, type Project } from "@/lib/models/project";
 import type { ProjectFormState } from "@/lib/actions/projects.actions";
 import { ImageUploader } from "./ImageUploader";
+import { VideoUploader } from "./VideoUploader";
 import { DocumentUploader } from "./DocumentUploader";
 
 export function ProjectForm({
@@ -101,6 +102,12 @@ export function ProjectForm({
         </p>
         <div className="mt-4">
           <ImageUploader name="images" initialImages={initialValues?.images} />
+        </div>
+
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-ink">Video</h3>
+          <p className="mt-1 mb-3 text-xs text-muted">Optional — a walkthrough or project video shown on the public project page.</p>
+          <VideoUploader name="videoUrl" initialVideo={initialValues?.videoUrl} bucket="project-videos" />
         </div>
 
         <div className="mt-6">

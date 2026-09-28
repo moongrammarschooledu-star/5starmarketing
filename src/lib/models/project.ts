@@ -19,6 +19,9 @@ export interface Project {
   whatsappNumber?: string;
   documents: PropertyDocument[];
   images: string[];
+  /** Optional walkthrough video, uploaded straight from the admin's
+   *  browser to Supabase Storage (same approach as properties). */
+  videoUrl?: string;
   published: boolean;
   createdAt: string;
   updatedAt: string;

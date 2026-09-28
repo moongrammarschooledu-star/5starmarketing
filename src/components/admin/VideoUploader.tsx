@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { AlertCircle, Loader2, Upload, Video as VideoIcon, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-const BUCKET = "property-videos";
+const DEFAULT_BUCKET = "property-videos";
 const MAX_BYTES = 100 * 1024 * 1024; // 100MB — mirrors the bucket's own file_size_limit
 const ALLOWED_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
@@ -15,7 +15,15 @@ const ALLOWED_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 // files are commonly 10-100MB; routing that through the Next.js server
 // action risks hitting Vercel's request body limits, so the bytes never
 // touch our server at all here.
-export function VideoUploader({ name, initialVideo }: { name: string; initialVideo?: string }) {
+export function VideoUploader({
+  name,
+  initialVideo,
+  bucket = DEFAULT_BUCKET,
+}: {
+  name: string;
+  initialVideo?: string;
+  bucket?: string;
+}) {
   const [videoUrl, setVideoUrl] = useState(initialVideo ?? "");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +48,10 @@ export function VideoUploader({ name, initialVideo }: { name: string; initialVid
       const ext = file.name.split(".").pop() || "mp4";
       const path = `${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await supabase.storage
-        .from(BUCKET)
+        .from(bucket)
         .upload(path, file, { contentType: file.type, upsert: false });
       if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
       setVideoUrl(data.publicUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not upload this video. Please try again.");

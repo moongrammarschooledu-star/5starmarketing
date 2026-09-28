@@ -10,6 +10,7 @@ import {
 } from "./storage";
 
 const BUCKET = "project-images";
+const VIDEO_BUCKET = "project-videos";
 
 const STATUS_TO_DB: Record<ProjectStatus, string> = {
   Upcoming: "upcoming",
@@ -41,6 +42,7 @@ function mapRowToProject(row: any): Project {
     whatsappNumber: row.whatsapp_number ?? undefined,
     documents: (row.documents ?? []) as StoredDocument[],
     images: row.images ?? [],
+    videoUrl: row.video_url ?? undefined,
     published: row.published ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -61,6 +63,7 @@ function mapProjectToRow(input: Partial<ProjectInput>) {
   if (input.mapsUrl !== undefined) row.maps_url = input.mapsUrl || null;
   if (input.whatsappNumber !== undefined) row.whatsapp_number = input.whatsappNumber || null;
   if (input.images !== undefined) row.images = input.images;
+  if (input.videoUrl !== undefined) row.video_url = input.videoUrl || null;
   if (input.published !== undefined) row.published = input.published;
   return row;
 }
@@ -200,6 +203,7 @@ export const projectService = {
     if (existing) {
       await deleteStorageImages(existing.images, BUCKET);
       if (existing.coverImage) await deleteStorageImages([existing.coverImage], BUCKET);
+      if (existing.videoUrl) await deleteStorageImages([existing.videoUrl], VIDEO_BUCKET);
       await deleteStorageDocuments(existing.documents);
     }
     return true;

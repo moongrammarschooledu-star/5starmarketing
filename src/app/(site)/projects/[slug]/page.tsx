@@ -201,6 +201,15 @@ export default async function ProjectDetailsPage({
               </div>
             )}
 
+            {project.videoUrl && (
+              <div>
+                <h2 className="font-heading text-base font-bold text-ink">Video</h2>
+                <div className="mt-3 overflow-hidden rounded-2xl border border-border">
+                  <video src={project.videoUrl} controls className="aspect-video w-full bg-ink" />
+                </div>
+              </div>
+            )}
+
             <PropertyDocuments documents={project.documents} title="Project Documents" />
 
             <PropertyLocationSection title="Project Location" location={project.location} mapsQuery={project.mapsUrl} />

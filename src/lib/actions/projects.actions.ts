@@ -63,6 +63,7 @@ function buildInputFromForm(formData: FormData, publish: boolean) {
     images: images.length
       ? images
       : ["https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1200&auto=format&fit=crop"],
+    videoUrl: String(formData.get("videoUrl") ?? "").trim() || undefined,
     published: publish,
   };
 }

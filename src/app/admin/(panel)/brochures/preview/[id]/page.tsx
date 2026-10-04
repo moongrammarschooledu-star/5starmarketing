@@ -4,9 +4,43 @@ import { brochureService } from "@/services/brochureService";
 import { requireSection } from "@/lib/guard";
 import { BrochurePreviewPanel } from "@/components/admin/BrochurePreviewPanel";
 import { BrochurePreviewLoader } from "@/components/admin/BrochurePreviewLoader";
+import { FacebookPostPanel } from "@/components/admin/FacebookPostPanel";
+import { buildFacebookCaptions } from "@/lib/facebookPost";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Preview Brochure" };
 export const dynamic = "force-dynamic";
+
+/** A brochure target is either a property's or a project's shape; the
+ *  caption builder takes the union of both with every field optional. */
+function postFields(target: object) {
+  const t = target as {
+    name: string;
+    location: string;
+    propertyType?: string;
+    purpose?: string;
+    size?: string;
+    price?: string;
+    features?: string[];
+    amenities?: string[];
+    projectStatus?: string;
+    availablePropertyTypes?: string[];
+    highlights?: string[];
+  };
+  return {
+    name: t.name,
+    location: t.location,
+    propertyType: t.propertyType,
+    purpose: t.purpose,
+    size: t.size,
+    price: t.price,
+    features: t.features,
+    amenities: t.amenities,
+    projectStatus: t.projectStatus,
+    availablePropertyTypes: t.availablePropertyTypes,
+    highlights: t.highlights,
+  };
+}
 
 export default async function BrochurePreviewPage({ params }: { params: Promise<{ id: string }> }) {
   await requireSection("brochures");
@@ -34,6 +68,22 @@ export default async function BrochurePreviewPage({ params }: { params: Promise<
 
       {loadError && (
         <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">{loadError}</div>
+      )}
+
+      {renderData && (
+        <div className="mt-6">
+          <FacebookPostPanel
+            brochureId={id}
+            captions={buildFacebookCaptions({
+              type: brochure.type,
+              ...postFields(renderData.target),
+              companyName: site.fullName,
+              phones: [renderData.business.phone, site.phoneDisplay2],
+              whatsappUrl: renderData.business.whatsappUrl,
+              websiteUrl: renderData.target.publicUrl,
+            })}
+          />
+        </div>
       )}
 
       {renderData && (

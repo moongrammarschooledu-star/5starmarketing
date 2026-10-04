@@ -540,7 +540,9 @@ export function BrochureDocument({
                 {showContact && (
                   <>
                     <Text style={styles.footerLine}>{truncate(business.address, 80)}</Text>
-                    <Text style={styles.footerLine}>{business.phone}</Text>
+                    <Text style={styles.footerLine}>
+                      {[business.phone, site.phoneDisplay2].filter((p, i, a) => p && a.indexOf(p) === i).join("  /  ")}
+                    </Text>
                     <Text style={styles.footerLine}>{business.email}</Text>
                     <Link src={site.websiteUrl} style={styles.footerLink}>
                       {site.websiteUrl.replace(/^https?:\/\//, "")}

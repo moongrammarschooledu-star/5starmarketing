@@ -199,6 +199,83 @@ function ease(p: number) {
   return p < 0 ? 0 : p > 1 ? 1 : p * p * (3 - 2 * p);
 }
 
+// Some computers' H.264 encoders only handle the plain "baseline" profile; on
+// those, asking for the heavier "high" profile records the sound but no
+// picture. So the simplest profile comes first.
+const MIME_CANDIDATES = [
+  "video/mp4;codecs=avc1.42E01F,mp4a.40.2",
+  "video/mp4;codecs=avc1.4D401F,mp4a.40.2",
+  "video/mp4;codecs=avc1,mp4a.40.2",
+  "video/mp4",
+  "video/webm;codecs=vp8,opus",
+  "video/webm;codecs=vp9,opus",
+  "video/webm",
+];
+
+/** Records ~2 seconds of a moving canvas plus a silent audio track in the
+ *  given format and checks that a picture actually came out. */
+async function probeRecording(mime: string): Promise<boolean> {
+  const c = document.createElement("canvas");
+  c.width = OUT_W;
+  c.height = OUT_H;
+  const x = c.getContext("2d", { alpha: false })!;
+  const ac = new AudioContext();
+  try {
+    const dest = ac.createMediaStreamDestination();
+    const osc = ac.createOscillator();
+    const quiet = ac.createGain();
+    quiet.gain.value = 0.0001;
+    osc.connect(quiet);
+    quiet.connect(dest);
+    osc.start();
+
+    const stream = c.captureStream(FPS);
+    dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 3_500_000, audioBitsPerSecond: 128_000 });
+    const parts: Blob[] = [];
+    rec.ondataavailable = (e) => e.data.size > 0 && parts.push(e.data);
+
+    let n = 0;
+    const paint = () => {
+      x.fillStyle = `hsl(${(n * 7) % 360} 70% 45%)`;
+      x.fillRect(0, 0, OUT_W, OUT_H);
+      x.fillStyle = "#fff";
+      x.fillRect((n * 9) % OUT_W, 300, 120, 120);
+      n++;
+    };
+    paint();
+    const timer = setInterval(paint, 33);
+    rec.start(500);
+    await new Promise((r) => setTimeout(r, 2000));
+    clearInterval(timer);
+    const blob = await new Promise<Blob>((resolve) => {
+      rec.onstop = () => resolve(new Blob(parts, { type: rec.mimeType || mime }));
+      rec.stop();
+    });
+    stream.getTracks().forEach((t) => t.stop());
+    osc.stop();
+    return await hasPicture(blob);
+  } catch {
+    return false;
+  } finally {
+    ac.close().catch(() => {});
+  }
+}
+
+/** The first format this browser supports AND can really record a picture
+ *  in. Falls back to the first supported one if none passes the check. */
+async function chooseMime(): Promise<string> {
+  const supported = MIME_CANDIDATES.filter((m) => MediaRecorder.isTypeSupported(m));
+  for (let i = 0; i < supported.length; i++) {
+    // The very first choice gets a second try - the failure can be intermittent.
+    const tries = i === 0 ? 2 : 1;
+    for (let k = 0; k < tries; k++) if (await probeRecording(supported[i])) return supported[i];
+  }
+  return supported[0] ?? "";
+}
+
+class NoPictureError extends Error {}
+
 // ------------------------------------------------------------------ music
 
 /** Light, original ambient music made from oscillators (nothing sampled, so
@@ -308,7 +385,18 @@ function scheduleMusic(
 
 // ------------------------------------------------------------------- main
 
+/** Builds the video; if a recording comes out without a picture, tries once more. */
 export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
+  try {
+    return await createReelVideoOnce(opts);
+  } catch (e) {
+    if (!(e instanceof NoPictureError)) throw e;
+    opts.onProgress?.(0, "The first try came out without a picture - trying again...");
+    return await createReelVideoOnce(opts);
+  }
+}
+
+async function createReelVideoOnce(opts: ReelOptions): Promise<ReelResult> {
   const { data } = opts;
   const progress = opts.onProgress ?? (() => {});
   const throwIfAborted = () => {
@@ -340,6 +428,11 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
     x.fillRect(0, 0, c.width, c.height);
     return c;
   });
+
+  // ---- find a video format this browser can really record
+  progress(0.01, "Checking this browser's video recording...");
+  const mime = await chooseMime();
+  throwIfAborted();
 
   // ---- audio
   progress(0.02, "Preparing audio...");
@@ -411,15 +504,6 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
   const wantsAudio = hasVoice || opts.music;
   if (wantsAudio) dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
 
-  const mimeCandidates = [
-    "video/mp4;codecs=avc1.640028,mp4a.40.2",
-    "video/mp4;codecs=avc1,mp4a.40.2",
-    "video/mp4",
-    "video/webm;codecs=vp9,opus",
-    "video/webm;codecs=vp8,opus",
-    "video/webm",
-  ];
-  const mime = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
   const recorder = new MediaRecorder(stream, {
     ...(mime ? { mimeType: mime } : {}),
     videoBitsPerSecond: 3_500_000,
@@ -771,7 +855,7 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
     throw new Error(`The tab was in the background for a moment, so part of the video would have frozen. ${tryAgain}`);
   }
   if (!(await hasPicture(blob))) {
-    throw new Error(`The recording came out without a picture (this can happen if the browser was busy). ${tryAgain}`);
+    throw new NoPictureError(`The recording came out without a picture (this can happen if the browser was busy). ${tryAgain}`);
   }
   progress(1, "Done");
 

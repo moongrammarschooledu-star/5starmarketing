@@ -18,6 +18,8 @@ import type { PropertyFormState } from "@/lib/actions/properties.actions";
 import { ImageUploader } from "./ImageUploader";
 import { VideoUploader } from "./VideoUploader";
 import { DocumentUploader } from "./DocumentUploader";
+import { OwnerDetailsSection } from "./OwnerDetailsSection";
+import type { OwnerDetails } from "@/lib/models/ownerDetails";
 
 // Leaflet touches `window` at import time — this file is already a
 // Client Component, so ssr:false can be called directly here (no
@@ -32,11 +34,14 @@ export function PropertyForm({
   initialValues,
   submitLabel,
   projects,
+  ownerDetails,
 }: {
   action: (state: PropertyFormState, formData: FormData) => Promise<PropertyFormState>;
   initialValues?: Property;
   submitLabel: string;
   projects: Project[];
+  /** Private owner info - undefined for a new property, null if loading it failed. */
+  ownerDetails?: OwnerDetails | null;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [sizeCategory, setSizeCategory] = useState<SizeCategory>(initialValues?.sizeCategory ?? sizeCategories[0]);
@@ -117,6 +122,8 @@ export function PropertyForm({
           Featured Property (shown on homepage)
         </label>
       </section>
+
+      <OwnerDetailsSection owner={ownerDetails} />
 
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="font-heading text-base font-bold text-ink">Description</h2>

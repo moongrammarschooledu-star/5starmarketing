@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { propertyService } from "@/services/propertyService";
 import { activityService } from "@/services/activityService";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
+import { readOwnerDetails } from "@/lib/models/ownerDetails";
 import type {
   PaymentOption,
   Property,
@@ -109,6 +111,20 @@ export interface PropertyFormState {
   error?: string;
 }
 
+/** Saves the private owner details (own staff-only table). Skipped when
+ *  the form's owner section was disabled because loading it failed, so a
+ *  failed load can never wipe what is stored. Returns an error message
+ *  rather than throwing - the property itself is already saved by now. */
+async function saveOwnerDetails(propertyId: string, formData: FormData): Promise<string | null> {
+  if (formData.get("ownerSection") !== "1") return null;
+  try {
+    await ownerDetailsService.saveForProperty(propertyId, readOwnerDetails(formData));
+    return null;
+  } catch (e) {
+    return errorMessage(e, "Could not save the owner details.");
+  }
+}
+
 export async function createPropertyAction(
   _prevState: PropertyFormState,
   formData: FormData
@@ -125,6 +141,12 @@ export async function createPropertyAction(
 
   await activityService.log("Added Property", property.title, "property", property.id);
   revalidateAll(property.slug);
+  const ownerError = await saveOwnerDetails(property.id, formData);
+  if (ownerError) {
+    return {
+      error: `The property was created, but its owner details could not be saved (${ownerError}). Open it from the Properties list to add them - do not submit this form again.`,
+    };
+  }
   redirect("/admin/properties");
 }
 
@@ -146,6 +168,10 @@ export async function updatePropertyAction(
 
   await activityService.log("Updated Property", updated.title, "property", updated.id);
   revalidateAll(updated.slug);
+  const ownerError = await saveOwnerDetails(updated.id, formData);
+  if (ownerError) {
+    return { error: `The property was saved, but its owner details could not be saved (${ownerError}). Please try again.` };
+  }
   redirect("/admin/properties");
 }
 

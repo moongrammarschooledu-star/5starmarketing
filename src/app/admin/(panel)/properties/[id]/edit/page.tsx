@@ -9,6 +9,8 @@ import { projectService } from "@/services/projectService";
 import { paymentPlanService } from "@/services/paymentPlanService";
 import { dealService } from "@/services/dealService";
 import { documentService } from "@/services/documentService";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
+import { emptyOwnerDetails } from "@/lib/models/ownerDetails";
 import { profileService } from "@/services/profileService";
 import { requireSection } from "@/lib/guard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -34,6 +36,9 @@ export default async function EditPropertyPage({
     projectService.list().catch(() => []),
   ]);
   if (!property) notFound();
+
+  // null = couldn't load (the form then leaves the stored owner details alone)
+  const ownerDetails = await ownerDetailsService.getForProperty(id).then((o) => o ?? emptyOwnerDetails).catch(() => null);
 
   const plan = await paymentPlanService.getForPropertyAdmin(id);
   const scheduleItems = plan ? await paymentPlanService.listScheduleItems(plan.id) : [];
@@ -89,7 +94,7 @@ export default async function EditPropertyPage({
       {admin && canAccess(admin.role, "support") && <PropertySupportPanel propertyId={id} />}
 
       <div className="mt-6">
-        <PropertyForm action={boundAction} initialValues={property} submitLabel="Save Changes" projects={projects} />
+        <PropertyForm action={boundAction} initialValues={property} submitLabel="Save Changes" projects={projects} ownerDetails={ownerDetails} />
       </div>
 
       <div className="mt-6">

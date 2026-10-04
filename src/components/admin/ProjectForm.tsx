@@ -7,13 +7,18 @@ import type { ProjectFormState } from "@/lib/actions/projects.actions";
 import { ImageUploader } from "./ImageUploader";
 import { VideoUploader } from "./VideoUploader";
 import { DocumentUploader } from "./DocumentUploader";
+import { OwnerDetailsSection } from "./OwnerDetailsSection";
+import type { OwnerDetails } from "@/lib/models/ownerDetails";
 
 export function ProjectForm({
   action,
   initialValues,
+  ownerDetails,
 }: {
   action: (state: ProjectFormState, formData: FormData) => Promise<ProjectFormState>;
   initialValues?: Project;
+  /** Private owner info - undefined for a new project, null if loading it failed. */
+  ownerDetails?: OwnerDetails | null;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
 
@@ -47,6 +52,8 @@ export function ProjectForm({
           </label>
         </div>
       </section>
+
+      <OwnerDetailsSection owner={ownerDetails} />
 
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="font-heading text-base font-bold text-ink">Description</h2>

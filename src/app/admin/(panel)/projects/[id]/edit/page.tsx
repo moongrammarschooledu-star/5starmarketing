@@ -5,6 +5,8 @@ import { ProjectForm } from "@/components/admin/ProjectForm";
 import { updateProjectAction } from "@/lib/actions/projects.actions";
 import { projectService } from "@/services/projectService";
 import { documentService } from "@/services/documentService";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
+import { emptyOwnerDetails } from "@/lib/models/ownerDetails";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { requireSection } from "@/lib/guard";
 
@@ -21,6 +23,8 @@ export default async function EditProjectPage({
   if (!project) notFound();
 
   const documents = await documentService.listByProject(id).catch(() => []);
+  // null = couldn't load (the form then leaves the stored owner details alone)
+  const ownerDetails = await ownerDetailsService.getForProject(id).then((o) => o ?? emptyOwnerDetails).catch(() => null);
   const boundAction = updateProjectAction.bind(null, id);
 
   return (
@@ -45,7 +49,7 @@ export default async function EditProjectPage({
       )}
 
       <div className="mt-6">
-        <ProjectForm action={boundAction} initialValues={project} />
+        <ProjectForm action={boundAction} initialValues={project} ownerDetails={ownerDetails} />
       </div>
     </div>
   );

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { projectService } from "@/services/projectService";
 import { activityService } from "@/services/activityService";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
+import { readOwnerDetails } from "@/lib/models/ownerDetails";
 import type { ProjectStatus } from "@/lib/models/project";
 
 function revalidateAll(slug?: string) {
@@ -72,6 +74,20 @@ export interface ProjectFormState {
   error?: string;
 }
 
+/** Saves the private owner details (own staff-only table). Skipped when
+ *  the form's owner section was disabled because loading it failed, so a
+ *  failed load can never wipe what is stored. Returns an error message
+ *  rather than throwing - the project itself is already saved by now. */
+async function saveOwnerDetails(projectId: string, formData: FormData): Promise<string | null> {
+  if (formData.get("ownerSection") !== "1") return null;
+  try {
+    await ownerDetailsService.saveForProject(projectId, readOwnerDetails(formData));
+    return null;
+  } catch (e) {
+    return errorMessage(e, "Could not save the owner details.");
+  }
+}
+
 export async function createProjectAction(
   _prevState: ProjectFormState,
   formData: FormData
@@ -89,6 +105,12 @@ export async function createProjectAction(
 
   await activityService.log("Added Project", project.name, "project", project.id);
   revalidateAll(project.slug);
+  const ownerError = await saveOwnerDetails(project.id, formData);
+  if (ownerError) {
+    return {
+      error: `The project was created, but its owner details could not be saved (${ownerError}). Open it from the Projects list to add them - do not submit this form again.`,
+    };
+  }
   redirect("/admin/projects");
 }
 
@@ -116,6 +138,10 @@ export async function updateProjectAction(
 
   await activityService.log("Updated Project", updated.name, "project", updated.id);
   revalidateAll(updated.slug);
+  const ownerError = await saveOwnerDetails(updated.id, formData);
+  if (ownerError) {
+    return { error: `The project was saved, but its owner details could not be saved (${ownerError}). Please try again.` };
+  }
   redirect("/admin/projects");
 }
 

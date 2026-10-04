@@ -5,10 +5,7 @@ import Link from "next/link";
 import { MapPin, Ruler, MessageCircle, Star, BedDouble, Bath } from "lucide-react";
 import clsx from "clsx";
 import type { Property } from "@/lib/models/property";
-import { whatsappLink } from "@/lib/site";
-import { trackWhatsAppLeadAction } from "@/lib/actions/leads.actions";
-import { recordWebsiteEventAction } from "@/lib/actions/analytics.actions";
-import { trackEvent } from "@/lib/analytics";
+import { WhatsAppInquiryButton } from "@/components/WhatsAppInquiryButton";
 import { getOrCreateSessionId } from "@/lib/session";
 import { FavoriteButton } from "@/components/customer/FavoriteButton";
 import { CompareCheckbox } from "@/components/customer/CompareCheckbox";
@@ -150,21 +147,15 @@ export function PropertyCard({
           >
             View Details
           </Link>
-          <a
-            href={whatsappLink(
-              `Assalam-o-Alaikum 5STAR.M Estate & Builders,\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => {
-              trackWhatsAppLeadAction(property.title, property.id);
-              trackEvent("whatsapp_click", { context: "property_card", property_id: property.id });
-              recordWebsiteEventAction("whatsapp_click", { propertyId: property.id, sessionId: getOrCreateSessionId() });
-            }}
+          <WhatsAppInquiryButton
+            propertyId={property.id}
+            propertyTitle={property.title}
+            message={`Assalam-o-Alaikum 5STAR.M Estate & Builders,\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`}
+            context="property_card"
             className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >
             <MessageCircle className="h-3.5 w-3.5" /> Inquiry
-          </a>
+          </WhatsAppInquiryButton>
         </div>
       </div>
     </article>

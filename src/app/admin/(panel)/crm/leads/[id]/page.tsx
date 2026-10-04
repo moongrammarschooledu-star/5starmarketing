@@ -14,6 +14,7 @@ import { marketingTagService } from "@/services/marketingTagService";
 import { LeadScorePanel } from "@/components/admin/marketing/LeadScorePanel";
 import { LeadActionsPanel } from "@/components/admin/LeadActionsPanel";
 import { LeadNotes } from "@/components/admin/LeadNotes";
+import { LeadContactRows } from "@/components/admin/LeadContactRows";
 import { LeadFollowUps } from "@/components/admin/LeadFollowUps";
 import { WhatsAppActivityLog } from "@/components/admin/WhatsAppActivityLog";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -106,10 +107,7 @@ export default async function CrmLeadDetailPage({ params }: { params: Promise<{ 
               <User className="h-4.5 w-4.5 text-primary" /> Customer Information
             </h2>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Row label="Name" value={lead.name} />
-              <Row label="Phone" value={lead.phone} />
-              {lead.whatsapp && <Row label="WhatsApp" value={lead.whatsapp} />}
-              {lead.email && <Row label="Email" value={lead.email} />}
+              <LeadContactRows lead={lead} />
               {lead.lastContactedAt && <Row label="Last Contacted" value={new Date(lead.lastContactedAt).toLocaleString("en-GB")} />}
             </div>
           </div>

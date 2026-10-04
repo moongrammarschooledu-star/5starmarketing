@@ -1,6 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { isRateLimited } from "@/lib/rateLimit";
 import { leadService } from "@/services/leadService";
 import { profileService } from "@/services/profileService";
 import { activityService } from "@/services/activityService";
@@ -9,26 +11,47 @@ import { staffNotificationService } from "@/services/staffNotificationService";
 import { automationService } from "@/services/automationService";
 import type { LeadStatus } from "@/lib/models/lead";
 
-/** Fired from the property WhatsApp-inquiry buttons so the click shows up
- *  as a real lead in the admin dashboard, not just an outbound link. */
-export async function trackWhatsAppLeadAction(propertyTitle?: string, propertyId?: string) {
+const PHONE_PATTERN = /^[0-9+()\-\s]{7,20}$/;
+
+/** Fired from the property WhatsApp-inquiry buttons once the visitor has
+ *  given their name and number, so the click shows up as a real lead (with
+ *  contact details) in the admin dashboard. WhatsApp's own link never tells
+ *  us who is writing, so the details are asked for before it opens. */
+export async function trackWhatsAppLeadAction(input: {
+  name: string;
+  phone: string;
+  propertyTitle?: string;
+  propertyId?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const name = input.name.trim().slice(0, 120);
+  const phone = input.phone.trim();
+  if (!name) return { ok: false, error: "Please enter your name." };
+  if (!PHONE_PATTERN.test(phone)) return { ok: false, error: "Please enter a valid phone number." };
+
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (isRateLimited(`wa-lead:${ip}`, 60_000, 8)) return { ok: false, error: "Too many requests. Please try again in a minute." };
+
+  const { propertyTitle, propertyId } = input;
   try {
     await leadService.create({
-      name: "WhatsApp Visitor",
-      phone: "Contacted via WhatsApp",
+      name,
+      phone,
+      whatsapp: phone,
       propertyId,
       propertyTitle,
       message: propertyTitle
         ? `Assalam-o-Alaikum, I am interested in ${propertyTitle}. Please share complete details.`
         : "Started a WhatsApp chat from the website.",
       source: "WhatsApp",
+      preferredContactMethod: "WhatsApp",
     });
   } catch (e) {
-    // Never block the visitor's WhatsApp click over a logging failure.
+    // The visitor still gets to WhatsApp - a logging failure never blocks them.
     console.error("trackWhatsAppLeadAction failed:", e);
-    return;
+    return { ok: false };
   }
   revalidateAll();
+  return { ok: true };
 }
 
 /** Fired from brochure download links so a real download shows up as a

@@ -303,7 +303,7 @@ async function toPdfSafeImages(urls: string[]): Promise<string[]> {
 
 async function buildPropertyTarget(property: Awaited<ReturnType<typeof propertyService.getById>>) {
   if (!property) throw new Error("Property not found.");
-  const publicUrl = `${site.url}/properties/${property.slug}`;
+  const publicUrl = `${site.websiteUrl}/properties/${property.slug}`;
   const directionsUrl = property.mapsQuery
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.mapsQuery)}`
     : undefined;
@@ -328,7 +328,7 @@ async function buildPropertyTarget(property: Awaited<ReturnType<typeof propertyS
 
 async function buildProjectTarget(project: Awaited<ReturnType<typeof projectService.getById>>) {
   if (!project) throw new Error("Project not found.");
-  const publicUrl = `${site.url}/projects/${project.slug}`;
+  const publicUrl = `${site.websiteUrl}/projects/${project.slug}`;
   const directionsUrl = project.mapsUrl
     ? project.mapsUrl
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.location)}`;

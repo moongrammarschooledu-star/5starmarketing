@@ -1,6 +1,10 @@
 // Central place for all business info. Edit here to update it site-wide.
 export const site = {
   url: "https://www.5starm.com",
+  // The website that is actually live today (www.5starm.com does not
+  // resolve yet). Used where a link must work right now, e.g. the
+  // brochure's printed website line and QR codes.
+  websiteUrl: "https://5starmarketing-5adv.vercel.app",
   name: "5STAR.M",
   fullName: "5STAR.M Estate & Builders",
   tagline: "NOW YOU WILL DREAM",

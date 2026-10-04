@@ -1,93 +1,50 @@
 /* eslint-disable jsx-a11y/alt-text -- this is react-pdf's own <Image>
    primitive (rendered into a PDF, not the DOM), which has no `alt` prop;
    the lint rule doesn't distinguish it from a real HTML <img>. */
-import { Document, Page, View, Text, Image, StyleSheet, Link } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, Link, StyleSheet } from "@react-pdf/renderer";
 import type { BrochureSectionKey, BrochureType } from "@/lib/models/brochure";
+import { LOGO_DATA_URI, LOGO_ASPECT } from "./logoData";
+import { site } from "@/lib/site";
 
 const RED = "#C81E2C";
 const DARK_RED = "#7A1219";
+const SOFT_RED = "#FDF1F2";
+const PINK = "#F9D9DC";
 const INK = "#1A1A1A";
 const MUTED = "#6B6B6B";
-const BORDER = "#E5E5E5";
+const LINE = "#E8CDD0";
 
-const styles = StyleSheet.create({
-  page: { fontFamily: "Helvetica", fontSize: 10, color: INK, paddingTop: 60, paddingBottom: 50, paddingHorizontal: 40 },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 36,
-    paddingHorizontal: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 2,
-    borderBottomColor: RED,
-  },
-  headerText: { fontSize: 9, fontWeight: 700, color: DARK_RED },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 34,
-    paddingHorizontal: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-  },
-  footerText: { fontSize: 8, color: MUTED },
-  h1: { fontSize: 20, fontWeight: 700, color: INK, marginBottom: 4 },
-  h2: { fontSize: 14, fontWeight: 700, color: DARK_RED, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 },
-  muted: { color: MUTED },
-  coverPage: { padding: 0 },
-  coverImage: { width: "100%", height: 420, objectFit: "cover" },
-  coverOverlay: { position: "absolute", top: 0, left: 0, right: 0, height: 420, backgroundColor: "rgba(0,0,0,0.35)" },
-  coverBrand: { position: "absolute", top: 30, left: 40, fontSize: 12, fontWeight: 700, color: "#FFFFFF", letterSpacing: 2 },
-  coverBadge: {
-    position: "absolute",
-    top: 30,
-    right: 40,
-    backgroundColor: RED,
-    color: "#FFFFFF",
-    fontSize: 9,
-    fontWeight: 700,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    letterSpacing: 1,
-  },
-  coverBody: { padding: 40 },
-  coverTitle: { fontSize: 26, fontWeight: 700, color: INK, marginBottom: 6 },
-  coverLocation: { fontSize: 13, color: MUTED, marginBottom: 20 },
-  cardsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
-  card: { width: "31%", borderWidth: 1, borderColor: BORDER, borderRadius: 4, padding: 10 },
-  cardLabel: { fontSize: 8, color: MUTED, textTransform: "uppercase", marginBottom: 3, letterSpacing: 0.5 },
-  cardValue: { fontSize: 12, fontWeight: 700, color: INK },
-  galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  galleryImage: { width: "48.5%", height: 180, objectFit: "cover", borderRadius: 2 },
-  bulletRow: { flexDirection: "row", marginBottom: 5, alignItems: "flex-start" },
-  bulletDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: RED, marginTop: 4, marginRight: 6 },
-  bulletText: { fontSize: 10, color: INK, flex: 1 },
-  table: { borderWidth: 1, borderColor: BORDER, borderRadius: 4, marginBottom: 14 },
-  tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: BORDER, paddingVertical: 7, paddingHorizontal: 10 },
-  tableRowLast: { flexDirection: "row", paddingVertical: 7, paddingHorizontal: 10 },
-  tableLabel: { fontSize: 9, color: MUTED, width: "50%" },
-  tableValue: { fontSize: 10, fontWeight: 700, color: INK, width: "50%", textAlign: "right" },
-  scheduleHeaderRow: { flexDirection: "row", backgroundColor: "#F7F7F7", paddingVertical: 6, paddingHorizontal: 8 },
-  scheduleHeaderCell: { fontSize: 8, fontWeight: 700, color: MUTED, textTransform: "uppercase" },
-  scheduleRow: { flexDirection: "row", paddingVertical: 6, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: BORDER },
-  scheduleCell: { fontSize: 9, color: INK },
-  ctaBox: { borderWidth: 2, borderColor: RED, borderRadius: 6, padding: 24, alignItems: "center", marginTop: 20 },
-  ctaTitle: { fontSize: 16, fontWeight: 700, color: INK, marginBottom: 4, textAlign: "center" },
-  ctaSubtitle: { fontSize: 10, color: MUTED, marginBottom: 14, textAlign: "center" },
-  ctaPhone: { fontSize: 14, fontWeight: 700, color: RED, marginBottom: 14 },
-  qr: { width: 110, height: 110 },
-  disclaimerBox: { borderWidth: 1, borderColor: BORDER, borderRadius: 4, padding: 12, backgroundColor: "#FAFAFA" },
-  disclaimerText: { fontSize: 8.5, color: MUTED, lineHeight: 1.5, marginBottom: 8 },
-});
+// The brochure is a single-page A4 flyer carrying ALL selected information.
+// Rather than cutting content, the layout measures how much there is and
+// picks the largest type scale at which everything still fits.
+const PAGE_W = 595;
+const PAGE_H = 841;
+const SIDE = 28;
+const COL_GAP = 16;
+const SCALES = [1, 0.94, 0.88, 0.82, 0.76, 0.7, 0.64, 0.58];
+// Deliberately short: a clean, readable flyer beats a crammed one. The
+// full details stay on the property's web page (linked by the QR code).
+const MAX_DESCRIPTION = 480;
+const MAX_LIST_ITEMS = 6;
+const STRIP_H = 24;
+
+// Taken from the company's own website copy (homepage stats and "Why
+// Choose 5STAR.M" list) - nothing here is invented for the brochure.
+const COMPANY_HIGHLIGHTS = [
+  "LDA-Approved Society Focus",
+  "Cash / Easy Installments",
+  "100% Transparent Dealings",
+  "Property & Construction Expertise",
+];
+// The company's own description of what it does (stated by the owner).
+const COMPANY_SERVICES = ["Buying & Selling", "Development", "Construction", "Rental Services"];
+// From the "Why Choose 5STAR.M" list on the company website.
+const COMPANY_WHY = [
+  "Professional Real Estate Guidance",
+  "Trusted Property Solutions",
+  "Customer-Focused Service",
+  "Long-Term Support",
+];
 
 interface BusinessInfo {
   name: string;
@@ -136,20 +93,32 @@ interface QrCodes {
   maps?: string;
 }
 
-function PageChrome({ business, children }: { business: BusinessInfo; children: React.ReactNode }) {
-  return (
-    <>
-      <View style={styles.header} fixed>
-        <Text style={styles.headerText}>{business.name}</Text>
-        <Text style={styles.headerText}>ESTATE & BUILDERS</Text>
-      </View>
-      {children}
-      <View style={styles.footer} fixed>
-        <Text style={styles.footerText}>{business.address}</Text>
-        <Text style={styles.footerText} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
-      </View>
-    </>
-  );
+function clean(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function truncate(value: string, max: number) {
+  const c = clean(value);
+  if (c.length <= max) return c;
+  return `${c.slice(0, max).replace(/\s+\S*$/, "")}...`;
+}
+
+/** Rough text height: how many wrapped lines `text` needs in a column of
+ *  `width` points at `fontSize`, times the line height. Helvetica averages
+ *  ~0.45em per glyph; 0.47 leaves a small safety margin. */
+function textHeight(text: string, width: number, fontSize: number, lineHeight: number) {
+  const perLine = Math.max(8, Math.floor(width / (fontSize * 0.47)));
+  return Math.max(1, Math.ceil(text.length / perLine)) * fontSize * lineHeight;
+}
+
+interface Plan {
+  s: number;
+  heroH: number;
+  galleryH: number;
+  factsH: number;
+  footerH: number;
+  bodyH: number;
+  need: number;
 }
 
 export function BrochureDocument({
@@ -157,7 +126,6 @@ export function BrochureDocument({
   sections,
   business,
   target,
-  paymentPlan,
   qrCodes,
   badge,
 }: {
@@ -165,283 +133,474 @@ export function BrochureDocument({
   sections: BrochureSectionKey[];
   business: BusinessInfo;
   target: TargetInfo;
+  /** Accepted for callers that still pass it, but the one-page flyer no
+   *  longer shows a payment plan - the description takes its place. */
   paymentPlan?: PaymentPlanInfo;
   qrCodes: QrCodes;
   badge?: string;
 }) {
   const has = (s: BrochureSectionKey) => sections.includes(s);
-  const galleryImages = target.images.slice(0, 12);
-  const galleryPages: string[][] = [];
-  for (let i = 0; i < galleryImages.length; i += 4) galleryPages.push(galleryImages.slice(i, i + 4));
+
+  // ---- what to show -------------------------------------------------
+  const heroImage = has("cover") ? target.images[0] : undefined;
+  const galleryImages = has("gallery") ? target.images.slice(heroImage ? 1 : 0, (heroImage ? 1 : 0) + 5) : [];
+  const showFacts = has("overview");
+
+  const description = has("overview") ? truncate(target.description || "", MAX_DESCRIPTION) : "";
+  const aboutText = has("overview") ? description || "Information not provided." : "";
+
+  const listA =
+    type === "property"
+      ? has("features") ? target.features ?? [] : []
+      : has("features") ? target.highlights ?? [] : [];
+  const listB =
+    type === "property"
+      ? has("amenities") ? target.amenities ?? [] : []
+      : has("overview") ? target.availablePropertyTypes ?? [] : [];
+  const titleA = type === "property" ? "Features" : "Project Highlights";
+  const titleB = type === "property" ? "Amenities" : "Property Types";
+  const itemsA = listA.map(clean).filter(Boolean).slice(0, MAX_LIST_ITEMS);
+  const itemsB = listB.map(clean).filter(Boolean).slice(0, MAX_LIST_ITEMS);
+
+  const showLocation = has("location");
+  const showContact = has("contact");
+  const showCta = has("whatsappCta");
+
+  const mapsQr = showLocation && qrCodes.maps && target.directionsUrl ? qrCodes.maps : undefined;
+  const footerQrs: { src: string; caption: string }[] = [];
+  if (showCta && qrCodes.whatsapp) footerQrs.push({ src: qrCodes.whatsapp, caption: "WhatsApp" });
+  if (showCta && qrCodes.propertyUrl)
+    footerQrs.push({ src: qrCodes.propertyUrl, caption: type === "property" ? "View Property" : "View Project" });
+
+  // Left: features/amenities lists, then the company card (this is a public
+  // company document, so it always carries the company's own information).
+  // Right: the property description card and the location card.
+  const hasLists = itemsA.length > 0 || itemsB.length > 0;
+  const hasLeft = true;
+  const hasRight = true; // the "Why Choose" company card is always on the right
+  const tagline = `${site.tagline} - ${site.taglineSecondary}`;
+
+  // ---- fit: pick the largest scale at which everything fits ---------
+  const fits = (s: number): Plan & { ok: boolean } => {
+    const heroH = (heroImage ? 205 : 150) * s;
+    const galleryH = galleryImages.length > 0 ? 88 * s : 0;
+    const factsH = showFacts ? 50 * s : 0;
+    const footerH = Math.max(100, 116 * Math.max(s, 0.85)) + STRIP_H;
+    const bodyH = PAGE_H - heroH - galleryH - factsH - footerH - 30 * s;
+
+    const inner = PAGE_W - SIDE * 2 - (hasLeft && hasRight ? COL_GAP : 0);
+    const leftW = hasRight ? inner * 0.6 : inner;
+    const rightW = hasLeft ? inner * 0.4 : inner;
+    const f = 9.2 * s;
+    const head = 26 * s;
+
+    let left = 0;
+    if (hasLists) {
+      const both = itemsA.length > 0 && itemsB.length > 0;
+      const colW = both ? (leftW - 12) / 2 : leftW;
+      const colH = (items: string[]) =>
+        head + items.reduce((acc, it) => acc + textHeight(it, colW - 10, 8.8 * s, 1.3) + 4 * s, 0);
+      left += Math.max(itemsA.length ? colH(itemsA) : 0, itemsB.length ? colH(itemsB) : 0) + 12 * s;
+    }
+    // company card: header + intro + director + services label + two rows of tiles + tagline
+    left +=
+      24 * s + 22 * s + textHeight(site.description, leftW - 22 * s, 8.8 * s, 1.5) + 7 * s + 16 * s + 14 * s + 2 * 30 * s + 6 * s + 8 * s + 16 * s;
+
+    let right = 0;
+    if (aboutText) {
+      right += 26 * s + 22 * s + textHeight(aboutText, rightW - 22 * s, f, 1.55) + 12 * s;
+    }
+    if (showLocation) {
+      right += head + textHeight(target.location, rightW - 24, 9.5 * s, 1.35) + (target.mapsQuery ? 14 * s : 0) + 22 * s;
+      if (mapsQr) right += 66 * s;
+    }
+
+    // "Why Choose" card: header + padding + one line per point
+    right += 24 * s + 22 * s + COMPANY_WHY.length * 17 * s + 12 * s;
+
+    const need = Math.max(left, right);
+    return { s, heroH, galleryH, factsH, footerH, bodyH, need, ok: need <= bodyH };
+  };
+
+  let plan = fits(SCALES[SCALES.length - 1]);
+  for (const sc of SCALES) {
+    const p = fits(sc);
+    if (p.ok) {
+      plan = p;
+      break;
+    }
+  }
+  const { s, factsH, footerH } = plan;
+  let { heroH } = plan;
+  const { galleryH, bodyH } = plan;
+
+  // Sparse content: give the hero a little extra height; the photo strip
+  // (flex-grow, see styles.gallery) absorbs the rest.
+  const spare = Math.max(0, plan.bodyH - plan.need - 18);
+  if (heroImage) heroH += Math.min(spare * 0.4, 50);
+  const u = (n: number) => Math.round(n * s * 100) / 100;
+
+  const styles = StyleSheet.create({
+    page: { fontFamily: "Helvetica", fontSize: u(9), color: INK, backgroundColor: "#FFFFFF" },
+    root: { position: "relative", height: PAGE_H, overflow: "hidden" },
+    hero: { position: "relative", width: "100%", height: heroH, backgroundColor: DARK_RED },
+    heroImage: { position: "absolute", top: 0, left: 0, width: "100%", height: heroH, objectFit: "cover" },
+    heroTint: { position: "absolute", top: 0, left: 0, right: 0, height: heroH, backgroundColor: "rgba(74,10,16,0.28)" },
+    heroShade: { position: "absolute", left: 0, right: 0, bottom: 0, height: heroH * 0.62, backgroundColor: "rgba(30,2,6,0.62)" },
+    heroStripe: { position: "absolute", left: 0, right: 0, bottom: 0, height: u(4), backgroundColor: RED },
+    // The real logo has a baked-in white background, so it always sits on
+    // a white card to stay crisp and readable over any photo.
+    logoCard: {
+      position: "absolute",
+      top: u(14),
+      left: SIDE,
+      backgroundColor: "#FFFFFF",
+      borderRadius: 5,
+      padding: u(6),
+      borderBottomWidth: 3,
+      borderBottomColor: RED,
+    },
+    logo: { width: u(118), height: u(118) / LOGO_ASPECT },
+    badge: {
+      position: "absolute",
+      top: u(20),
+      right: SIDE,
+      backgroundColor: RED,
+      color: "#FFFFFF",
+      fontSize: u(8),
+      fontWeight: 700,
+      paddingVertical: u(5),
+      paddingHorizontal: u(12),
+      borderRadius: 10,
+      letterSpacing: 1,
+    },
+    heroBottom: {
+      position: "absolute",
+      left: SIDE,
+      right: SIDE,
+      bottom: u(16),
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+    },
+    title: { fontSize: u(19), fontWeight: 700, color: "#FFFFFF", lineHeight: 1.15 },
+    location: { fontSize: u(9.5), color: PINK, marginTop: u(4) },
+    priceChip: { backgroundColor: RED, paddingVertical: u(7), paddingHorizontal: u(12), marginLeft: u(12), alignItems: "flex-end" },
+    priceLabel: { fontSize: u(6.5), color: PINK, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: u(2) },
+    priceValue: { fontSize: u(14), fontWeight: 700, color: "#FFFFFF" },
+    facts: { height: factsH, flexDirection: "row", backgroundColor: SOFT_RED, borderBottomWidth: 1, borderBottomColor: LINE },
+    fact: { flexGrow: 1, flexBasis: 0, justifyContent: "center", paddingHorizontal: u(10) },
+    factDivider: { borderLeftWidth: 1, borderLeftColor: LINE },
+    factLabel: { fontSize: u(6.8), color: MUTED, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: u(3) },
+    factValue: { fontSize: u(10.5), fontWeight: 700, color: DARK_RED },
+    body: { flexDirection: "row", gap: COL_GAP, paddingHorizontal: SIDE, paddingTop: u(14), maxHeight: bodyH, overflow: "hidden" },
+    leftCol: { width: "60%" },
+    rightCol: { width: "40%" },
+    sectionHead: { flexDirection: "row", alignItems: "center", marginBottom: u(7) },
+    sectionSquare: { width: u(7), height: u(7), backgroundColor: RED, marginRight: u(6) },
+    sectionTitle: { fontSize: u(9.5), fontWeight: 700, color: DARK_RED, textTransform: "uppercase", letterSpacing: 1 },
+    sectionRule: { flexGrow: 1, height: 1, backgroundColor: LINE, marginLeft: u(8) },
+    about: { fontSize: u(9.2), lineHeight: 1.55, color: INK },
+    listsRow: { flexDirection: "row", gap: 12 },
+    listCol: { flexGrow: 1, flexBasis: 0 },
+    bulletRow: { flexDirection: "row", marginBottom: u(4), alignItems: "flex-start" },
+    bulletDot: { width: u(4.5), height: u(4.5), backgroundColor: RED, marginTop: u(3), marginRight: u(6) },
+    bulletText: { fontSize: u(8.8), lineHeight: 1.3, color: INK, flex: 1 },
+    card: { borderWidth: 1, borderColor: LINE, marginBottom: u(12) },
+    // The last card in each column stretches so both columns end level
+    // and no blank patch is left under the shorter one.
+    cardGrow: { flexGrow: 1, marginBottom: 0 },
+    cardBodyGrow: { flexGrow: 1, justifyContent: "space-between" },
+    cardHead: { backgroundColor: DARK_RED, paddingVertical: u(6), paddingHorizontal: u(10) },
+    cardHeadText: { fontSize: u(8.5), fontWeight: 700, color: "#FFFFFF", textTransform: "uppercase", letterSpacing: 1 },
+    cardBody: { backgroundColor: SOFT_RED, padding: u(10) },
+    companyLine: { fontSize: u(8.8), color: INK, marginBottom: u(7) },
+    companyLabel: { fontWeight: 700, color: DARK_RED },
+    companyLabelBlock: { fontSize: u(7.4), fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: 0.9, marginBottom: u(5) },
+    servicesWrap: { flexDirection: "row", flexWrap: "wrap", gap: u(6), marginBottom: u(8) },
+    serviceTile: {
+      width: "48.5%",
+      backgroundColor: "#FFFFFF",
+      borderTopWidth: 2,
+      borderTopColor: RED,
+      paddingVertical: u(7),
+      paddingHorizontal: u(8),
+      alignItems: "center",
+    },
+    serviceText: { fontSize: u(9), fontWeight: 700, color: DARK_RED },
+    tagline: { fontSize: u(7.4), fontWeight: 700, color: RED, letterSpacing: 0.8, marginTop: u(2) },
+    note: { fontSize: u(7.4), color: MUTED, marginTop: u(3) },
+    locationBody: { padding: u(10), flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    // Takes all remaining vertical room above the footer, so a short
+    // description or few features never leaves a blank gap on the page.
+    gallery: {
+      flexGrow: 1,
+      minHeight: galleryH,
+      paddingHorizontal: SIDE,
+      paddingTop: u(10),
+      paddingBottom: footerH + u(12),
+    },
+    galleryRow: { flexGrow: 1, flexDirection: "row", gap: u(7) },
+    galleryImage: { flexGrow: 1, flexBasis: 0, height: "100%", objectFit: "cover", borderRadius: 3 },
+    footer: { position: "absolute", bottom: 0, left: 0, right: 0, height: footerH, backgroundColor: DARK_RED },
+    strip: {
+      height: STRIP_H,
+      backgroundColor: RED,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: SIDE,
+    },
+    stripItem: { flexDirection: "row", alignItems: "center" },
+    stripDot: { width: 4, height: 4, backgroundColor: "#FFFFFF", marginRight: 4 },
+    stripText: { fontSize: 6.9, fontWeight: 700, color: "#FFFFFF", textTransform: "uppercase", letterSpacing: 0.5 },
+    footerInner: { flexDirection: "row", alignItems: "center", paddingHorizontal: SIDE, paddingTop: 9 },
+    footerLogo: { backgroundColor: "#FFFFFF", borderRadius: 4, padding: 4, marginRight: 12 },
+    footerLogoImg: { width: 78, height: 78 / LOGO_ASPECT },
+    footerLine: { fontSize: 8.6, color: PINK, marginBottom: 2.5 },
+    footerLink: { fontSize: 8.6, fontWeight: 700, color: "#FFFFFF", textDecoration: "none", marginBottom: 2.5 },
+    footerCta: { fontSize: 9, fontWeight: 700, color: "#FFFFFF", marginTop: 4 },
+    qrRow: { flexDirection: "row", gap: 10 },
+    qrItem: { alignItems: "center" },
+    qrBox: { backgroundColor: "#FFFFFF", padding: 3, borderRadius: 3 },
+    qr: { width: 52, height: 52 },
+    qrCaption: { fontSize: 6.5, color: PINK, marginTop: 3, textAlign: "center" },
+    disclaimer: { position: "absolute", left: SIDE, right: SIDE, bottom: 6, fontSize: 6.3, color: "#E3A9AE", lineHeight: 1.3 },
+  });
+
+  const factCards: { label: string; value: string }[] = [];
+  if (type === "property") {
+    if (target.propertyType) factCards.push({ label: "Type", value: target.propertyType });
+    if (target.purpose) factCards.push({ label: "Purpose", value: target.purpose });
+    if (target.size) factCards.push({ label: "Size", value: truncate(target.size, 20) });
+    if (target.status) factCards.push({ label: "Status", value: target.status });
+  } else {
+    if (target.projectStatus) factCards.push({ label: "Status", value: target.projectStatus });
+    if (target.availablePropertyTypes && target.availablePropertyTypes.length > 0)
+      factCards.push({ label: "Offering", value: truncate(target.availablePropertyTypes.join(", "), 40) });
+  }
+
+  const heroChip =
+    type === "property" && target.price
+      ? { label: "Demand", value: truncate(target.price, 24) }
+      : type === "project" && target.projectStatus
+        ? { label: "Project", value: target.projectStatus }
+        : undefined;
 
   return (
-    <Document title={`${target.name} — ${business.name}`}>
-      {has("cover") && (
-        <Page size="A4" style={styles.coverPage}>
-          <View>
-            {target.images[0] && <Image src={target.images[0]} style={styles.coverImage} />}
-            <View style={styles.coverOverlay} />
-            <Text style={styles.coverBrand}>{business.name} ESTATE & BUILDERS</Text>
-            {badge && <Text style={styles.coverBadge}>{badge}</Text>}
-          </View>
-          <View style={styles.coverBody}>
-            <Text style={styles.coverTitle}>{target.name}</Text>
-            <Text style={styles.coverLocation}>{target.location}</Text>
-            <View style={styles.disclaimerBox}>
-              <Text style={styles.disclaimerText}>
-                All details in this brochure are provided by {business.name} Estate &amp; Builders and are subject to
-                confirmation. This document does not constitute a legal offer or contract.
-              </Text>
+    <Document title={`${target.name} - ${business.name}`}>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.root}>
+          <View style={styles.hero}>
+            {heroImage && <Image src={heroImage} style={styles.heroImage} />}
+            {heroImage && <View style={styles.heroTint} />}
+            <View style={styles.heroShade} />
+            <View style={styles.heroStripe} />
+            <View style={styles.logoCard}>
+              <Image src={LOGO_DATA_URI} style={styles.logo} />
             </View>
-          </View>
-        </Page>
-      )}
-
-      {has("overview") && (
-        <Page size="A4" style={styles.page}>
-          <PageChrome business={business}>
-            <Text style={styles.h2}>{type === "property" ? "Property Overview" : "Project Overview"}</Text>
-            <View style={styles.cardsRow}>
-              <InfoCard label="Location" value={target.location} />
-              {type === "property" && target.propertyType && <InfoCard label="Type" value={target.propertyType} />}
-              {type === "property" && target.purpose && <InfoCard label="Purpose" value={target.purpose} />}
-              {type === "property" && target.size && <InfoCard label="Size" value={target.size} />}
-              {type === "property" && target.price && <InfoCard label="Price" value={target.price} />}
-              {type === "property" && target.status && <InfoCard label="Status" value={target.status} />}
-              {type === "project" && target.projectStatus && <InfoCard label="Status" value={target.projectStatus} />}
-            </View>
-            {target.description ? (
-              <Text style={{ fontSize: 10, lineHeight: 1.6, color: INK }}>{target.description}</Text>
-            ) : (
-              <Text style={styles.muted}>Information not provided.</Text>
-            )}
-
-            {type === "project" && target.availablePropertyTypes && target.availablePropertyTypes.length > 0 && (
-              <View style={{ marginTop: 16 }}>
-                <Text style={[styles.h2, { fontSize: 11 }]}>Available Property Types</Text>
-                {target.availablePropertyTypes.map((t) => (
-                  <View key={t} style={styles.bulletRow}>
-                    <View style={styles.bulletDot} />
-                    <Text style={styles.bulletText}>{t}</Text>
-                  </View>
-                ))}
+            {badge && <Text style={styles.badge}>{badge}</Text>}
+            <View style={styles.heroBottom}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{truncate(target.name, 70)}</Text>
+                <Text style={styles.location}>{truncate(target.location, 95)}</Text>
               </View>
-            )}
-          </PageChrome>
-        </Page>
-      )}
+              {heroChip && (
+                <View style={styles.priceChip}>
+                  <Text style={styles.priceLabel}>{heroChip.label}</Text>
+                  <Text style={styles.priceValue}>{heroChip.value}</Text>
+                </View>
+              )}
+            </View>
+          </View>
 
-      {has("gallery") &&
-        galleryPages.map((group, pageIndex) => (
-          <Page size="A4" style={styles.page} key={`gallery-${pageIndex}`}>
-            <PageChrome business={business}>
-              {pageIndex === 0 && <Text style={styles.h2}>Gallery</Text>}
-              <View style={styles.galleryGrid}>
-                {group.map((src, i) => (
+          {showFacts && factCards.length > 0 && (
+            <View style={styles.facts}>
+              {factCards.map((c, i) => (
+                <View key={c.label} style={i > 0 ? [styles.fact, styles.factDivider] : styles.fact}>
+                  <Text style={styles.factLabel}>{c.label}</Text>
+                  <Text style={styles.factValue}>{c.value}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {(hasLeft || hasRight) && (
+            <View style={styles.body}>
+              {hasLeft && (
+                <View style={hasRight ? styles.leftCol : { width: "100%" }}>
+                  {hasLists && (
+                    <View style={[styles.listsRow, { marginBottom: u(12) }]}>
+                      {itemsA.length > 0 && <BulletList styles={styles} title={titleA} items={itemsA} />}
+                      {itemsB.length > 0 && <BulletList styles={styles} title={titleB} items={itemsB} />}
+                    </View>
+                  )}
+
+                  <View style={[styles.card, styles.cardGrow]}>
+                    <View style={styles.cardHead}>
+                      <Text style={styles.cardHeadText}>About {site.fullName}</Text>
+                    </View>
+                    <View style={[styles.cardBody, styles.cardBodyGrow]}>
+                      <Text style={[styles.about, { marginBottom: u(7) }]}>{site.description}</Text>
+                      <Text style={styles.companyLine}>
+                        <Text style={styles.companyLabel}>{site.directorTitle}: </Text>
+                        {site.director}
+                      </Text>
+                      <Text style={styles.companyLabelBlock}>Our Services</Text>
+                      <View style={styles.servicesWrap}>
+                        {COMPANY_SERVICES.map((svc) => (
+                          <View key={svc} style={styles.serviceTile}>
+                            <Text style={styles.serviceText}>{svc}</Text>
+                          </View>
+                        ))}
+                      </View>
+                      <Text style={styles.tagline}>{tagline}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {hasRight && (
+                <View style={hasLeft ? styles.rightCol : { width: "100%" }}>
+                  {aboutText && (
+                    <View style={styles.card}>
+                      <View style={styles.cardHead}>
+                        <Text style={styles.cardHeadText}>{type === "property" ? "About This Property" : "About This Project"}</Text>
+                      </View>
+                      <View style={styles.cardBody}>
+                        <Text style={styles.about}>{aboutText}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {showLocation && (
+                    <View style={styles.card}>
+                      <View style={styles.cardHead}>
+                        <Text style={styles.cardHeadText}>Location</Text>
+                      </View>
+                      <View style={[styles.cardBody, styles.locationBody]}>
+                        <View style={{ flex: 1, paddingRight: mapsQr ? 8 : 0 }}>
+                          <Text style={{ fontSize: u(9.5), fontWeight: 700, color: INK, lineHeight: 1.35 }}>{target.location}</Text>
+                          {target.mapsQuery && clean(target.mapsQuery) !== clean(target.location) && (
+                            <Text style={styles.note}>{truncate(target.mapsQuery, 120)}</Text>
+                          )}
+                          {mapsQr && <Text style={styles.note}>Scan for directions</Text>}
+                        </View>
+                        {mapsQr && (
+                          <View style={{ backgroundColor: "#FFFFFF", padding: 3 }}>
+                            <Image src={mapsQr} style={{ width: u(54), height: u(54) }} />
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={[styles.card, styles.cardGrow]}>
+                    <View style={styles.cardHead}>
+                      <Text style={styles.cardHeadText}>Why Choose {site.name}</Text>
+                    </View>
+                    <View style={[styles.cardBody, styles.cardBodyGrow]}>
+                      {COMPANY_WHY.map((w) => (
+                        <View key={w} style={styles.bulletRow}>
+                          <View style={styles.bulletDot} />
+                          <Text style={styles.bulletText}>{w}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {galleryImages.length > 0 && (
+            <View style={styles.gallery}>
+              <View style={styles.galleryRow}>
+                {galleryImages.map((src, i) => (
                   <Image key={i} src={src} style={styles.galleryImage} />
                 ))}
               </View>
-            </PageChrome>
-          </Page>
-        ))}
+            </View>
+          )}
 
-      {(has("features") || has("amenities")) &&
-        ((type === "property" && ((target.features?.length ?? 0) > 0 || (target.amenities?.length ?? 0) > 0)) ||
-          (type === "project" && (target.highlights?.length ?? 0) > 0)) && (
-          <Page size="A4" style={styles.page}>
-            <PageChrome business={business}>
-              {type === "property" && has("features") && target.features && target.features.length > 0 && (
-                <View style={{ marginBottom: 18 }}>
-                  <Text style={styles.h2}>Features</Text>
-                  {target.features.map((f) => (
-                    <View key={f} style={styles.bulletRow}>
-                      <View style={styles.bulletDot} />
-                      <Text style={styles.bulletText}>{f}</Text>
-                    </View>
-                  ))}
+          <View style={styles.footer}>
+            <View style={styles.strip}>
+              {COMPANY_HIGHLIGHTS.map((h) => (
+                <View key={h} style={styles.stripItem}>
+                  <View style={styles.stripDot} />
+                  <Text style={styles.stripText}>{h}</Text>
                 </View>
-              )}
-              {type === "property" && has("amenities") && target.amenities && target.amenities.length > 0 && (
-                <View>
-                  <Text style={styles.h2}>Amenities</Text>
-                  {target.amenities.map((a) => (
-                    <View key={a} style={styles.bulletRow}>
-                      <View style={styles.bulletDot} />
-                      <Text style={styles.bulletText}>{a}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-              {type === "project" && target.highlights && target.highlights.length > 0 && (
-                <View>
-                  <Text style={styles.h2}>Project Highlights</Text>
-                  {target.highlights.map((h) => (
-                    <View key={h} style={styles.bulletRow}>
-                      <View style={styles.bulletDot} />
-                      <Text style={styles.bulletText}>{h}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </PageChrome>
-          </Page>
-        )}
-
-      {has("paymentPlan") && (paymentPlan || (type === "project" && target.paymentOptionsList && target.paymentOptionsList.length > 0)) && (
-        <Page size="A4" style={styles.page}>
-          <PageChrome business={business}>
-            <Text style={styles.h2}>Payment Plan</Text>
-            {paymentPlan ? (
-              <>
-                <View style={styles.table}>
-                  <Row label="Property Price" value={formatMoney(paymentPlan.propertyPrice)} />
-                  <Row label="Down Payment" value={formatMoney(paymentPlan.downPayment)} />
-                  <Row label="Remaining Amount" value={formatMoney(paymentPlan.remainingAmount)} />
-                  {paymentPlan.installmentAmount !== undefined && (
-                    <Row label={`Installment (${paymentPlan.frequency})`} value={formatMoney(paymentPlan.installmentAmount)} />
-                  )}
-                  <Row label="Duration" value={`${paymentPlan.duration} ${paymentPlan.frequency.toLowerCase()} period(s)`} last />
-                </View>
-                {paymentPlan.scheduleItems.length > 0 && (
-                  <View style={{ marginTop: 6 }}>
-                    <Text style={[styles.h2, { fontSize: 11 }]}>Payment Schedule</Text>
-                    <View style={styles.scheduleHeaderRow}>
-                      <Text style={[styles.scheduleHeaderCell, { width: "10%" }]}>#</Text>
-                      <Text style={[styles.scheduleHeaderCell, { width: "25%" }]}>Due Date</Text>
-                      <Text style={[styles.scheduleHeaderCell, { width: "25%" }]}>Amount</Text>
-                      <Text style={[styles.scheduleHeaderCell, { width: "40%" }]}>Description</Text>
-                    </View>
-                    {paymentPlan.scheduleItems.map((item) => (
-                      <View style={styles.scheduleRow} key={item.installmentNumber}>
-                        <Text style={[styles.scheduleCell, { width: "10%" }]}>{item.installmentNumber}</Text>
-                        <Text style={[styles.scheduleCell, { width: "25%" }]}>{item.dueDate ?? "—"}</Text>
-                        <Text style={[styles.scheduleCell, { width: "25%" }]}>{item.amount}</Text>
-                        <Text style={[styles.scheduleCell, { width: "40%" }]}>{item.description || "—"}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </>
-            ) : (
-              type === "project" &&
-              target.paymentOptionsList && (
-                <View>
-                  <Text style={{ fontSize: 10, marginBottom: 8 }}>Payment Options</Text>
-                  {target.paymentOptionsList.map((o) => (
-                    <View key={o} style={styles.bulletRow}>
-                      <View style={styles.bulletDot} />
-                      <Text style={styles.bulletText}>{o}</Text>
-                    </View>
-                  ))}
-                </View>
-              )
-            )}
-            <Text style={[styles.disclaimerText, { marginTop: 14 }]}>
-              Payment details are subject to confirmation by {business.name} Estate &amp; Builders.
-            </Text>
-          </PageChrome>
-        </Page>
-      )}
-
-      {has("location") && (
-        <Page size="A4" style={styles.page}>
-          <PageChrome business={business}>
-            <Text style={styles.h2}>Location</Text>
-            <Text style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>{target.location}</Text>
-            {target.mapsQuery && <Text style={styles.muted}>{target.mapsQuery}</Text>}
-            {qrCodes.maps && target.directionsUrl && (
-              <View style={{ marginTop: 20, alignItems: "center" }}>
-                <Image src={qrCodes.maps} style={styles.qr} />
-                <Text style={{ fontSize: 9, marginTop: 8, color: MUTED }}>Scan for Google Maps Directions</Text>
-                <Link src={target.directionsUrl} style={{ fontSize: 8, color: RED, marginTop: 4 }}>
-                  {target.directionsUrl}
-                </Link>
+              ))}
+            </View>
+            <View style={styles.footerInner}>
+              <View style={styles.footerLogo}>
+                <Image src={LOGO_DATA_URI} style={styles.footerLogoImg} />
               </View>
-            )}
-          </PageChrome>
-        </Page>
-      )}
-
-      {(has("contact") || has("whatsappCta")) && (
-        <Page size="A4" style={styles.page}>
-          <PageChrome business={business}>
-            {has("contact") && (
-              <View style={{ marginBottom: 20 }}>
-                <Text style={styles.h2}>Contact Information</Text>
-                <Text style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{business.name} Estate &amp; Builders</Text>
-                <Text style={{ fontSize: 10, marginBottom: 3 }}>{business.address}</Text>
-                <Text style={{ fontSize: 10, marginBottom: 3 }}>{business.phone}</Text>
-                <Text style={{ fontSize: 10 }}>{business.email}</Text>
-              </View>
-            )}
-            {has("whatsappCta") && (
-              <View style={styles.ctaBox}>
-                <Text style={styles.ctaTitle}>Interested in This {type === "property" ? "Property" : "Project"}?</Text>
-                <Text style={styles.ctaSubtitle}>Contact {business.name} Estate &amp; Builders</Text>
-                <Text style={styles.ctaPhone}>{business.phone}</Text>
-                {qrCodes.whatsapp && (
+              <View style={{ flexGrow: 1, paddingRight: 14 }}>
+                {showContact && (
                   <>
-                    <Image src={qrCodes.whatsapp} style={styles.qr} />
-                    <Text style={{ fontSize: 9, marginTop: 8, color: MUTED }}>Scan to Chat on WhatsApp</Text>
+                    <Text style={styles.footerLine}>{truncate(business.address, 80)}</Text>
+                    <Text style={styles.footerLine}>{business.phone}</Text>
+                    <Text style={styles.footerLine}>{business.email}</Text>
+                    <Link src={site.websiteUrl} style={styles.footerLink}>
+                      {site.websiteUrl.replace(/^https?:\/\//, "")}
+                    </Link>
                   </>
                 )}
-                {qrCodes.propertyUrl && (
-                  <View style={{ marginTop: 16, alignItems: "center" }}>
-                    <Image src={qrCodes.propertyUrl} style={styles.qr} />
-                    <Text style={{ fontSize: 9, marginTop: 8, color: MUTED }}>
-                      Scan to View {type === "property" ? "Property" : "Project"}
-                    </Text>
-                  </View>
+                {showCta && (
+                  <Text style={styles.footerCta}>
+                    Interested in this {type === "property" ? "property" : "project"}? Scan to chat on WhatsApp.
+                  </Text>
                 )}
               </View>
-            )}
-          </PageChrome>
-        </Page>
-      )}
-
-      {has("disclaimer") && (
-        <Page size="A4" style={styles.page}>
-          <PageChrome business={business}>
-            <Text style={styles.h2}>Disclaimer</Text>
-            <View style={styles.disclaimerBox}>
-              <Text style={styles.disclaimerText}>
-                This brochure is provided for general information purposes only by {business.name} Estate &amp;
-                Builders and does not constitute a legal offer, contract, or guarantee of any kind.
-              </Text>
-              <Text style={styles.disclaimerText}>
-                Payment figures shown are estimates for informational purposes only. Please contact {business.name}{" "}
-                Estate &amp; Builders for the confirmed price and official payment schedule.
-              </Text>
-              <Text style={styles.disclaimerText}>
-                Property availability, pricing and terms are subject to change without notice and must be confirmed
-                directly with {business.name} Estate &amp; Builders before making any decision.
-              </Text>
+              {footerQrs.length > 0 && (
+                <View style={styles.qrRow}>
+                  {footerQrs.map((q) => (
+                    <View key={q.caption} style={styles.qrItem}>
+                      <View style={styles.qrBox}>
+                        <Image src={q.src} style={styles.qr} />
+                      </View>
+                      <Text style={styles.qrCaption}>{q.caption}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
-          </PageChrome>
-        </Page>
-      )}
+            {has("disclaimer") && (
+              <Text style={styles.disclaimer}>
+                For general information only; not a legal offer or contract. Demand, availability and terms are subject to
+                change and must be confirmed with {business.name} Estate &amp; Builders.
+              </Text>
+            )}
+          </View>
+        </View>
+      </Page>
     </Document>
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+type S = ReturnType<typeof StyleSheet.create>;
+
+function SectionTitle({ styles, text }: { styles: S; text: string }) {
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardLabel}>{label}</Text>
-      <Text style={styles.cardValue}>{value}</Text>
+    <View style={styles.sectionHead}>
+      <View style={styles.sectionSquare} />
+      <Text style={styles.sectionTitle}>{text}</Text>
+      <View style={styles.sectionRule} />
     </View>
   );
 }
 
-function Row({ label, value, last }: { label: string; value: string; last?: boolean }) {
+function BulletList({ styles, title, items }: { styles: S; title: string; items: string[] }) {
   return (
-    <View style={last ? styles.tableRowLast : styles.tableRow}>
-      <Text style={styles.tableLabel}>{label}</Text>
-      <Text style={styles.tableValue}>{value}</Text>
+    <View style={styles.listCol}>
+      <SectionTitle styles={styles} text={title} />
+      {items.map((it, i) => (
+        <View key={`${it}-${i}`} style={styles.bulletRow}>
+          <View style={styles.bulletDot} />
+          <Text style={styles.bulletText}>{it}</Text>
+        </View>
+      ))}
     </View>
   );
-}
-
-function formatMoney(value: number) {
-  return `Rs. ${Math.round(value).toLocaleString("en-US")}`;
 }

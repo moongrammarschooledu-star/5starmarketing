@@ -54,15 +54,31 @@ export async function trackWhatsAppLeadAction(input: {
   return { ok: true };
 }
 
-/** Fired from brochure download links so a real download shows up as a
- *  lead in the CRM (lead_type: "Brochure Request"), mirroring how
- *  trackWhatsAppLeadAction turns a WhatsApp click into a lead — never
- *  blocks the actual download. */
-export async function trackBrochureDownloadLeadAction(title?: string, propertyId?: string, projectId?: string, projectTitle?: string) {
+/** Fired from brochure download links once the visitor has given their name
+ *  and number, so a real download shows up as a lead in the CRM (lead_type:
+ *  "Brochure Request") with contact details - never blocks the download. */
+export async function trackBrochureDownloadLeadAction(input: {
+  name: string;
+  phone: string;
+  title?: string;
+  propertyId?: string;
+  projectId?: string;
+  projectTitle?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const name = input.name.trim().slice(0, 120);
+  const phone = input.phone.trim();
+  if (!name) return { ok: false, error: "Please enter your name." };
+  if (!PHONE_PATTERN.test(phone)) return { ok: false, error: "Please enter a valid phone number." };
+
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (isRateLimited(`brochure-lead:${ip}`, 60_000, 8)) return { ok: false, error: "Too many requests. Please try again in a minute." };
+
+  const { title, propertyId, projectId, projectTitle } = input;
   try {
     await leadService.create({
-      name: "Brochure Visitor",
-      phone: "Downloaded Brochure",
+      name,
+      phone,
+      whatsapp: phone,
       propertyId,
       propertyTitle: propertyId ? title : undefined,
       projectId,
@@ -73,9 +89,10 @@ export async function trackBrochureDownloadLeadAction(title?: string, propertyId
     });
   } catch (e) {
     console.error("trackBrochureDownloadLeadAction failed:", e);
-    return;
+    return { ok: false };
   }
   revalidateAll();
+  return { ok: true };
 }
 
 function revalidateAll() {

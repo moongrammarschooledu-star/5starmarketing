@@ -138,18 +138,24 @@ export function buildFacebookCaptions(input: FacebookPostInput): Record<CaptionL
       headline = [purposeText ?? purpose, typeText].filter(Boolean).join(" - ");
     }
 
+    // In a right-to-left (Urdu) line, Latin text and digits get visually
+    // reordered ("4.5 Crore" reads as "Crore 4.5", phone numbers come out
+    // scrambled). An invisible left-to-right mark before such a value keeps
+    // it reading the right way, both in the editor and once posted.
+    const v = (s: string) => (lang === "ur" ? `‎${s}` : s);
+
     const lines: string[] = [];
     lines.push(`🏡 ${name}`);
     if (headline.trim()) lines.push(headline);
-    if (location) lines.push(`📍 ${L.loc}: ${location}`);
-    if (size) lines.push(`📐 ${L.size}: ${size}`);
-    if (price) lines.push(`💰 ${L.demand}: ${price}`);
-    if (offering) lines.push(`🏘️ ${L.offer}: ${offering}`);
+    if (location) lines.push(`📍 ${L.loc}: ${v(location)}`);
+    if (size) lines.push(`📐 ${L.size}: ${v(size)}`);
+    if (price) lines.push(`💰 ${L.demand}: ${v(price)}`);
+    if (offering) lines.push(`🏘️ ${L.offer}: ${v(offering)}`);
     if (bullets.length > 0) {
-      lines.push("", `✅ ${L.feat}:`, ...bullets.map((b) => `• ${b}`));
+      lines.push("", `✅ ${L.feat}:`, ...bullets.map((b) => `• ${v(b)}`));
     }
     lines.push("");
-    if (phones) lines.push(`📞 ${L.contact}: ${phones}`);
+    if (phones) lines.push(`📞 ${L.contact}: ${v(phones)}`);
     if (input.whatsappUrl) lines.push(`💬 ${L.wa}: ${input.whatsappUrl}`);
     if (input.websiteUrl) lines.push(`🌐 ${L.more}: ${input.websiteUrl}`);
     lines.push("", `${input.companyName} - ${COMPANY_LINE[lang]}`, "", tags);

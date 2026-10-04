@@ -20,10 +20,9 @@ export const site = {
   phoneHref2: "+923086010310",
   whatsappNumber: "923198430458",
   whatsappHref: "https://wa.me/923198430458",
-  // Kept for the geocode API's required contact identification only
-  // (OpenStreetMap/Nominatim usage policy) — never shown to visitors.
-  // Use `displayEmail` for anything public-facing.
-  email: "maos.edu@gmail.com",
+  // The company email - the ONLY email address used anywhere in the app
+  // (public pages, PDFs, structured data, outgoing request headers). The
+  // owner's personal login email must never be put here or in code.
   displayEmail: "5star.marketing.2233@gmail.com",
   address: "1037-E-1 Johar Town, Lahore, Pakistan",
   addressShort: "1037-E-1 Johar Town, Lahore",

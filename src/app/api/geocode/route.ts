@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { site } from "@/lib/site";
 
 // Proxies geocoding to OpenStreetMap's Nominatim — the map provider this
 // deployment uses needs no paid API key (see src/lib/map.ts for why).
@@ -6,7 +7,7 @@ import { NextResponse } from "next/server";
 // User-Agent, which browsers refuse to let client-side fetch() set, and
 // this also lets us rate-limit before ever reaching their service.
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
-const USER_AGENT = "5starm-estate-builders/1.0 (maos.edu@gmail.com)";
+const USER_AGENT = `5starm-estate-builders/1.0 (${site.displayEmail})`;
 
 const requestsByIp = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60_000;

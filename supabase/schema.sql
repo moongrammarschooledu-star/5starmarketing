@@ -109,7 +109,7 @@ create table if not exists public.website_settings (
   tagline text not null default 'NOW YOU WILL DREAM — WE WILL FULFILL IT',
   phone text not null default '+92 319 8430458',
   whatsapp text not null default '+92 319 8430458',
-  email text not null default 'maos.edu@gmail.com',
+  email text not null default '5star.marketing.2233@gmail.com',
   address text not null default '1037-E-1 Johar Town, Lahore, Pakistan',
   logo_url text,
   favicon_url text,

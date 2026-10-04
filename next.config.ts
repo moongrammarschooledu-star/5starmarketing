@@ -22,6 +22,14 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // pdfkit (used by @react-pdf/renderer) loads its font data through a
+  // package.json "imports" alias — require('#standard-fonts/Helvetica') —
+  // which Vercel's file tracer cannot follow, so the font files were
+  // missing from the deployed functions and every PDF failed with
+  // "Cannot find module .../pdfkit/js/standard-fonts/Helvetica.cjs".
+  outputFileTracingIncludes: {
+    "/*": ["./node_modules/pdfkit/js/standard-fonts/**/*"],
+  },
   images: {
     remotePatterns: [
       {

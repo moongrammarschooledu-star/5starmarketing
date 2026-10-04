@@ -11,8 +11,9 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https:",
-  // Property walkthrough videos are served straight from Supabase Storage.
-  "media-src 'self' https://*.supabase.co",
+  // Property walkthrough videos are served straight from Supabase Storage;
+  // blob: lets the admin preview a reel video it just recorded in the browser.
+  "media-src 'self' blob: https://*.supabase.co",
   "frame-src 'self' https://maps.google.com https://www.google.com",
   "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com wss://*.supabase.co",
   "form-action 'self'",

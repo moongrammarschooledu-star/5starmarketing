@@ -5,6 +5,7 @@ import { requireSection } from "@/lib/guard";
 import { BrochurePreviewPanel } from "@/components/admin/BrochurePreviewPanel";
 import { BrochurePreviewLoader } from "@/components/admin/BrochurePreviewLoader";
 import { FacebookPostPanel } from "@/components/admin/FacebookPostPanel";
+import { ReelVideoPanel } from "@/components/admin/ReelVideoPanel";
 import { buildFacebookCaptions } from "@/lib/facebookPost";
 import { site } from "@/lib/site";
 
@@ -83,6 +84,12 @@ export default async function BrochurePreviewPage({ params }: { params: Promise<
               websiteUrl: renderData.target.publicUrl,
             })}
           />
+        </div>
+      )}
+
+      {renderData && (
+        <div className="mt-6">
+          <ReelVideoPanel brochureId={id} />
         </div>
       )}
 

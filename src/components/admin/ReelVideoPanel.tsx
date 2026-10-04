@@ -57,28 +57,29 @@ export function ReelVideoPanel({ brochureId }: { brochureId: string }) {
       let closing: ArrayBuffer | null = null;
       if (voice) {
         setLabel("Creating the female voice...");
-        for (const part of ["description", "closing"] as const) {
-          const res = await fetch(`/admin/brochures/narration/${brochureId}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ part, lang: lang === "auto" ? undefined : lang }),
-            signal: controller.signal,
-          });
-          if (res.ok) {
-            const buf = await res.arrayBuffer();
-            if (part === "description") description = buf;
-            else closing = buf;
-            continue;
-          }
-          const body = await res.json().catch(() => null);
-          description = null;
-          closing = null;
+        // Both parts are requested at once - each takes several seconds.
+        const results = await Promise.all(
+          (["description", "closing"] as const).map(async (part) => {
+            const res = await fetch(`/admin/brochures/narration/${brochureId}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ part, lang: lang === "auto" ? undefined : lang }),
+              signal: controller.signal,
+            });
+            return res.ok ? { audio: await res.arrayBuffer() } : { failure: await res.json().catch(() => null) };
+          })
+        );
+        const failed = results.find((r) => "failure" in r);
+        if (failed && "failure" in failed) {
+          const body = failed.failure;
           setNote(
             body?.error === "voice_not_configured"
               ? "The voice service is not set up yet, so this video has captions and music but no spoken voice."
               : `${body?.message ?? "The voice could not be created."} The video was made without a voice.`
           );
-          break;
+        } else {
+          description = (results[0] as { audio: ArrayBuffer }).audio;
+          closing = (results[1] as { audio: ArrayBuffer }).audio;
         }
       }
 

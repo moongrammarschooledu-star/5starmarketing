@@ -6,8 +6,14 @@
 
 import { LOGO_DATA_URI, LOGO_ASPECT } from "@/lib/pdf/logoData";
 
+// Everything is laid out on a 1080x1920 grid, but the video itself is
+// recorded at 720x1280: still a proper Reel size, yet less than half the
+// pixels for the browser to encode, which is what made finishing slow on
+// ordinary laptops.
 const W = 1080;
 const H = 1920;
+const OUT_W = 720;
+const OUT_H = 1280;
 const FPS = 30;
 
 const RED = "#C81E2C";
@@ -378,8 +384,8 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
 
   // ---- canvas + recorder
   const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = OUT_W;
+  canvas.height = OUT_H;
   const ctx = canvas.getContext("2d", { alpha: false })!;
 
   const dest = audioCtx.createMediaStreamDestination();
@@ -416,7 +422,7 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
   const mime = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
   const recorder = new MediaRecorder(stream, {
     ...(mime ? { mimeType: mime } : {}),
-    videoBitsPerSecond: 6_000_000,
+    videoBitsPerSecond: 3_500_000,
     audioBitsPerSecond: 128_000,
   });
   const chunks: Blob[] = [];
@@ -643,6 +649,7 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
   }
 
   function drawFrame(t: number) {
+    ctx.setTransform(OUT_W / W, 0, 0, OUT_H / H, 0, 0);
     if (t < closeStart - 0.3) {
       drawPhotoScene(Math.max(0, t));
       // top/bottom shading for legibility
@@ -696,12 +703,32 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
   // audio clock keeps running, which would leave a frozen stretch of video.
   let stalled = false;
   let lastTick = 0;
+  const tryAgain = "Please click Create Video again and keep this tab in front until it finishes.";
 
   await new Promise<void>((resolve, reject) => {
     let raf = 0;
+    let hiddenTimer: ReturnType<typeof setTimeout> | undefined;
+    const cleanup = () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(hiddenTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    // A background tab stops drawing completely, so the recording could
+    // never finish (it would sit at 97%) - give up early and say why.
+    const onVisibility = () => {
+      clearTimeout(hiddenTimer);
+      if (!document.hidden) return;
+      hiddenTimer = setTimeout(() => {
+        if (!document.hidden) return;
+        cleanup();
+        reject(new Error(`The tab went to the background, which pauses the recording. ${tryAgain}`));
+      }, 2500);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     const tick = () => {
       if (opts.signal?.aborted) {
-        cancelAnimationFrame(raf);
+        cleanup();
         reject(new DOMException("Cancelled", "AbortError"));
         return;
       }
@@ -710,8 +737,9 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
       lastTick = now;
       const t = audioCtx.currentTime - startAt;
       drawFrame(Math.max(0, t));
-      progress(Math.min(0.97, 0.05 + 0.92 * (t / total)), "Recording the video - keep this tab open...");
+      progress(Math.min(0.95, 0.05 + 0.9 * (t / total)), "Recording the video - keep this tab open...");
       if (t >= total) {
+        cleanup();
         resolve();
         return;
       }
@@ -724,14 +752,21 @@ export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
     throw e;
   });
 
+  // Closing the file takes the browser a moment; say so, and never wait
+  // forever - after 25 s use whatever has been recorded so far.
+  progress(0.97, "Finishing the video - this takes a few seconds...");
   const blob = await new Promise<Blob>((resolve) => {
-    recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || mime || "video/webm" }));
+    const finish = () => resolve(new Blob(chunks, { type: recorder.mimeType || mime || "video/webm" }));
+    const giveUp = setTimeout(finish, 25000);
+    recorder.onstop = () => {
+      clearTimeout(giveUp);
+      finish();
+    };
     recorder.stop();
   });
   stream.getTracks().forEach((t) => t.stop());
   await audioCtx.close().catch(() => {});
 
-  const tryAgain = "Please click Create Video again and keep this tab in front until it finishes.";
   if (stalled) {
     throw new Error(`The tab was in the background for a moment, so part of the video would have frozen. ${tryAgain}`);
   }

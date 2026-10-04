@@ -1,4 +1,5 @@
 import "server-only";
+import sharp from "sharp";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createClient } from "@/lib/supabase/server";
 import { propertyService } from "./propertyService";
@@ -275,6 +276,31 @@ export const brochureService = {
   },
 };
 
+/** react-pdf's <Image> only recognizes JPEG/PNG/SVG magic bytes — a
+ *  WEBP or GIF photo (both of which the property/project image
+ *  uploader allows) makes PDF generation throw "Not valid image
+ *  extension" and kills the ENTIRE brochure, not just that one photo.
+ *  Normalizes every embedded image to JPEG so any uploaded format
+ *  works, and quietly drops (never throws for) an image that can't be
+ *  fetched/decoded at all, so one bad photo never blocks the rest. */
+async function toPdfSafeImage(url: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return undefined;
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const jpeg = await sharp(buffer).rotate().jpeg({ quality: 85 }).toBuffer();
+    return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+  } catch (e) {
+    console.error("brochureService: could not prepare image for PDF:", url, e);
+    return undefined;
+  }
+}
+
+async function toPdfSafeImages(urls: string[]): Promise<string[]> {
+  const resolved = await Promise.all(urls.map(toPdfSafeImage));
+  return resolved.filter((u): u is string => Boolean(u));
+}
+
 async function buildPropertyTarget(property: Awaited<ReturnType<typeof propertyService.getById>>) {
   if (!property) throw new Error("Property not found.");
   const publicUrl = `${site.url}/properties/${property.slug}`;
@@ -285,7 +311,7 @@ async function buildPropertyTarget(property: Awaited<ReturnType<typeof propertyS
     name: property.title,
     slug: property.slug,
     location: property.location,
-    images: property.images,
+    images: await toPdfSafeImages(property.images),
     description: property.description,
     publicUrl,
     mapsQuery: property.mapsQuery,
@@ -306,11 +332,12 @@ async function buildProjectTarget(project: Awaited<ReturnType<typeof projectServ
   const directionsUrl = project.mapsUrl
     ? project.mapsUrl
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.location)}`;
+  const rawImages = project.images.length > 0 ? project.images : project.coverImage ? [project.coverImage] : [];
   return {
     name: project.name,
     slug: project.slug,
     location: project.location,
-    images: project.images.length > 0 ? project.images : project.coverImage ? [project.coverImage] : [],
+    images: await toPdfSafeImages(rawImages),
     description: project.description || project.shortDescription,
     publicUrl,
     mapsQuery: project.location,

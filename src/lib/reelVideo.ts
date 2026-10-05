@@ -57,6 +57,8 @@ export interface ReelResult {
   extension: "mp4" | "webm";
   seconds: number;
   hasVoice: boolean;
+  /** True when the automatic check could not find a picture in the file. */
+  pictureUnverified?: boolean;
 }
 
 // ---------------------------------------------------------------- helpers
@@ -214,62 +216,88 @@ const MIME_CANDIDATES = [
 
 /** Records ~2 seconds of a moving canvas plus a silent audio track in the
  *  given format and checks that a picture actually came out. */
-async function probeRecording(mime: string): Promise<boolean> {
+async function probeRecording(mime: string, cleanups: (() => void)[]): Promise<boolean> {
   const c = document.createElement("canvas");
   c.width = OUT_W;
   c.height = OUT_H;
   const x = c.getContext("2d", { alpha: false })!;
   const ac = new AudioContext();
-  try {
-    const dest = ac.createMediaStreamDestination();
-    const osc = ac.createOscillator();
-    const quiet = ac.createGain();
-    quiet.gain.value = 0.0001;
-    osc.connect(quiet);
-    quiet.connect(dest);
-    osc.start();
+  cleanups.push(() => void ac.close().catch(() => {}));
+  const dest = ac.createMediaStreamDestination();
+  const osc = ac.createOscillator();
+  const quiet = ac.createGain();
+  quiet.gain.value = 0.0001;
+  osc.connect(quiet);
+  quiet.connect(dest);
+  osc.start();
+  await Promise.race([ac.resume(), sleep(1000)]);
 
-    const stream = c.captureStream(FPS);
-    dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
-    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 3_500_000, audioBitsPerSecond: 128_000 });
-    const parts: Blob[] = [];
-    rec.ondataavailable = (e) => e.data.size > 0 && parts.push(e.data);
+  const stream = c.captureStream(FPS);
+  cleanups.push(() => stream.getTracks().forEach((t) => t.stop()));
+  dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 3_500_000, audioBitsPerSecond: 128_000 });
+  cleanups.push(() => rec.state !== "inactive" && rec.stop());
+  const parts: Blob[] = [];
+  rec.ondataavailable = (e) => e.data.size > 0 && parts.push(e.data);
 
-    let n = 0;
-    const paint = () => {
-      x.fillStyle = `hsl(${(n * 7) % 360} 70% 45%)`;
-      x.fillRect(0, 0, OUT_W, OUT_H);
-      x.fillStyle = "#fff";
-      x.fillRect((n * 9) % OUT_W, 300, 120, 120);
-      n++;
+  let n = 0;
+  const paint = () => {
+    x.fillStyle = `hsl(${(n * 7) % 360} 70% 45%)`;
+    x.fillRect(0, 0, OUT_W, OUT_H);
+    x.fillStyle = "#fff";
+    x.fillRect((n * 9) % OUT_W, 300, 120, 120);
+    n++;
+  };
+  paint();
+  const timer = setInterval(paint, 33);
+  cleanups.push(() => clearInterval(timer));
+  rec.start(500);
+  await sleep(2000);
+  clearInterval(timer);
+  // Some encoders never report "stopped" - don't wait for them.
+  const blob = await new Promise<Blob>((resolve) => {
+    const give = setTimeout(() => resolve(new Blob(parts, { type: mime })), 3000);
+    rec.onstop = () => {
+      clearTimeout(give);
+      resolve(new Blob(parts, { type: rec.mimeType || mime }));
     };
-    paint();
-    const timer = setInterval(paint, 33);
-    rec.start(500);
-    await new Promise((r) => setTimeout(r, 2000));
-    clearInterval(timer);
-    const blob = await new Promise<Blob>((resolve) => {
-      rec.onstop = () => resolve(new Blob(parts, { type: rec.mimeType || mime }));
-      rec.stop();
-    });
-    stream.getTracks().forEach((t) => t.stop());
-    osc.stop();
-    return await hasPicture(blob);
-  } catch {
-    return false;
+    rec.stop();
+  });
+  return hasPicture(blob);
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** One probe, but never for more than `ms` - a stuck encoder must not be
+ *  able to freeze the whole video at "1%". */
+async function probeWithDeadline(mime: string, ms: number): Promise<boolean> {
+  const cleanups: (() => void)[] = [];
+  try {
+    return await Promise.race([probeRecording(mime, cleanups).catch(() => false), sleep(ms).then(() => false)]);
   } finally {
-    ac.close().catch(() => {});
+    for (const fn of cleanups) {
+      try {
+        fn();
+      } catch {
+        /* already stopped */
+      }
+    }
   }
 }
 
 /** The first format this browser supports AND can really record a picture
- *  in. Falls back to the first supported one if none passes the check. */
+ *  in. Falls back to the first supported one if none passes the check, and
+ *  never spends more than ~15 s deciding. */
 async function chooseMime(): Promise<string> {
   const supported = MIME_CANDIDATES.filter((m) => MediaRecorder.isTypeSupported(m));
+  const deadline = Date.now() + 15000;
   for (let i = 0; i < supported.length; i++) {
     // The very first choice gets a second try - the failure can be intermittent.
     const tries = i === 0 ? 2 : 1;
-    for (let k = 0; k < tries; k++) if (await probeRecording(supported[i])) return supported[i];
+    for (let k = 0; k < tries; k++) {
+      if (Date.now() > deadline) return supported[0] ?? "";
+      if (await probeWithDeadline(supported[i], 6000)) return supported[i];
+    }
   }
   return supported[0] ?? "";
 }
@@ -385,18 +413,21 @@ function scheduleMusic(
 
 // ------------------------------------------------------------------- main
 
-/** Builds the video; if a recording comes out without a picture, tries once more. */
+/** Builds the video; if a recording comes out without a picture, tries once
+ *  more. The second time the file is handed over even if the check still says
+ *  "no picture" (with a warning), because that check can be wrong on some
+ *  browsers and the admin can see for themselves in the preview. */
 export async function createReelVideo(opts: ReelOptions): Promise<ReelResult> {
   try {
-    return await createReelVideoOnce(opts);
+    return await createReelVideoOnce(opts, false);
   } catch (e) {
     if (!(e instanceof NoPictureError)) throw e;
     opts.onProgress?.(0, "The first try came out without a picture - trying again...");
-    return await createReelVideoOnce(opts);
+    return await createReelVideoOnce(opts, true);
   }
 }
 
-async function createReelVideoOnce(opts: ReelOptions): Promise<ReelResult> {
+async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise<ReelResult> {
   const { data } = opts;
   const progress = opts.onProgress ?? (() => {});
   const throwIfAborted = () => {
@@ -437,7 +468,7 @@ async function createReelVideoOnce(opts: ReelOptions): Promise<ReelResult> {
   // ---- audio
   progress(0.02, "Preparing audio...");
   const audioCtx = new AudioContext();
-  await audioCtx.resume();
+  await Promise.race([audioCtx.resume(), sleep(2000)]);
   const decode = async (buf: ArrayBuffer | null) => {
     if (!buf) return null;
     try {
@@ -854,10 +885,17 @@ async function createReelVideoOnce(opts: ReelOptions): Promise<ReelResult> {
   if (stalled) {
     throw new Error(`The tab was in the background for a moment, so part of the video would have frozen. ${tryAgain}`);
   }
-  if (!(await hasPicture(blob))) {
+  const pictureOk = await hasPicture(blob);
+  if (!pictureOk && !lenient) {
     throw new NoPictureError(`The recording came out without a picture (this can happen if the browser was busy). ${tryAgain}`);
   }
   progress(1, "Done");
 
-  return { blob, extension: (recorder.mimeType || mime).includes("mp4") ? "mp4" : "webm", seconds: total, hasVoice };
+  return {
+    blob,
+    extension: (recorder.mimeType || mime).includes("mp4") ? "mp4" : "webm",
+    seconds: total,
+    hasVoice,
+    pictureUnverified: !pictureOk,
+  };
 }

@@ -98,6 +98,9 @@ export function ReelVideoPanel({ brochureId }: { brochureId: string }) {
       const url = URL.createObjectURL(out.blob);
       urlRef.current = url;
       setResult({ url, name: `5STAR-M-${data.slug}-reel.${out.extension}`, seconds: out.seconds, hasVoice: out.hasVoice });
+      if (out.pictureUnverified) {
+        setNote("The automatic check could not confirm the picture. Play the video below - if you can see the photos, it is fine; if it is blank, click Create Again.");
+      }
       toast.show("Video created.");
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {

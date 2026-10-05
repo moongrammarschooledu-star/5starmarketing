@@ -80,7 +80,7 @@ export function SettingsForm({ settings }: { settings: WebsiteSettings }) {
           <Field label="Country" name="country" defaultValue={settings.country ?? "Pakistan"} />
           <Field label="Latitude" name="latitude" type="number" defaultValue={settings.latitude} />
           <Field label="Longitude" name="longitude" type="number" defaultValue={settings.longitude} />
-          <Field label="Website" name="websiteUrl" defaultValue={settings.websiteUrl} placeholder="https://www.5starm.com" />
+          <Field label="Website" name="websiteUrl" defaultValue={settings.websiteUrl} placeholder="https://5starmestate.com" />
           <Field
             label="Business Description"
             name="businessDescription"

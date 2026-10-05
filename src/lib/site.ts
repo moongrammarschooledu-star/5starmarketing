@@ -1,10 +1,11 @@
 // Central place for all business info. Edit here to update it site-wide.
 export const site = {
-  url: "https://www.5starm.com",
-  // The website that is actually live today (www.5starm.com does not
-  // resolve yet). Used where a link must work right now, e.g. the
-  // brochure's printed website line and QR codes.
-  websiteUrl: "https://5starmarketing-5adv.vercel.app",
+  // The company's own domain (www.5starmestate.com redirects to it).
+  url: "https://5starmestate.com",
+  // The address printed on brochures and encoded in their QR codes. Same as
+  // `url` now that the domain is live; kept separate so a link that must
+  // keep working can be pointed somewhere else without touching SEO.
+  websiteUrl: "https://5starmestate.com",
   name: "5STAR.M",
   fullName: "5STAR.M Estate & Builders",
   tagline: "NOW YOU WILL DREAM",

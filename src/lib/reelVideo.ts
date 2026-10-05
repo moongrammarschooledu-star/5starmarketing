@@ -59,6 +59,8 @@ export interface ReelResult {
   hasVoice: boolean;
   /** True when the automatic check could not find a picture in the file. */
   pictureUnverified?: boolean;
+  /** "fast" = encoded frame by frame; "live" = recorded in real time (fallback). */
+  method?: "fast" | "live";
 }
 
 // ---------------------------------------------------------------- helpers
@@ -304,13 +306,170 @@ async function chooseMime(): Promise<string> {
 
 class NoPictureError extends Error {}
 
+// ------------------------------------------------------- WebCodecs encoder
+
+/** Lets the browser breathe (paint, handle clicks) without relying on timers,
+ *  which a background tab slows to one tick per second. */
+function yieldToBrowser() {
+  return new Promise<void>((resolve) => {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = () => resolve();
+    ch.port2.postMessage(0);
+  });
+}
+
+function waitForDequeue(enc: VideoEncoder | AudioEncoder) {
+  return Promise.race([new Promise<void>((r) => enc.addEventListener("dequeue", () => r(), { once: true })), sleep(2000)]);
+}
+
+interface FastEncodeInput {
+  canvas: HTMLCanvasElement;
+  drawFrame: (t: number) => void;
+  total: number;
+  descAudio: AudioBuffer | null;
+  closeAudio: AudioBuffer | null;
+  descStart: number;
+  closeStart: number;
+  voiceWindows: { from: number; to: number }[];
+  music: boolean;
+  progress: (fraction: number, label: string) => void;
+  throwIfAborted: () => void;
+}
+
+/** Builds the MP4 frame by frame with the browser's WebCodecs encoders instead
+ *  of recording a live stream. It does not depend on MediaRecorder (which
+ *  records no picture on some computers), is several times faster than real
+ *  time, and keeps going even if the tab is in the background. Returns null
+ *  when this browser cannot do it, so the caller can fall back. */
+async function encodeWithWebCodecs(p: FastEncodeInput): Promise<Blob | null> {
+  if (typeof VideoEncoder === "undefined" || typeof AudioEncoder === "undefined" || typeof VideoFrame === "undefined" || typeof AudioData === "undefined") {
+    return null;
+  }
+
+  // Video: plain baseline H.264. The software encoder first - it is the one
+  // that behaves the same on every computer.
+  let videoConfig: VideoEncoderConfig | null = null;
+  search: for (const codec of ["avc1.42001f", "avc1.4d401f", "avc1.640028"]) {
+    for (const hw of ["prefer-software", "no-preference"] as const) {
+      const cfg: VideoEncoderConfig = { codec, width: OUT_W, height: OUT_H, bitrate: 3_500_000, framerate: FPS, hardwareAcceleration: hw, avc: { format: "avc" } };
+      try {
+        if ((await VideoEncoder.isConfigSupported(cfg)).supported) {
+          videoConfig = cfg;
+          break search;
+        }
+      } catch {
+        /* try the next one */
+      }
+    }
+  }
+  if (!videoConfig) return null;
+
+  const SR = 48000;
+  const audioConfig: AudioEncoderConfig = { codec: "mp4a.40.2", sampleRate: SR, numberOfChannels: 2, bitrate: 128_000 };
+  const wantsAudio = Boolean(p.descAudio || p.closeAudio || p.music);
+  if (wantsAudio) {
+    try {
+      if (!(await AudioEncoder.isConfigSupported(audioConfig)).supported) return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // The whole soundtrack is mixed offline in one go.
+  let pcm: AudioBuffer | null = null;
+  if (wantsAudio) {
+    p.progress(0.03, "Mixing the sound...");
+    const off = new OfflineAudioContext(2, Math.ceil(p.total * SR), SR);
+    for (const [buf, at] of [[p.descAudio, p.descStart], [p.closeAudio, p.closeStart]] as const) {
+      if (!buf) continue;
+      const src = off.createBufferSource();
+      src.buffer = buf;
+      src.connect(off.destination);
+      src.start(at);
+    }
+    if (p.music) scheduleMusic(off, off.destination, 0, p.total, p.voiceWindows);
+    pcm = await off.startRendering();
+    p.throwIfAborted();
+  }
+
+  const { Muxer, ArrayBufferTarget } = await import("mp4-muxer");
+  const target = new ArrayBufferTarget();
+  const muxer = new Muxer({
+    target,
+    video: { codec: "avc", width: OUT_W, height: OUT_H },
+    ...(wantsAudio ? { audio: { codec: "aac" as const, numberOfChannels: 2, sampleRate: SR } } : {}),
+    fastStart: "in-memory",
+  });
+
+  let failure: Error | null = null;
+  const fail = (e: unknown) => {
+    failure = e instanceof Error ? e : new Error(String(e));
+  };
+  const venc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: fail });
+  venc.configure(videoConfig);
+  const aenc = wantsAudio ? new AudioEncoder({ output: (chunk, meta) => muxer.addAudioChunk(chunk, meta), error: fail }) : null;
+  aenc?.configure(audioConfig);
+
+  // Audio is fed alongside the video so the two stay interleaved in the file.
+  let audioPos = 0;
+  const AUDIO_CHUNK = 4096;
+  const feedAudio = async (untilSec: number) => {
+    if (!pcm || !aenc) return;
+    const left = pcm.getChannelData(0);
+    const right = pcm.getChannelData(1);
+    while (audioPos < pcm.length && audioPos / SR < untilSec) {
+      const n = Math.min(AUDIO_CHUNK, pcm.length - audioPos);
+      const planar = new Float32Array(n * 2);
+      planar.set(left.subarray(audioPos, audioPos + n), 0);
+      planar.set(right.subarray(audioPos, audioPos + n), n);
+      const data = new AudioData({ format: "f32-planar", sampleRate: SR, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round((audioPos / SR) * 1e6), data: planar });
+      aenc.encode(data);
+      data.close();
+      audioPos += n;
+      if (aenc.encodeQueueSize > 24) await waitForDequeue(aenc);
+    }
+  };
+
+  const frames = Math.ceil(p.total * FPS);
+  try {
+    for (let i = 0; i < frames; i++) {
+      p.throwIfAborted();
+      if (failure) throw failure;
+      p.drawFrame(i / FPS);
+      const frame = new VideoFrame(p.canvas, { timestamp: Math.round((i * 1e6) / FPS), duration: Math.round(1e6 / FPS) });
+      venc.encode(frame, { keyFrame: i % (FPS * 2) === 0 });
+      frame.close();
+      await feedAudio(i / FPS + 0.5);
+      while (venc.encodeQueueSize > 6 && !failure) await waitForDequeue(venc);
+      if (i % 8 === 0) {
+        p.progress(0.05 + 0.9 * (i / frames), "Creating the video...");
+        await yieldToBrowser();
+      }
+    }
+    await feedAudio(Infinity);
+    p.progress(0.97, "Finishing the video - this takes a few seconds...");
+    await Promise.race([Promise.all([venc.flush(), aenc ? aenc.flush() : Promise.resolve()]), sleep(30000).then(() => Promise.reject(new Error("The encoder did not finish.")))]);
+    if (failure) throw failure;
+    muxer.finalize();
+  } finally {
+    for (const enc of [venc, aenc]) {
+      try {
+        if (enc && enc.state !== "closed") enc.close();
+      } catch {
+        /* already closed */
+      }
+    }
+  }
+  return new Blob([target.buffer], { type: "video/mp4" });
+}
+
 // ------------------------------------------------------------------ music
 
 /** Light, original ambient music made from oscillators (nothing sampled, so
  *  there is no copyright to worry about). Chords Am - F - C - G, a soft pad,
  *  a gentle plucked arpeggio and a quiet bass, with an echo for warmth. */
 function scheduleMusic(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   out: AudioNode,
   startAt: number,
   total: number,
@@ -460,11 +619,6 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
     return c;
   });
 
-  // ---- find a video format this browser can really record
-  progress(0.01, "Checking this browser's video recording...");
-  const mime = await chooseMime();
-  throwIfAborted();
-
   // ---- audio
   progress(0.02, "Preparing audio...");
   const audioCtx = new AudioContext();
@@ -512,22 +666,58 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
   canvas.height = OUT_H;
   const ctx = canvas.getContext("2d", { alpha: false })!;
 
+  const voiceWindows: { from: number; to: number }[] = [];
+  if (descAudio) voiceWindows.push({ from: descStart, to: descEnd });
+  if (closeAudio) voiceWindows.push({ from: closeStart, to: closeEnd });
+
+  // ---- preferred way: encode frame by frame (no MediaRecorder involved)
+  let fastBlob: Blob | null = null;
+  try {
+    fastBlob = await encodeWithWebCodecs({
+      canvas,
+      drawFrame,
+      total,
+      descAudio,
+      closeAudio,
+      descStart,
+      closeStart,
+      voiceWindows,
+      music: opts.music,
+      progress,
+      throwIfAborted,
+    });
+    // Make sure the file really plays and has a picture before trusting it.
+    if (fastBlob && !(await hasPicture(fastBlob))) fastBlob = null;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    console.warn("Fast video encoding failed, using live recording instead:", e);
+    fastBlob = null;
+  }
+  if (fastBlob) {
+    await audioCtx.close().catch(() => {});
+    progress(1, "Done");
+    return { blob: fastBlob, extension: "mp4", seconds: total, hasVoice, method: "fast" };
+  }
+  throwIfAborted();
+
+  // ---- fallback: live recording. Find a format this browser can really record.
+  progress(0.01, "Checking this browser's video recording...");
+  const mime = await chooseMime();
+  throwIfAborted();
+
   const dest = audioCtx.createMediaStreamDestination();
   const startAt = audioCtx.currentTime + 0.4;
-  const voiceWindows: { from: number; to: number }[] = [];
   if (descAudio) {
     const src = audioCtx.createBufferSource();
     src.buffer = descAudio;
     src.connect(dest);
     src.start(startAt + descStart);
-    voiceWindows.push({ from: descStart, to: descEnd });
   }
   if (closeAudio) {
     const src = audioCtx.createBufferSource();
     src.buffer = closeAudio;
     src.connect(dest);
     src.start(startAt + closeStart);
-    voiceWindows.push({ from: closeStart, to: closeEnd });
   }
   if (opts.music) scheduleMusic(audioCtx, dest, startAt, total, voiceWindows);
 
@@ -546,7 +736,9 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
   };
 
   // ---- drawing
-  const logoH = (w: number) => w / LOGO_ASPECT;
+  function logoH(w: number) {
+    return w / LOGO_ASPECT;
+  }
 
   function drawPhotoScene(t: number) {
     const slot = 4.2;
@@ -897,5 +1089,6 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
     seconds: total,
     hasVoice,
     pictureUnverified: !pictureOk,
+    method: "live",
   };
 }

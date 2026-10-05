@@ -122,7 +122,7 @@ export function ReelVideoPanel({ brochureId }: { brochureId: string }) {
       </div>
       <p className="mt-1 text-xs text-muted">
         Makes a vertical video for Facebook Reels and Stories: photos, the property details, the company and contact details, with an
-        optional female voice and light background music. It is recorded live in this browser, so keep this tab open until it finishes.
+        optional female voice and light background music. It is made right here in your browser, so keep this tab open until it finishes.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">

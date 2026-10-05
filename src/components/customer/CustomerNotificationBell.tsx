@@ -12,8 +12,10 @@ import {
 } from "@/lib/actions/customer.actions";
 import type { CustomerNotification } from "@/lib/models/customer";
 import { resolveNotificationLink } from "@/lib/notificationLinks";
+import { usePolling } from "@/lib/usePolling";
 
-const POLL_INTERVAL_MS = 30_000;
+// Paused while the tab is hidden (see usePolling), so this stays cheap.
+const POLL_INTERVAL_MS = 120_000;
 
 /** The customer-portal counterpart to StaffNotificationBell.tsx —
  *  this genuinely didn't exist before STEP 31 (customer_notifications
@@ -29,11 +31,10 @@ export function CustomerNotificationBell({ userId }: { userId: string }) {
 
   useEffect(() => {
     getUnreadNotificationCountAction(userId).then(setUnread).catch(() => {});
-    const id = setInterval(() => {
-      getUnreadNotificationCountAction(userId).then(setUnread).catch(() => {});
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
   }, [userId]);
+  usePolling(() => {
+    getUnreadNotificationCountAction(userId).then(setUnread).catch(() => {});
+  }, POLL_INTERVAL_MS);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {

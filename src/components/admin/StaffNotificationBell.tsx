@@ -12,8 +12,10 @@ import {
 } from "@/lib/actions/staffNotification.actions";
 import type { StaffNotification } from "@/lib/models/team";
 import { resolveNotificationLink } from "@/lib/notificationLinks";
+import { usePolling } from "@/lib/usePolling";
 
-const POLL_INTERVAL_MS = 30_000;
+// Paused while the tab is hidden (see usePolling), so this stays cheap.
+const POLL_INTERVAL_MS = 120_000;
 
 function entityHref(portal: "admin" | "agent", n: StaffNotification): string | null {
   return resolveNotificationLink(portal, n.entityType, n.entityId);
@@ -29,11 +31,10 @@ export function StaffNotificationBell({ userId, portal = "admin" }: { userId: st
 
   useEffect(() => {
     getUnreadStaffNotificationCountAction(userId).then(setUnread).catch(() => {});
-    const id = setInterval(() => {
-      getUnreadStaffNotificationCountAction(userId).then(setUnread).catch(() => {});
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
   }, [userId]);
+  usePolling(() => {
+    getUnreadStaffNotificationCountAction(userId).then(setUnread).catch(() => {});
+  }, POLL_INTERVAL_MS);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {

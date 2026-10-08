@@ -16,9 +16,22 @@
 //    safe, since their URLs change when their content does.
 //  - A failed navigation with nothing cached falls back to
 //    /offline.html rather than the browser's own ugly error page.
-const VERSION = "v1";
+//
+// v2: only successful responses are cached. v1 stored whatever came back,
+// so a 404 served while a deploy was still rolling out stuck in the
+// cache-first static rule and left the site unstyled. Bumping the version
+// makes the activate step below drop those poisoned v1 caches.
+const VERSION = "v2";
 const APP_SHELL_CACHE = `5starm-shell-${VERSION}`;
 const RUNTIME_CACHE = `5starm-runtime-${VERSION}`;
+
+function cacheIfOk(request, response) {
+  if (response && response.ok) {
+    const copy = response.clone();
+    caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+  }
+  return response;
+}
 
 const APP_SHELL = ["/offline.html", "/icons/icon-192.png", "/icons/icon-512.png"];
 
@@ -29,6 +42,9 @@ function isPrivatePath(pathname) {
 }
 
 self.addEventListener("install", (event) => {
+  // Take over straight away so browsers holding a poisoned v1 cache are
+  // repaired on their next load, not only after every tab is closed.
+  self.skipWaiting();
   event.waitUntil(
     caches.open(APP_SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL)).catch(() => {})
   );
@@ -70,11 +86,7 @@ self.addEventListener("fetch", (event) => {
       caches.match(request).then(
         (cached) =>
           cached ||
-          fetch(request).then((response) => {
-            const copy = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-            return response;
-          })
+          fetch(request).then((response) => cacheIfOk(request, response))
       )
     );
     return;
@@ -85,11 +97,7 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
+        .then((response) => cacheIfOk(request, response))
         .catch(() => caches.match(request).then((cached) => cached || caches.match("/offline.html")))
     );
     return;
@@ -100,11 +108,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
+        .then((response) => cacheIfOk(request, response))
         .catch(() => cached);
       return cached || network;
     })

@@ -32,7 +32,9 @@ export type AdminSection =
   | "legal"
   | "support"
   | "ai"
-  | "content";
+  | "content"
+  // Client demands (what customers are looking for) - every staff role.
+  | "demands";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -67,10 +69,11 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "support",
     "ai",
     "content",
+    "demands",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal", "support", "ai", "content"],
-  editor: ["dashboard", "properties", "projects", "services", "profile", "brochures", "content"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support", "ai"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal", "support", "ai", "content", "demands"],
+  editor: ["dashboard", "properties", "projects", "services", "profile", "brochures", "content", "demands"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support", "ai", "demands"],
 };
 
 /** AI Settings (STEP 30) — enabling/disabling assistants, editing tool

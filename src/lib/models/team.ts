@@ -35,6 +35,8 @@ export type FollowUpInput = Pick<FollowUp, "leadId" | "assignedAgentId" | "follo
 /** Staff-facing notifications — distinct from the customer-facing
  *  CustomerNotification model; these point at admin_profiles.id. */
 export type StaffNotificationType =
+  // Client demands - a new property fits clients who are already waiting
+  | "demand_match"
   | "lead_assigned"
   | "lead_reassigned"
   | "follow_up_due"

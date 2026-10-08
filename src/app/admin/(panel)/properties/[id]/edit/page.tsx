@@ -19,6 +19,7 @@ import { PropertyInvestmentPanel } from "@/components/admin/investment/PropertyI
 import { PropertyMaintenancePanel } from "@/components/admin/maintenance/PropertyMaintenancePanel";
 import { PropertyLegalPanel } from "@/components/admin/legal/PropertyLegalPanel";
 import { PropertySupportPanel } from "@/components/support/PropertySupportPanel";
+import { PropertyDemandMatches } from "@/components/admin/PropertyDemandMatches";
 import { canManageFinance, canAccess } from "@/lib/permissions";
 import { formatPKR } from "@/lib/calculator";
 
@@ -87,6 +88,7 @@ export default async function EditPropertyPage({
         </div>
       )}
 
+      {admin && canAccess(admin.role, "demands") && <PropertyDemandMatches property={property} />}
       {canSeeFinancials && <PropertyFinancialPanel propertyId={id} />}
       {admin && canAccess(admin.role, "investment") && <PropertyInvestmentPanel propertyId={id} />}
       {admin && canAccess(admin.role, "maintenance") && <PropertyMaintenancePanel propertyId={id} />}

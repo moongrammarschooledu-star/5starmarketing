@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { propertyService } from "@/services/propertyService";
 import { activityService } from "@/services/activityService";
 import { ownerDetailsService } from "@/services/ownerDetailsService";
+import { demandService } from "@/services/demandService";
 import { readOwnerDetails } from "@/lib/models/ownerDetails";
 import type {
   PaymentOption,
@@ -140,6 +141,8 @@ export async function createPropertyAction(
   }
 
   await activityService.log("Added Property", property.title, "property", property.id);
+  // Tell the team if clients are already waiting for something like this.
+  await demandService.alertTeamAboutProperty(property);
   revalidateAll(property.slug);
   const ownerError = await saveOwnerDetails(property.id, formData);
   if (ownerError) {
@@ -200,6 +203,7 @@ export async function toggleFeaturedAction(id: string) {
 export async function changeStatusAction(id: string, status: Property["status"]) {
   try {
     const updated = await propertyService.update(id, { status });
+    if (updated && status === "Available") await demandService.alertTeamAboutProperty(updated);
     revalidateAll(updated?.slug);
   } catch (e) {
     console.error("changeStatusAction failed:", e);

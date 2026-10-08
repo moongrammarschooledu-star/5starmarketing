@@ -25,7 +25,7 @@ export function categoryForNotificationType(type: string): NotificationCategory 
   )
     return "payment";
   if (type.startsWith("property") || type.startsWith("investment")) return "property";
-  if (type.startsWith("inquiry") || type.startsWith("status_updated") || type.startsWith("follow_up")) return "lead";
+  if (type.startsWith("inquiry") || type.startsWith("status_updated") || type.startsWith("follow_up") || type.startsWith("demand")) return "lead";
   return "system";
 }
 
@@ -80,6 +80,8 @@ export function resolveNotificationLink(
   // entity types resolve to the same /admin/* detail route regardless
   // of which shell is rendering the bell.
   switch (entityType) {
+    case "demand":
+      return `/admin/demands/${entityId}`;
     case "lead":
       return `/${portal}/leads/${entityId}`;
     case "appointment":

@@ -164,6 +164,15 @@ export function DemandForm({
               </select>
             </Label>
           )}
+          <label className="flex items-start gap-3 rounded-xl border border-border bg-surface-muted/50 p-3.5 text-sm sm:col-span-2">
+            <input type="checkbox" name="showOnSite" defaultChecked={v?.showOnSite ?? true} className="mt-0.5 h-4 w-4 rounded border-border text-primary" />
+            <span>
+              <span className="font-semibold text-ink">Show on the website news bar</span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Visitors see only the type, size, area and budget (for example &quot;5 Marla House to buy in Johar Town - budget up to 1.5 Crore&quot;). The client&apos;s name, phone and notes are never shown.
+              </span>
+            </span>
+          </label>
           <div className="sm:col-span-2">
             <Label text="Notes">
               <textarea name="notes" defaultValue={v?.notes} rows={3} placeholder="Anything else the client said - family size, parking, near a school, in a hurry..." className={`${inputClass} resize-none`} />

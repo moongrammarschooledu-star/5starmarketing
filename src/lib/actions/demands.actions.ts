@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { demandService } from "@/services/demandService";
+import { TICKER_TAG } from "@/services/siteNewsService";
 import { activityService } from "@/services/activityService";
 import { profileService } from "@/services/profileService";
 import { parsePriceText, parseSizeToMarla } from "@/lib/pkUnits";
@@ -95,12 +96,15 @@ function readInput(formData: FormData): { input?: DemandInput; error?: string } 
       priority: demandPriorities.includes(priority as (typeof demandPriorities)[number]) ? (priority as DemandInput["priority"]) : "Normal",
       status: demandStatuses.includes(status as DemandStatus) ? (status as DemandStatus) : "Open",
       notes: text(formData, "notes") || undefined,
+      showOnSite: formData.get("showOnSite") === "on",
       assignedTo: text(formData, "assignedTo") || undefined,
     },
   };
 }
 
 function revalidate(id?: string) {
+  // The public news bar lists waiting demands, so it must refresh too.
+  revalidateTag(TICKER_TAG);
   revalidatePath("/admin/demands");
   if (id) revalidatePath(`/admin/demands/${id}`);
 }

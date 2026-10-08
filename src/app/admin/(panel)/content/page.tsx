@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Newspaper, LayoutTemplate, MessageSquareQuote } from "lucide-react";
+import { Newspaper, LayoutTemplate, MessageSquareQuote, Megaphone } from "lucide-react";
 import { requireSection } from "@/lib/guard";
 import { blogService } from "@/services/blogService";
 import { landingPageService } from "@/services/landingPageService";
@@ -20,14 +20,15 @@ export default async function ContentHubPage() {
     { href: "/admin/content/blog", icon: Newspaper, label: "Blog", count: `${posts.length} posts` },
     { href: "/admin/content/landing-pages", icon: LayoutTemplate, label: "Landing Pages", count: `${pages.length} pages` },
     { href: "/admin/content/testimonials", icon: MessageSquareQuote, label: "Testimonials", count: `${pendingTestimonials} pending approval` },
+    { href: "/admin/content/news", icon: Megaphone, label: "News Bar", count: "Scrolling news + client demands" },
   ];
 
   return (
     <div>
       <h1 className="font-heading text-2xl font-extrabold text-ink">Public Content</h1>
-      <p className="mt-1 text-sm text-muted">Blog posts, campaign landing pages, and testimonials shown on the public site.</p>
+      <p className="mt-1 text-sm text-muted">Blog posts, campaign landing pages, testimonials, and the news bar shown on the public site.</p>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <Link key={c.href} href={c.href} className="rounded-2xl border border-border bg-surface p-5 hover:border-primary">
             <c.icon className="h-6 w-6 text-primary" />

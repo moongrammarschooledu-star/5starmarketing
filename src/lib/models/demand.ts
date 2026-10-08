@@ -31,6 +31,8 @@ export interface PropertyDemand {
   priority: DemandPriority;
   status: DemandStatus;
   notes?: string;
+  /** Shown on the public website news bar - type, size, area and budget only. */
+  showOnSite: boolean;
   assignedTo?: string;
   assignedToName?: string;
   createdBy?: string;

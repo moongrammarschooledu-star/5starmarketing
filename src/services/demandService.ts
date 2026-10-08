@@ -38,6 +38,7 @@ function mapRow(row: any): PropertyDemand {
     priority: PRIORITY_FROM_DB[row.priority] ?? "Normal",
     status: STATUS_FROM_DB[row.status] ?? "Open",
     notes: row.notes ?? undefined,
+    showOnSite: row.show_on_site ?? true,
     assignedTo: row.assigned_to ?? undefined,
     createdBy: row.created_by ?? undefined,
     createdAt: row.created_at,
@@ -61,6 +62,7 @@ function toRow(input: DemandInput) {
     priority: input.priority.toLowerCase(),
     status: input.status.toLowerCase(),
     notes: input.notes || null,
+    show_on_site: input.showOnSite,
     assigned_to: input.assignedTo || null,
   };
 }

@@ -108,6 +108,31 @@ h1, h2, h3, h4, h5 {
   animation: fade-up 0.6s ease-out both;
 }
 
+/* Public news bar: the track holds two identical halves, so sliding it left
+   by half its width loops seamlessly. */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  animation: ticker-scroll linear infinite;
+}
+
+.ticker-viewport:hover .ticker-track,
+.ticker-viewport:focus-within .ticker-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .ticker-viewport {
+    overflow-x: auto;
+  }
+}
+
 .diagonal-clip-br {
   clip-path: polygon(0 0, 100% 0, 100% 100%, 18% 100%);
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
+import { NewsTicker } from "@/components/NewsTicker";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloatButton } from "@/components/WhatsAppButton";
 import { FavoritesProvider } from "@/components/customer/FavoritesProvider";
@@ -28,6 +29,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   return (
     <FavoritesProvider initialFavoriteIds={favoriteIds} isLoggedIn={isLoggedIn}>
       <CompareProvider>
+        <NewsTicker />
         <Navbar isLoggedIn={isLoggedIn} />
         {children}
         <Footer />

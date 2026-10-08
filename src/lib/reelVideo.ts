@@ -27,9 +27,12 @@ export interface ReelData {
   location: string;
   badge: string;
   demand: string;
+  /** The small label above the highlighted price/offer; "DEMAND" when unset. */
+  highlightLabel?: string;
   facts: { label: string; value: string }[];
   features: string[];
-  images: string[];
+  /** Photo addresses, or the picture files themselves (the Ad Maker's uploads). */
+  images: (string | Blob)[];
   companyName: string;
   about: string;
   tagline: string;
@@ -74,8 +77,10 @@ function dataUriToBlob(uri: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
-async function loadBitmap(src: string): Promise<ImageBitmap | null> {
+async function loadBitmap(src: string | Blob): Promise<ImageBitmap | null> {
   try {
+    // An uploaded picture is already in memory - no network involved.
+    if (typeof src !== "string") return await createImageBitmap(src);
     // data: URIs are decoded by hand - fetch() of data: is blocked by the
     // site's connect-src policy.
     if (src.startsWith("data:")) return await createImageBitmap(dataUriToBlob(src));
@@ -823,7 +828,7 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
     if (facts) y += drawFitted(ctx, facts, 84, y, W - 168, 100, { size: 36, minSize: 26, weight: "bold", color: "#FFFFFF" }) + 14;
     if (data.demand) {
       ctx.font = `bold 62px ${FONT}`;
-      const label = "DEMAND";
+      const label = data.highlightLabel ?? "DEMAND";
       const vw = ctx.measureText(data.demand).width;
       const bw = Math.min(W - 168, Math.max(vw + 70, 360));
       ctx.fillStyle = RED;

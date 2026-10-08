@@ -72,14 +72,10 @@ export function buildNarration(input: {
   const body = limitAtSentence(description, 650);
   const phones = input.phones.map((p) => spokenPhone(p, lang)).filter(Boolean).slice(0, 2);
 
+  const closing = closingScript(lang, phones);
+
   if (lang === "ur") {
     const intro = [`${name}۔`, location && `${location}۔`, price && `ڈیمانڈ، ${price}۔`].filter(Boolean).join(" ");
-    const closing = [
-      "فائیو اسٹار ایم اسٹیٹ اینڈ بلڈرز۔",
-      "خرید و فروخت، ڈویلپمنٹ، تعمیرات اور کرایہ داری کی خدمات۔",
-      phones.length > 0 ? `مزید معلومات کے لیے رابطہ کریں: ${phones.join("، یا ")}۔` : "مزید معلومات کے لیے ہم سے رابطہ کریں۔",
-      "آپ واٹس ایپ پر بھی پیغام کر سکتے ہیں۔ شکریہ۔",
-    ].join(" ");
     return { lang, description: [intro, body].filter(Boolean).join(" "), closing };
   }
 
@@ -90,13 +86,47 @@ export function buildNarration(input: {
   ]
     .filter(Boolean)
     .join(" ");
-  const closing = [
+  return { lang, description: [intro, body].filter(Boolean).join(" "), closing };
+}
+
+/** The company line and contact numbers spoken at the end of every video. */
+function closingScript(lang: NarrationLang, spokenPhones: string[]): string {
+  if (lang === "ur") {
+    return [
+      "فائیو اسٹار ایم اسٹیٹ اینڈ بلڈرز۔",
+      "خرید و فروخت، ڈویلپمنٹ، تعمیرات اور کرایہ داری کی خدمات۔",
+      spokenPhones.length > 0 ? `مزید معلومات کے لیے رابطہ کریں: ${spokenPhones.join("، یا ")}۔` : "مزید معلومات کے لیے ہم سے رابطہ کریں۔",
+      "آپ واٹس ایپ پر بھی پیغام کر سکتے ہیں۔ شکریہ۔",
+    ].join(" ");
+  }
+  return [
     "Five Star M Estate and Builders.",
     "We deal in buying and selling, development, construction, and rental services.",
-    phones.length > 0 ? `For more details, call ${phones.join(", or ")}.` : "For more details, contact us today.",
+    spokenPhones.length > 0 ? `For more details, call ${spokenPhones.join(", or ")}.` : "For more details, contact us today.",
     "You can also message us on WhatsApp. Thank you.",
   ].join(" ");
-  return { lang, description: [intro, body].filter(Boolean).join(" "), closing };
+}
+
+/** The script for a company ad made from text the admin typed: the headline,
+ *  then the description exactly as written (cut at a sentence end if it is
+ *  very long), then the company closing with the phone numbers. */
+export function buildAdNarration(input: {
+  headline: string;
+  description: string;
+  phones: string[];
+  langOverride?: NarrationLang;
+}): NarrationScripts {
+  const description = clean(input.description);
+  const headline = clean(input.headline);
+  const lang = input.langOverride ?? detectNarrationLang(description || headline);
+  const phones = input.phones.map((p) => spokenPhone(p, lang)).filter(Boolean).slice(0, 2);
+  const stop = lang === "ur" ? "۔" : ".";
+  const head = headline && !/[.!?۔]$/.test(headline) ? `${headline}${stop}` : headline;
+  return {
+    lang,
+    description: [head, limitAtSentence(description, 900)].filter(Boolean).join(" "),
+    closing: closingScript(lang, phones),
+  };
 }
 
 export type SpeechResult =

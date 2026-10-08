@@ -10,7 +10,9 @@ const csp = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: https:",
+  // blob: lets the Ad Maker show thumbnails of pictures the admin picked
+  // (they stay in the browser and are never uploaded).
+  "img-src 'self' data: blob: https:",
   // Property walkthrough videos are served straight from Supabase Storage;
   // blob: lets the admin preview a reel video it just recorded in the browser.
   "media-src 'self' blob: https://*.supabase.co",

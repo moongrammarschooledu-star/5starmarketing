@@ -63,7 +63,7 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
       )}
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Open" value={tally("Open")} icon={ClipboardCheck} tone="primary" />
+        <StatCard label="Waiting" value={tally("Open") + tally("Matched")} icon={ClipboardCheck} tone="primary" />
         <StatCard label="With a good match" value={waitingWithMatch} icon={Sparkles} tone="success" />
         <StatCard label="Closed" value={tally("Closed")} icon={Handshake} />
         <StatCard label="Lost" value={tally("Lost")} icon={XCircle} />

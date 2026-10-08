@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { ShieldCheck, Handshake, TrendingUp, Users2 } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
+import { CompanyVideo } from "./CompanyVideo";
 import { site } from "@/lib/site";
 
 const pillars = [
@@ -14,18 +14,13 @@ export function About() {
   return (
     <section id="about" className="bg-surface-muted py-20 sm:py-24">
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 lg:grid-cols-2 lg:gap-16 lg:px-8">
-        <div className="relative">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl shadow-xl shadow-ink/10">
-            <Image
-              src="https://images.unsplash.com/photo-1523217582562-09d0def993a6?q=80&w=1200&auto=format&fit=crop"
-              alt="5STAR.M Estate & Builders residential development"
-              fill
-              sizes="(min-width: 1024px) 560px, 90vw"
-              className="object-cover"
-            />
+        <div className="relative mx-auto w-full max-w-[320px] sm:max-w-[360px]">
+          <div className="relative aspect-[9/16] w-full overflow-hidden rounded-3xl bg-ink shadow-xl shadow-ink/10">
+            <CompanyVideo className="absolute inset-0 h-full w-full object-cover" />
           </div>
 
-          <div className="absolute -bottom-6 -right-4 w-56 rounded-2xl bg-ink p-5 text-white shadow-xl sm:-right-8 sm:w-64">
+          {/* Below the video, not over it - the video itself shows the logo. */}
+          <div className="mt-5 w-full rounded-2xl bg-ink p-4 text-white shadow-xl sm:p-5">
             <div className="font-heading text-lg font-extrabold">{site.director}</div>
             <div className="text-xs font-semibold text-primary">{site.directorTitle}</div>
             <p className="mt-2 text-xs leading-relaxed text-white/70">

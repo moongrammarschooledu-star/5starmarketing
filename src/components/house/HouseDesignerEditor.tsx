@@ -69,7 +69,7 @@ function findFreeSpot(rooms: Room[], w: number, h: number, plotW: number, plotL:
   return { x: 0, y: 0 };
 }
 
-export function HouseDesignerEditor({ design, projects }: { design: HouseDesign; projects: { id: string; label: string }[] }) {
+export function HouseDesignerEditor({ design, projects, startMix = false }: { design: HouseDesign; projects: { id: string; label: string }[]; startMix?: boolean }) {
   // ---- the drawing, with undo / redo ----
   const [data, setData] = useState<DesignData>(design.data);
   const dataRef = useRef(data);
@@ -136,6 +136,7 @@ export function HouseDesignerEditor({ design, projects }: { design: HouseDesign;
     return counts;
   });
   const [autoNotes, setAutoNotes] = useState<string[]>([]);
+  const [mixTip, setMixTip] = useState(startMix);
 
   const planSvgRef = useRef<SVGSVGElement | null>(null);
   const elevSvgRef = useRef<SVGSVGElement | null>(null);
@@ -392,6 +393,16 @@ export function HouseDesignerEditor({ design, projects }: { design: HouseDesign;
       </div>
 
       {/* ---------------------------------------------------------------- Floor plan */}
+      {tab === "plan" && mixTip && (
+        <div className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-ink">
+          <p>
+            <span className="font-bold">The first plan was made automatically.</span> Now adjust it by hand: drag a room to move it, drag the red squares to resize, and change doors and windows in the room panel. You can also change the room list on the right and make the plan again.
+          </p>
+          <button type="button" onClick={() => setMixTip(false)} className="shrink-0 text-xs font-bold text-primary hover:underline">
+            Got it
+          </button>
+        </div>
+      )}
       {tab === "plan" && (
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div>
@@ -487,7 +498,7 @@ export function HouseDesignerEditor({ design, projects }: { design: HouseDesign;
               </div>
             </section>
 
-            <details className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <details open={startMix} className="rounded-xl border border-primary/30 bg-primary/5 p-4">
               <summary className="flex cursor-pointer items-center gap-2 font-heading text-sm font-bold text-ink">
                 <Wand2 className="h-4 w-4 text-primary" /> Make the plan automatically
               </summary>

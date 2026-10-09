@@ -86,6 +86,33 @@ export async function createHouseDesignAction(_prev: NewDesignState, formData: F
     return { error: e instanceof Error ? e.message : "Could not create the design." };
   }
   revalidatePath("/admin/house-designer");
+  // "Auto + manual": the editor opens ready for hand changes.
+  redirect(text(formData, "after", 10) === "mix" ? `/admin/house-designer/${id}?mix=1` : `/admin/house-designer/${id}`);
+}
+
+/** Saves a plan that was read from a picture (already shown to the user for review). */
+export async function createHouseDesignFromDataAction(_prev: NewDesignState, formData: FormData): Promise<NewDesignState> {
+  let id: string;
+  try {
+    const adminId = await requireAccess();
+    const { meta, error } = readMeta(formData);
+    if (!meta) return { error };
+    let raw: unknown;
+    try {
+      raw = JSON.parse(text(formData, "data", 200_000));
+    } catch {
+      return { error: "The plan could not be read. Please read the picture again." };
+    }
+    const parsed = parseDesignData(raw);
+    if (!parsed.data) return { error: parsed.error };
+    meta.notes = [meta.notes, "Made from an uploaded hand-drawn naqsha. Please check the sizes against the drawing."].filter(Boolean).join("\n\n").slice(0, 2000);
+    const design = await houseDesignService.create(meta, parsed.data, adminId);
+    id = design.id;
+    await activityService.log("Created House Design", `${design.name} (from picture)`, "house_design", design.id);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not create the design." };
+  }
+  revalidatePath("/admin/house-designer");
   redirect(`/admin/house-designer/${id}`);
 }
 

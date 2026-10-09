@@ -42,10 +42,10 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 /** One form for both ways of starting a design: "manual" (an empty plot or the
  *  sample, then the user draws the rooms) and "auto" (the rooms are listed and
  *  the plan is made automatically). The two are separate pages. */
-export function NewDesignForm({ projects, mode }: { projects: { id: string; label: string }[]; mode: "manual" | "auto" }) {
+export function NewDesignForm({ projects, mode }: { projects: { id: string; label: string }[]; mode: "manual" | "auto" | "mix" }) {
   const [state, formAction, pending] = useActionState<NewDesignState, FormData>(createHouseDesignAction, {});
   const [plot, setPlot] = useState("5m");
-  const auto = mode === "auto";
+  const auto = mode !== "manual";
   const [counts, setCounts] = useState<AutoCounts>(() => defaultCounts("5m"));
 
   return (
@@ -114,6 +114,7 @@ export function NewDesignForm({ projects, mode }: { projects: { id: string; labe
           <input name="floorHeight" defaultValue="10" inputMode="decimal" className={inputClass} />
         </Field>
 
+        <input type="hidden" name="after" value={mode} />
         {auto && (
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 sm:col-span-2">
             <h2 className="text-sm font-bold text-ink">Which rooms do you want?</h2>
@@ -141,7 +142,7 @@ export function NewDesignForm({ projects, mode }: { projects: { id: string; labe
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:opacity-60">
-          {pending ? "Creating..." : auto ? "Make my naqsha" : "Create and open"}
+          {pending ? "Creating..." : mode === "mix" ? "Make the first plan" : auto ? "Make my naqsha" : "Create and open"}
         </button>
         <Link href="/admin/house-designer/new" className="rounded-full border-2 border-ink/15 px-6 py-3 text-sm font-bold text-ink hover:border-ink/30">
           Cancel

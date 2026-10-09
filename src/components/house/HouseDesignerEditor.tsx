@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Box, Copy, Download, FileText, Grid3x3, Layers, LayoutPanelTop, Printer, Redo2, Save, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, Box, Copy, Download, FileText, Grid3x3, Layers, Wand2, LayoutPanelTop, Printer, Redo2, Save, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 import { PlanEditorCanvas } from "./PlanEditorCanvas";
+import { AutoPlanFields, type AutoCounts } from "./AutoPlanFields";
+import { DEFAULT_AUTO_SPEC, generateDesign } from "@/lib/house/autoLayout";
 import { ElevationSvg } from "./ElevationSvg";
 import { House3DView } from "./House3DView";
 import { saveHouseDesignAction } from "@/lib/actions/houseDesign.actions";
@@ -125,6 +127,15 @@ export function HouseDesignerEditor({ design, projects }: { design: HouseDesign;
   const [showRoof, setShowRoof] = useState(true);
   const [status, setStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [autoCounts, setAutoCounts] = useState<AutoCounts>(() => {
+    const { width, length, floors, floorHeight, ...counts } = DEFAULT_AUTO_SPEC;
+    void width;
+    void length;
+    void floors;
+    void floorHeight;
+    return counts;
+  });
+  const [autoNotes, setAutoNotes] = useState<string[]>([]);
 
   const planSvgRef = useRef<SVGSVGElement | null>(null);
   const elevSvgRef = useRef<SVGSVGElement | null>(null);
@@ -233,6 +244,23 @@ export function HouseDesignerEditor({ design, projects }: { design: HouseDesign;
       const o = r.openings.find((x) => x.id === id);
       if (o) Object.assign(o, patch);
     });
+  };
+
+  // ---- automatic plan ----
+  const runAutoPlan = () => {
+    const hasRooms = dataRef.current.floors.some((f) => f.rooms.length > 0);
+    if (hasRooms && !confirm("This replaces every room on every floor with a new automatic plan. You can undo it with Ctrl+Z. Continue?")) return;
+    const current = dataRef.current;
+    const result = generateDesign({ ...autoCounts, width: current.plot.width, length: current.plot.length, floors: current.floors.length, floorHeight: current.floorHeight });
+    setAutoNotes(result.notes);
+    if (result.design.floors[0].rooms.length === 0) return;
+    edit((d) => {
+      d.floors.forEach((f, i) => {
+        f.rooms = result.design.floors[i]?.rooms ?? [];
+      });
+    });
+    setSelectedId(null);
+    setFloorIndex(0);
   };
 
   // ---- floors ----
@@ -458,6 +486,26 @@ export function HouseDesignerEditor({ design, projects }: { design: HouseDesign;
                 )}
               </div>
             </section>
+
+            <details className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+              <summary className="flex cursor-pointer items-center gap-2 font-heading text-sm font-bold text-ink">
+                <Wand2 className="h-4 w-4 text-primary" /> Make the plan automatically
+              </summary>
+              <p className="mt-2 text-xs text-muted">Choose the rooms you want. A full plan for this plot ({data.plot.width} x {data.plot.length} ft, {data.floors.length} floor{data.floors.length > 1 ? "s" : ""}) replaces what is drawn now.</p>
+              <div className="mt-3">
+                <AutoPlanFields value={autoCounts} onChange={setAutoCounts} />
+              </div>
+              <button type="button" onClick={runAutoPlan} className="mt-3 flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">
+                <Wand2 className="h-3.5 w-3.5" /> Make the plan
+              </button>
+              {autoNotes.length > 0 && (
+                <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-ink">
+                  {autoNotes.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              )}
+            </details>
 
             {selected ? (
               <section className="rounded-xl border border-primary/40 bg-surface p-4">

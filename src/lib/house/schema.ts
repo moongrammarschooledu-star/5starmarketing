@@ -32,6 +32,21 @@ export const designDataSchema = z.object({
   floors: z.array(floor).min(1).max(4),
 });
 
+export const autoCountsSchema = z.object({
+  bedrooms: z.number().int().min(0).max(8),
+  bathrooms: z.number().int().min(0).max(10),
+  kitchens: z.number().int().min(0).max(2),
+  lounges: z.number().int().min(0).max(2),
+  stores: z.number().int().min(0).max(3),
+  drawing: z.boolean(),
+  dining: z.boolean(),
+  prayer: z.boolean(),
+  study: z.boolean(),
+  porch: z.boolean(),
+  lawn: z.boolean(),
+  garage: z.boolean(),
+});
+
 /** Checks drawing data coming from the browser before it is stored. */
 export function parseDesignData(raw: unknown): { data?: DesignData; error?: string } {
   const result = designDataSchema.safeParse(raw);

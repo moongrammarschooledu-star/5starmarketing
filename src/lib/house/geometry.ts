@@ -197,7 +197,8 @@ export function roomArea(r: Room): number {
 function overlap(a: Room, b: Room): number {
   const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
   const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-  return w > 0 && h > 0 ? w * h : 0;
+  // Slivers thinner than an inch are drawing noise, not real overlaps.
+  return w > 0.08 && h > 0.08 ? w * h : 0;
 }
 
 /** Plain-language problems the designer should look at. */

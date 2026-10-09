@@ -7,7 +7,8 @@ import { activityService } from "@/services/activityService";
 import { profileService } from "@/services/profileService";
 import { canAccess } from "@/lib/permissions";
 import { PLOT_PRESETS, emptyDesign, fiveMarlaTemplate, DEFAULT_FLOOR_HEIGHT } from "@/lib/house/catalog";
-import { parseDesignData } from "@/lib/house/schema";
+import { autoCountsSchema, parseDesignData } from "@/lib/house/schema";
+import { generateDesign } from "@/lib/house/autoLayout";
 
 export interface NewDesignState {
   error?: string;
@@ -57,8 +58,26 @@ export async function createHouseDesignAction(_prev: NewDesignState, formData: F
     if (floorHeight < 8 || floorHeight > 16) return { error: "Floor height must be between 8 and 16 feet." };
 
     const template = text(formData, "template", 20);
-    const data =
+    let data =
       template === "5marla" && width === 25 && length === 45 ? fiveMarlaTemplate(floors, floorHeight) : emptyDesign(width, length, floors, floorHeight);
+
+    // "Draw the plan for me": the plot and the wanted rooms become a finished plan.
+    const autoRaw = text(formData, "autoSpec", 2000);
+    if (autoRaw) {
+      let parsedJson: unknown;
+      try {
+        parsedJson = JSON.parse(autoRaw);
+      } catch {
+        return { error: "The room list could not be read. Please try again." };
+      }
+      const counts = autoCountsSchema.safeParse(parsedJson);
+      if (!counts.success) return { error: "Please check the number of rooms." };
+      const result = generateDesign({ ...counts.data, width, length, floors, floorHeight });
+      if (result.design.floors[0].rooms.length === 0) return { error: result.notes[0] ?? "Could not plan this plot." };
+      data = result.design;
+      const summary = `Automatic plan: ${result.notes.join(" ")}`.slice(0, 1800);
+      meta.notes = [meta.notes, summary].filter(Boolean).join("\n\n").slice(0, 2000);
+    }
 
     const design = await houseDesignService.create(meta, data, adminId);
     id = design.id;

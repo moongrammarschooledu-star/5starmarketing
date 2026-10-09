@@ -39,10 +39,13 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-export function NewDesignForm({ projects }: { projects: { id: string; label: string }[] }) {
+/** One form for both ways of starting a design: "manual" (an empty plot or the
+ *  sample, then the user draws the rooms) and "auto" (the rooms are listed and
+ *  the plan is made automatically). The two are separate pages. */
+export function NewDesignForm({ projects, mode }: { projects: { id: string; label: string }[]; mode: "manual" | "auto" }) {
   const [state, formAction, pending] = useActionState<NewDesignState, FormData>(createHouseDesignAction, {});
   const [plot, setPlot] = useState("5m");
-  const [auto, setAuto] = useState(true);
+  const auto = mode === "auto";
   const [counts, setCounts] = useState<AutoCounts>(() => defaultCounts("5m"));
 
   return (
@@ -111,19 +114,16 @@ export function NewDesignForm({ projects }: { projects: { id: string; label: str
           <input name="floorHeight" defaultValue="10" inputMode="decimal" className={inputClass} />
         </Field>
 
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 sm:col-span-2">
-          <label className="flex items-center gap-2 text-sm font-bold text-ink">
-            <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="h-4 w-4 rounded border-border text-primary" />
-            Draw the naqsha for me automatically
-          </label>
-          <p className="mt-1 text-xs text-muted">Tell us the rooms you want. The plan, doors, windows, 3D view and elevations are made for you, and you can change anything afterwards.</p>
-          {auto && (
+        {auto && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 sm:col-span-2">
+            <h2 className="text-sm font-bold text-ink">Which rooms do you want?</h2>
+            <p className="mt-1 text-xs text-muted">The plan, doors, windows, 3D view and elevations are made from this. You can change anything afterwards in the editor.</p>
             <div className="mt-4">
               <AutoPlanFields value={counts} onChange={setCounts} />
               <input type="hidden" name="autoSpec" value={JSON.stringify(counts)} />
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="sm:col-span-2">
           <Field label="Construction project (optional)">
@@ -141,9 +141,9 @@ export function NewDesignForm({ projects }: { projects: { id: string; label: str
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:opacity-60">
-          {pending ? "Creating..." : "Create and open"}
+          {pending ? "Creating..." : auto ? "Make my naqsha" : "Create and open"}
         </button>
-        <Link href="/admin/house-designer" className="rounded-full border-2 border-ink/15 px-6 py-3 text-sm font-bold text-ink hover:border-ink/30">
+        <Link href="/admin/house-designer/new" className="rounded-full border-2 border-ink/15 px-6 py-3 text-sm font-bold text-ink hover:border-ink/30">
           Cancel
         </Link>
       </div>

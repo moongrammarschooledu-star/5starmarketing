@@ -156,7 +156,15 @@ export function HouseDesignerEditor({ design, projects }: { design: HouseDesign;
   const save = async (): Promise<boolean> => {
     setSaving(true);
     setStatus(null);
-    const result = await saveHouseDesignAction(design.id, { name, clientName, notes, constructionProjectId: projectId, data });
+    let result: Awaited<ReturnType<typeof saveHouseDesignAction>>;
+    try {
+      result = await saveHouseDesignAction(design.id, { name, clientName, notes, constructionProjectId: projectId, data });
+    } catch {
+      // The request itself failed (connection dropped); the server may or may not have saved.
+      setSaving(false);
+      setStatus({ kind: "error", text: "The connection dropped while saving. Please press Save again." });
+      return false;
+    }
     setSaving(false);
     if (!result.ok) {
       setStatus({ kind: "error", text: result.error ?? "Could not save." });

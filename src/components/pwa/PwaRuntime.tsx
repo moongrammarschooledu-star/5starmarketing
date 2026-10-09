@@ -47,6 +47,16 @@ export function PwaRuntime() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
+    if (process.env.NODE_ENV !== "production") {
+      // In development the file names of the app's scripts never change, so a
+      // worker that caches them makes every edit look stale. Run without one.
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => registrations.forEach((r) => r.unregister()))
+        .catch(() => {});
+      return;
+    }
+
     navigator.serviceWorker
       .register("/sw.js")
       .then((registration) => {

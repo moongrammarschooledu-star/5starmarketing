@@ -41,6 +41,7 @@ import {
   Scale,
   Headset,
   Bot,
+  PencilRuler,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -62,6 +63,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/investment", label: "Investment", icon: TrendingUp, section: "investment" },
   { href: "/admin/maintenance", label: "Maintenance", icon: Hammer, section: "maintenance" },
   { href: "/admin/construction", label: "Construction", icon: HardHat, section: "construction" },
+  { href: "/admin/house-designer", label: "House Designer", icon: PencilRuler, section: "construction" },
   { href: "/admin/rentals", label: "Rentals", icon: KeyRound, section: "rentals" },
   { href: "/admin/legal", label: "Legal & Compliance", icon: Scale, section: "legal" },
   { href: "/admin/support", label: "Support Desk", icon: Headset, section: "support" },

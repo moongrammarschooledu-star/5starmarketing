@@ -7,6 +7,7 @@ import { PlanEditorCanvas } from "./PlanEditorCanvas";
 import { AutoPlanFields, type AutoCounts } from "./AutoPlanFields";
 import { DEFAULT_AUTO_SPEC, generateDesign } from "@/lib/house/autoLayout";
 import { ElevationSvg } from "./ElevationSvg";
+import { DEFAULT_STYLISH, STYLE_THEMES, StylishElevationSvg, type StyleThemeKey, type StylishOptions } from "./StylishElevationSvg";
 import { House3DView } from "./House3DView";
 import { saveHouseDesignAction } from "@/lib/actions/houseDesign.actions";
 import {
@@ -123,6 +124,8 @@ export function HouseDesignerEditor({ design, projects, startMix = false }: { de
   const [showGrid, setShowGrid] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState<ViewName>("front");
+  const [elevStyle, setElevStyle] = useState<"drawing" | "stylish">("drawing");
+  const [stylish, setStylish] = useState<StylishOptions>(DEFAULT_STYLISH);
   const [floorsShown, setFloorsShown] = useState(design.data.floors.length);
   const [showRoof, setShowRoof] = useState(true);
   const [status, setStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -325,7 +328,7 @@ export function HouseDesignerEditor({ design, projects, startMix = false }: { de
     if (planSvgRef.current) await downloadSvgAsPng(planSvgRef.current, `${safeFileName(name)}-${safeFileName(floor.name)}-plan.png`);
   };
   const downloadElevation = async () => {
-    if (elevSvgRef.current) await downloadSvgAsPng(elevSvgRef.current, `${safeFileName(name)}-${view}-elevation.png`, 2000);
+    if (elevSvgRef.current) await downloadSvgAsPng(elevSvgRef.current, `${safeFileName(name)}-${view}-${elevStyle === "stylish" ? "stylish-" : ""}elevation.png`, elevStyle === "stylish" ? 2400 : 2000);
   };
   const download3d = () => {
     const url = captureRef.current?.();
@@ -663,10 +666,41 @@ export function HouseDesignerEditor({ design, projects, startMix = false }: { de
               <Download className="h-4 w-4" /> Download (PNG)
             </button>
           </div>
-          <div className="overflow-auto rounded-xl border border-border bg-white p-2">
-            <ElevationSvg design={data} view={view} svgRef={elevSvgRef} className="mx-auto block h-auto w-full max-w-4xl" />
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {([["drawing", "Drawing (for construction)"], ["stylish", "Stylish (rendered look)"]] as const).map(([k, label]) => (
+              <button key={k} type="button" onClick={() => setElevStyle(k)} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${elevStyle === k ? "bg-primary text-primary-foreground" : "border border-border bg-surface text-ink hover:border-primary"}`}>
+                {label}
+              </button>
+            ))}
+            {elevStyle === "stylish" && (
+              <>
+                <select value={stylish.theme} onChange={(e) => setStylish((s) => ({ ...s, theme: e.target.value as StyleThemeKey }))} className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs font-bold text-ink" aria-label="Colours">
+                  {(Object.keys(STYLE_THEMES) as StyleThemeKey[]).map((k) => (
+                    <option key={k} value={k}>
+                      {STYLE_THEMES[k].label}
+                    </option>
+                  ))}
+                </select>
+                {([["evening", "Evening lights"], ["plants", "Plants and trees"], ["boundary", "Boundary wall and gate"]] as const).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-1.5 text-xs font-bold text-ink">
+                    <input type="checkbox" checked={stylish[k]} onChange={(e) => setStylish((s) => ({ ...s, [k]: e.target.checked }))} className="h-4 w-4" /> {label}
+                  </label>
+                ))}
+              </>
+            )}
           </div>
-          <p className="mt-2 text-xs text-muted">Made from the floor plans: every outside wall, door and window facing that side, the floor slabs, the parapet and the porch. Change the plan and it updates.</p>
+          <div className="overflow-auto rounded-xl border border-border bg-white p-2">
+            {elevStyle === "stylish" ? (
+              <StylishElevationSvg design={data} view={view} options={stylish} svgRef={elevSvgRef} className="mx-auto block h-auto w-full max-w-3xl" />
+            ) : (
+              <ElevationSvg design={data} view={view} svgRef={elevSvgRef} className="mx-auto block h-auto w-full max-w-4xl" />
+            )}
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            {elevStyle === "stylish"
+              ? "A rendered look made from your plan: wood and grey cladding, window canopies and grills, balcony railing, entrance pediment, roof edge, boundary wall with gate, lights, plants and the road. Change the plan and it updates. The boundary wall and gate show on the front view."
+              : "Made from the floor plans: every outside wall, door and window facing that side, the floor slabs, the parapet and the porch. Change the plan and it updates."}
+          </p>
         </div>
       )}
 

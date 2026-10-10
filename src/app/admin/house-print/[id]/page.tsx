@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/admin/PrintButton";
 import { ElevationSvg } from "@/components/house/ElevationSvg";
+import { DEFAULT_STYLISH, StylishElevationSvg } from "@/components/house/StylishElevationSvg";
 import { PlanSvg } from "@/components/house/PlanSvg";
 import { requireSection } from "@/lib/guard";
 import { buildSchedule } from "@/lib/house/geometry";
@@ -50,7 +51,11 @@ export default async function HousePrintPage({ params }: { params: Promise<{ id:
 
       <section className="sheet mb-8">
         <Header title={design.name} subtitle="Elevations" client={design.clientName} />
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-3 overflow-hidden rounded border border-black/15">
+          <StylishElevationSvg design={data} view="front" options={DEFAULT_STYLISH} idPrefix="print-stylish" className="block h-auto w-full" />
+        </div>
+        <p className="mt-1 text-center text-[11px] text-black/50">Stylish front view (artist impression made from the plan)</p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {VIEWS.map((v) => (
             <div key={v} className="rounded border border-black/15 p-1">
               <ElevationSvg design={data} view={v} className="block h-auto w-full" />

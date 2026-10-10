@@ -1,6 +1,6 @@
 import { OPENING_SPECS, PARAPET, PLINTH, SLAB } from "./catalog";
 import { absOpenings, cutWall, levels, topUsedFloor, totalHeight, wallSegments, type Level } from "./geometry";
-import type { DesignData, Room, Side, ViewName } from "./types";
+import type { DesignData, OpeningKind, Room, Side, ViewName } from "./types";
 
 export type ElevKind = "wall" | "glass" | "door" | "slab" | "parapet" | "pillar" | "plinth" | "railing";
 
@@ -13,6 +13,8 @@ export interface ElevShape {
   z1: number;
   /** Larger = nearer to the viewer; shapes are painted far to near. */
   depth: number;
+  /** For doors and windows: which kind of opening it is. */
+  detail?: OpeningKind;
 }
 
 export interface Elevation {
@@ -45,10 +47,10 @@ export function computeElevation(design: DesignData, view: ViewName): Elevation 
   const topFloor = topUsedFloor(design);
   const shapes: ElevShape[] = [];
 
-  const push = (kind: ElevKind, pa: number, pb: number, z0: number, z1: number, depth: number) => {
+  const push = (kind: ElevKind, pa: number, pb: number, z0: number, z1: number, depth: number, detail?: OpeningKind) => {
     const u0 = Math.min(mapU(pa), mapU(pb));
     const u1 = Math.max(mapU(pa), mapU(pb));
-    if (u1 - u0 > 0.01 && z1 - z0 > 0.01) shapes.push({ kind, u0, u1, z0, z1, depth });
+    if (u1 - u0 > 0.01 && z1 - z0 > 0.01) shapes.push({ kind, u0, u1, z0, z1, depth, detail });
   };
 
   shapes.push({ kind: "plinth", u0: 0, u1: span, z0: 0, z1: PLINTH, depth: -1e6 });
@@ -65,7 +67,7 @@ export function computeElevation(design: DesignData, view: ViewName): Elevation 
       for (const p of pieces) push("wall", p.a, p.b, level.z0 + p.z0, level.z0 + p.z1, depth);
       for (const c of cuts) {
         const kind: ElevKind = OPENING_SPECS[c.kind].sill === 0 ? "door" : "glass";
-        push(kind, c.a, c.b, level.z0 + c.sill, level.z0 + c.top, depth + 0.001);
+        push(kind, c.a, c.b, level.z0 + c.sill, level.z0 + c.top, depth + 0.001, c.kind);
       }
       // Slab edge above this wall (with a small overhang), and the parapet on the roof.
       push("slab", seg.a - 0.3, seg.b + 0.3, level.z1, level.z1 + SLAB, depth + 0.002);
@@ -82,7 +84,7 @@ function addOpenRoom(
   room: Room,
   level: Level,
   depthOf: (c: number) => number,
-  push: (kind: ElevKind, pa: number, pb: number, z0: number, z1: number, depth: number) => void,
+  push: (kind: ElevKind, pa: number, pb: number, z0: number, z1: number, depth: number, detail?: OpeningKind) => void,
   view: ViewName
 ) {
   if (room.type !== "porch" && room.type !== "balcony") return;

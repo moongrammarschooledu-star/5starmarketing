@@ -25,11 +25,20 @@ const room = z.object({
 
 const floor = z.object({ id, name: z.string().max(40), rooms: z.array(room).max(60) });
 
+const boundarySchema = z.object({
+  walls: z.object({ top: z.boolean(), bottom: z.boolean(), left: z.boolean(), right: z.boolean() }),
+  height: z.number().min(2).max(10),
+  gates: z
+    .array(z.object({ id, kind: z.enum(["main", "small"]), side: z.enum(["top", "bottom", "left", "right"]), offset: z.number().min(0).max(500), width: z.number().min(2).max(30) }))
+    .max(10),
+});
+
 export const designDataSchema = z.object({
   version: z.literal(1),
   plot: z.object({ width: z.number().min(10).max(400), length: z.number().min(10).max(400) }),
   floorHeight: z.number().min(8).max(16),
   floors: z.array(floor).min(1).max(4),
+  boundary: boundarySchema.optional(),
 });
 
 export const autoCountsSchema = z.object({

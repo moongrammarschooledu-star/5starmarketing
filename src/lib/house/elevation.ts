@@ -1,8 +1,8 @@
 import { OPENING_SPECS, PARAPET, PLINTH, SLAB } from "./catalog";
-import { absOpenings, cutWall, levels, topUsedFloor, totalHeight, wallSegments, type Level } from "./geometry";
-import type { DesignData, OpeningKind, Room, Side, ViewName } from "./types";
+import { absOpenings, boundaryLayout, cutWall, levels, topUsedFloor, totalHeight, wallSegments, type Level } from "./geometry";
+import type { DesignData, GateKind, OpeningKind, Room, Side, ViewName } from "./types";
 
-export type ElevKind = "wall" | "glass" | "door" | "slab" | "parapet" | "pillar" | "plinth" | "railing";
+export type ElevKind = "wall" | "glass" | "door" | "slab" | "parapet" | "pillar" | "plinth" | "railing" | "boundary" | "gate" | "plants" | "tree";
 
 export interface ElevShape {
   kind: ElevKind;
@@ -15,6 +15,8 @@ export interface ElevShape {
   depth: number;
   /** For doors and windows: which kind of opening it is. */
   detail?: OpeningKind;
+  /** For gates in the boundary wall: main or small. */
+  gate?: GateKind;
 }
 
 export interface Elevation {
@@ -77,6 +79,19 @@ export function computeElevation(design: DesignData, view: ViewName): Elevation 
     for (const room of floor.rooms) addOpenRoom(room, level, depthOf, push, view);
   });
 
+  // The boundary wall on the side the viewer stands on, in front of everything.
+  const bl = boundaryLayout(design);
+  for (const piece of bl.pieces.filter((p) => p.side === FACING[view])) {
+    const u0 = Math.min(mapU(piece.a), mapU(piece.b));
+    const u1 = Math.max(mapU(piece.a), mapU(piece.b));
+    if (u1 - u0 > 0.01) shapes.push({ kind: "boundary", u0, u1, z0: 0, z1: bl.height, depth: 1e5 });
+  }
+  for (const gt of bl.gates.filter((g) => g.side === FACING[view])) {
+    const u0 = Math.min(mapU(gt.a), mapU(gt.b));
+    const u1 = Math.max(mapU(gt.a), mapU(gt.b));
+    shapes.push({ kind: "gate", u0, u1, z0: 0, z1: Math.max(1, bl.height - 0.3), depth: 1e5 + 0.01, gate: gt.kind });
+  }
+
   return { shapes: shapes.sort((p, q) => p.depth - q.depth), span, height: totalHeight(design), levels: lv.slice(0, topFloor + 1) };
 }
 
@@ -87,13 +102,22 @@ function addOpenRoom(
   push: (kind: ElevKind, pa: number, pb: number, z0: number, z1: number, depth: number, detail?: OpeningKind) => void,
   view: ViewName
 ) {
-  if (room.type !== "porch" && room.type !== "balcony") return;
+  if (room.type !== "porch" && room.type !== "balcony" && room.type !== "plants" && room.type !== "tree") return;
   const horizontal = view === "front" || view === "back";
   const pa = horizontal ? room.x : room.y;
   const pb = horizontal ? room.x + room.w : room.y + room.h;
   // The edge nearest to the viewer.
   const near = view === "front" ? room.y + room.h : view === "back" ? room.y : view === "left" ? room.x : room.x + room.w;
   const depth = depthOf(near) + 0.01;
+
+  if (room.type === "plants") {
+    push("plants", pa, pb, 0, 2.6, depth);
+    return;
+  }
+  if (room.type === "tree") {
+    push("tree", pa, pb, 0, 14, depth);
+    return;
+  }
 
   if (room.type === "porch") {
     push("slab", pa - 0.2, pb + 0.2, level.z1, level.z1 + SLAB, depth);

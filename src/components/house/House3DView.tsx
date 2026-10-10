@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type * as T from "three";
-import { PARAPET, PLINTH, ROOM_SPECS, SLAB, WALL_INNER, WALL_OUTER } from "@/lib/house/catalog";
-import { absOpenings, cutWall, levels, topUsedFloor, totalHeight, wallSegments } from "@/lib/house/geometry";
+import { BOUNDARY_T, PARAPET, PLINTH, ROOM_SPECS, SLAB, WALL_INNER, WALL_OUTER } from "@/lib/house/catalog";
+import { absOpenings, boundaryLayout, cutWall, levels, topUsedFloor, totalHeight, wallSegments } from "@/lib/house/geometry";
 import type { DesignData, Room } from "@/lib/house/types";
 
 type Three = typeof import("three");
@@ -65,6 +65,41 @@ function buildHouse(THREE: Three, design: DesignData, floorsShown: number, showR
   box(groundMat, 0, W, 0, L, -0.02, 0.03, false);
   box(roadMat, -40, W + 40, L + 3, L + 19, -0.1, 0.05, false);
 
+  // The boundary wall around the plot, with its gates.
+  const bl = boundaryLayout(design);
+  if (bl.pieces.length > 0) {
+    const boundaryMat = mat("#e3dccd");
+    const pillarDark = mat("#4a4a4f");
+    const gateMat = mat("#2a2a2d");
+    const gateWood = mat("#7a4a2a");
+    const t = BOUNDARY_T;
+    for (const p of bl.pieces) {
+      if (p.orient === "h") box(boundaryMat, p.a - (p.a === 0 ? t / 2 : 0), p.b + (p.b === W ? t / 2 : 0), p.c - t / 2, p.c + t / 2, 0, bl.height);
+      else box(boundaryMat, p.c - t / 2, p.c + t / 2, p.a - (p.a === 0 ? t / 2 : 0), p.b + (p.b === L ? t / 2 : 0), 0, bl.height);
+    }
+    for (const gt of bl.gates) {
+      const main = gt.kind === "main";
+      const gh = bl.height - 0.3;
+      const leaves = main ? 2 : 1;
+      const run = (gt.b - gt.a) / leaves;
+      for (let k = 0; k < leaves; k++) {
+        const a0 = gt.a + k * run + 0.05;
+        const a1 = gt.a + (k + 1) * run - 0.05;
+        if (gt.orient === "h") {
+          box(gateMat, a0, a1, gt.c - 0.1, gt.c + 0.1, 0.25, gh);
+          box(gateWood, a0 + 0.15, a1 - 0.15, gt.c - 0.14, gt.c + 0.14, 0.45, Math.min(gh - 0.7, 3.4));
+        } else {
+          box(gateMat, gt.c - 0.1, gt.c + 0.1, a0, a1, 0.25, gh);
+          box(gateWood, gt.c - 0.14, gt.c + 0.14, a0 + 0.15, a1 - 0.15, 0.45, Math.min(gh - 0.7, 3.4));
+        }
+      }
+      for (const edge of [gt.a - 0.9, gt.b]) {
+        if (gt.orient === "h") box(pillarDark, edge, edge + 0.9, gt.c - 0.5, gt.c + 0.5, 0, bl.height + 0.8);
+        else box(pillarDark, gt.c - 0.5, gt.c + 0.5, edge, edge + 0.9, 0, bl.height + 0.8);
+      }
+    }
+  }
+
   const half = WALL_OUTER / 2;
   const shownFloors = Math.min(floorsShown, design.floors.length);
   const lv = levels(design);
@@ -84,8 +119,42 @@ function buildHouse(THREE: Three, design: DesignData, floorsShown: number, showR
     // Slabs and floor finishes.
     for (const r of floor.rooms) {
       const spec = ROOM_SPECS[r.type];
-      if (r.type === "lawn") {
+      if (r.type === "lawn" || r.type === "grass") {
         box(floorMat(spec.floor), r.x, r.x + r.w, r.y, r.y + r.h, 0.03, 0.2, false);
+        continue;
+      }
+      if (r.type === "plants" || r.type === "tree") {
+        const leaf = floorMat("#4f9a3c");
+        const leaf2 = floorMat("#6db553");
+        const sphere = (px: number, py: number, pz: number, rad: number, m: T.Material) => {
+          const g = new THREE.SphereGeometry(rad, 12, 10);
+          geometries.push(g);
+          const mesh = new THREE.Mesh(g, m);
+          mesh.position.set(px - W / 2, py, pz - L / 2);
+          mesh.castShadow = true;
+          group.add(mesh);
+        };
+        if (r.type === "tree") {
+          const cxp = r.x + r.w / 2;
+          const cyp = r.y + r.h / 2;
+          box(floorMat("#5a4030"), cxp - 0.3, cxp + 0.3, cyp - 0.3, cyp + 0.3, 0, 4.5);
+          const rad = Math.max(2.2, Math.min(r.w, r.h) / 2);
+          sphere(cxp, 4.5 + rad * 0.8, cyp, rad, leaf);
+          sphere(cxp + rad * 0.45, 4.5 + rad * 0.55, cyp - rad * 0.3, rad * 0.7, leaf2);
+        } else {
+          box(floorMat("#6b6258"), r.x, r.x + r.w, r.y, r.y + r.h, 0.03, 0.6);
+          const along = r.w >= r.h;
+          const n = Math.max(1, Math.floor((along ? r.w : r.h) / 1.8));
+          for (let i = 0; i < n; i++) {
+            const tt = ((i + 0.5) / n) * (along ? r.w : r.h);
+            const rad = Math.min(0.85, (along ? r.h : r.w) / 2);
+            sphere(along ? r.x + tt : r.x + r.w / 2, 0.6 + rad * 0.8, along ? r.y + r.h / 2 : r.y + tt, rad, i % 2 ? leaf2 : leaf);
+          }
+        }
+        continue;
+      }
+      if (r.type === "footpath") {
+        box(floorMat(spec.floor), r.x, r.x + r.w, r.y, r.y + r.h, 0.03, 0.14, false);
         continue;
       }
       const x0 = r.x - half;

@@ -125,7 +125,7 @@ export function StylishElevationSvg({
   const floorH = design.floorHeight;
   const top = e.height;
 
-  const bodyShapes = e.shapes.filter((s) => s.kind !== "plinth");
+  const bodyShapes = e.shapes.filter((s) => s.kind !== "plinth" && s.kind !== "boundary" && s.kind !== "gate" && s.kind !== "plants" && s.kind !== "tree");
   const uMin = bodyShapes.length ? Math.min(...bodyShapes.map((s) => s.u0)) : 0;
   const uMax = bodyShapes.length ? Math.max(...bodyShapes.map((s) => s.u1)) : e.span;
   const W = uMax - uMin;
@@ -337,6 +337,20 @@ export function StylishElevationSvg({
         );
       }
 
+      case "plants": {
+        const n = Math.max(1, Math.floor(w / 1.9));
+        return (
+          <g key={i}>
+            <rect {...box(s.u0, s.u1, -0.5, 0.9)} fill={th.metal} />
+            <rect {...box(s.u0, s.u1, 0.78, 0.9)} fill={th.stone} />
+            {options.plants && Array.from({ length: n }, (_, k) => <Palm key={k} x={s.u0 + ((k + 0.5) / n) * w} y={-0.9} size={k % 2 ? 2.4 : 3.1} color={k % 2 ? "#3a8a37" : "#2f7a2f"} />)}
+          </g>
+        );
+      }
+
+      case "tree":
+        return options.plants ? <Tree key={i} x={cx} base={0} h={Math.max(10, s.z1)} plants /> : null;
+
       case "pillar":
         return (
           <g key={i}>
@@ -384,31 +398,45 @@ export function StylishElevationSvg({
     }
   };
 
-  // ---- boundary wall with gate (front view only)
-  const showBoundary = view === "front" && options.boundary;
-  const Hw = 4.6;
-  const gw = e.span >= 22 ? 9 : e.span >= 16 ? 7 : 0;
-  const gx = gw ? clamp(mainDoor ? (mainDoor.u0 + mainDoor.u1) / 2 : e.span * 0.65, gw / 2 + 1.6, e.span - gw / 2 - 1.6) : 0;
+  // ---- boundary wall and gates. Designs that have a boundary use it (any side the viewer
+  // stands on); older designs get an automatic front wall with a gate.
+  const Hw = design.boundary?.height ?? 4.6;
+  const hasData = Boolean(design.boundary);
+  let bPieces: { a: number; b: number }[] = [];
+  let bGates: { a: number; b: number; kind: "main" | "small" }[] = [];
+  if (hasData) {
+    if (options.boundary) {
+      bPieces = e.shapes.filter((s) => s.kind === "boundary").map((s) => ({ a: s.u0, b: s.u1 }));
+      bGates = e.shapes.filter((s) => s.kind === "gate").map((s) => ({ a: s.u0, b: s.u1, kind: s.gate ?? "main" }));
+    }
+  } else if (view === "front" && options.boundary) {
+    const gw = e.span >= 22 ? 9 : e.span >= 16 ? 7 : 0;
+    if (gw) {
+      const gx = clamp(mainDoor ? (mainDoor.u0 + mainDoor.u1) / 2 : e.span * 0.65, gw / 2 + 1.6, e.span - gw / 2 - 1.6);
+      bGates = [{ a: gx - gw / 2, b: gx + gw / 2, kind: "main" }];
+      bPieces = [{ a: 0, b: gx - gw / 2 }, { a: gx + gw / 2, b: e.span }];
+    } else {
+      bPieces = [{ a: 0, b: e.span }];
+    }
+  }
+  const showBoundary = bPieces.length > 0 || bGates.length > 0;
   const boundary: ReactNode = (() => {
     if (!showBoundary) return null;
-    const leftEnd = gw ? gx - gw / 2 - 0.9 : e.span;
-    const rightStart = gw ? gx + gw / 2 + 0.9 : e.span;
-    const segs: { a: number; b: number; outer: "left" | "right" }[] = [];
-    if (leftEnd > 0.6) segs.push({ a: 0, b: leftEnd, outer: "left" });
-    if (gw && rightStart < e.span - 0.6) segs.push({ a: rightStart, b: e.span, outer: "right" });
-    // The longer piece of wall gets the stripes, the planter and the wall lights.
-    const decorated = segs.slice().sort((p, q) => q.b - q.a - (p.b - p.a))[0];
+    const sorted = bPieces.filter((p) => p.b - p.a > 0.3);
+    // The longest piece of wall gets the stripes, the planter and the wall lights (front view).
+    const decorated = view === "front" ? sorted.slice().sort((p, q) => q.b - q.a - (p.b - p.a))[0] : undefined;
 
-    const wallPieces = segs.map((s, k) => {
+    const wallPieces = sorted.map((s, k) => {
       const len = s.b - s.a;
-      const dir = s.outer === "left" ? 1 : -1;
-      const origin = s.outer === "left" ? s.a : s.b;
+      const outer: "left" | "right" | "mid" = s.a <= 0.01 ? "left" : s.b >= e.span - 0.01 ? "right" : "mid";
+      const dir = outer === "right" ? -1 : 1;
+      const origin = outer === "right" ? s.b : s.a;
       const span = (t0: number, t1: number) => {
         const p0 = origin + dir * t0;
         const p1 = origin + dir * t1;
         return [Math.min(p0, p1), Math.max(p0, p1)] as const;
       };
-      const dec = s === decorated && len > 4;
+      const dec = s === decorated && len > 5;
       const stripes: ReactNode[] = [];
       if (dec && len > 6) {
         const [a0, a1] = span(1.7, 2.5);
@@ -421,16 +449,20 @@ export function StylishElevationSvg({
         addLight(origin + dir * 2.1, 2.8, 1.1);
         if (len > 9) addLight(origin + dir * 5.6, 2.8, 1.1);
       }
-      const palms = dec ? Math.max(2, Math.floor((len - 1.4) / 2)) : 0;
-      const [p0, p1] = span(0.8, len - 0.6);
+      const palms = dec ? Math.max(2, Math.floor((len - 2.2) / 2)) : 0;
+      const [p0, p1] = span(0.8, len - 1.6);
       const [e0, e1] = span(0, 1.1);
       return (
         <g key={k}>
           <rect {...box(s.a, s.b, 0, Hw)} fill={th.body} />
           {stripes}
           <rect {...box(s.a, s.b, Hw, Hw + 0.25)} fill={th.bodyShade} />
-          <rect {...box(e0, e1, 0, Hw + 1.2)} fill={th.body} stroke={th.bodyShade} strokeWidth={0.06} />
-          <rect {...box(e0 - 0.1, e1 + 0.1, Hw + 1.2, Hw + 1.45)} fill={th.bodyShade} />
+          {outer !== "mid" && (
+            <g>
+              <rect {...box(e0, e1, 0, Hw + 1.2)} fill={th.body} stroke={th.bodyShade} strokeWidth={0.06} />
+              <rect {...box(e0 - 0.1, e1 + 0.1, Hw + 1.2, Hw + 1.45)} fill={th.bodyShade} />
+            </g>
+          )}
           {dec && (
             <g>
               <rect {...box(p0, p1, -0.6, 0.9)} fill={th.metal} />
@@ -451,54 +483,64 @@ export function StylishElevationSvg({
       );
     });
 
-    const gate: ReactNode = gw ? (
-      <g>
-        {[gx - gw / 2 - 0.9, gx + gw / 2].map((pu, k) => (
-          <g key={k}>
-            <rect {...box(pu, pu + 0.9, 0, Hw + 0.8)} fill={th.grey} />
-            <rect {...box(pu - 0.1, pu + 1.0, Hw + 0.8, Hw + 1.05)} fill={th.stone} />
-            <rect {...box(pu + 0.15, pu + 0.75, Hw + 1.05, Hw + 1.55)} fill={ev ? "#fff1c8" : "#e4dfd2"} />
-            <rect {...box(pu + 0.05, pu + 0.85, Hw + 1.55, Hw + 1.7)} fill={th.stone} />
-          </g>
-        ))}
-        {[0, 1].map((k) => {
-          const g0 = gx - gw / 2 + k * (gw / 2);
-          const g1 = g0 + gw / 2;
-          const bars: ReactNode[] = [];
-          for (let u = g0 + 0.3; u < g1 - 0.2; u += 0.5) bars.push(<rect key={u} {...box(u, u + 0.08, 3.5, Hw - 0.15)} fill={th.metal} />);
-          const slats: ReactNode[] = [];
-          for (let z = 0.5; z < 3.4; z += 0.55) slats.push(<rect key={z} {...box(g0 + 0.2, g1 - 0.2, z, z + 0.4)} fill={`url(#${id("wood")})`} />);
-          return (
+    const gates = bGates.map((gt, gi) => {
+      const gwid = gt.b - gt.a;
+      const gcx = (gt.a + gt.b) / 2;
+      const main = gt.kind === "main";
+      const leaves = main && gwid >= 5 ? 2 : 1;
+      return (
+        <g key={`gate${gi}`}>
+          {[gt.a - 0.9, gt.b].map((pu, k) => (
             <g key={k}>
-              <rect {...box(g0, g1, 0.15, Hw)} fill={th.metal} />
-              {slats}
-              {bars}
-              <rect {...box(g0, g1, 3.4, 3.6)} fill={th.metal} />
-              <rect {...box(g0 + 0.1, g1 - 0.1, Hw - 0.3, Hw - 0.1)} fill={th.metal} />
+              <rect {...box(pu, pu + 0.9, 0, Hw + 0.8)} fill={th.grey} />
+              <rect {...box(pu - 0.1, pu + 1.0, Hw + 0.8, Hw + 1.05)} fill={th.stone} />
+              <rect {...box(pu + 0.15, pu + 0.75, Hw + 1.05, Hw + 1.55)} fill={ev ? "#fff1c8" : "#e4dfd2"} />
+              <rect {...box(pu + 0.05, pu + 0.85, Hw + 1.55, Hw + 1.7)} fill={th.stone} />
             </g>
-          );
-        })}
-        <path d={`M ${gx} ${-0.9} L ${gx} ${-3.2}`} stroke={th.gold} strokeWidth={0.09} />
-        {[0, 1, 2, 3, 4].map((k) => (
-          <g key={k}>
-            <ellipse cx={gx - 0.38} cy={-(1.2 + k * 0.45)} rx={0.34} ry={0.12} transform={`rotate(-35 ${gx - 0.38} ${-(1.2 + k * 0.45)})`} fill={th.gold} />
-            <ellipse cx={gx + 0.38} cy={-(1.2 + k * 0.45)} rx={0.34} ry={0.12} transform={`rotate(35 ${gx + 0.38} ${-(1.2 + k * 0.45)})`} fill={th.gold} />
-          </g>
-        ))}
-        <rect {...box(gx - gw / 2, gx + gw / 2, -0.3, 0)} fill="#d4d0c8" />
-        <rect {...box(gx - gw / 2 + 0.4, gx + gw / 2 - 0.4, -0.65, -0.3)} fill="#c3beb5" />
-        {(() => {
-          addLight(gx - gw / 2 - 0.45, Hw + 1.3, 1.1);
-          addLight(gx + gw / 2 + 0.45, Hw + 1.3, 1.1);
-          return null;
-        })()}
-      </g>
-    ) : null;
+          ))}
+          {Array.from({ length: leaves }, (_, k) => {
+            const g0 = gt.a + k * (gwid / leaves);
+            const g1 = g0 + gwid / leaves;
+            const bars: ReactNode[] = [];
+            for (let u = g0 + 0.3; u < g1 - 0.2; u += 0.5) bars.push(<rect key={u} {...box(u, u + 0.08, 3.5, Hw - 0.15)} fill={th.metal} />);
+            const slats: ReactNode[] = [];
+            for (let z = 0.5; z < 3.4; z += 0.55) slats.push(<rect key={z} {...box(g0 + 0.2, g1 - 0.2, z, z + 0.4)} fill={`url(#${id("wood")})`} />);
+            return (
+              <g key={k}>
+                <rect {...box(g0, g1, 0.15, Hw)} fill={th.metal} />
+                {slats}
+                {bars}
+                <rect {...box(g0, g1, 3.4, 3.6)} fill={th.metal} />
+                <rect {...box(g0 + 0.1, g1 - 0.1, Hw - 0.3, Hw - 0.1)} fill={th.metal} />
+              </g>
+            );
+          })}
+          {main && (
+            <g>
+              <path d={`M ${gcx} ${-0.9} L ${gcx} ${-3.2}`} stroke={th.gold} strokeWidth={0.09} />
+              {[0, 1, 2, 3, 4].map((k) => (
+                <g key={k}>
+                  <ellipse cx={gcx - 0.38} cy={-(1.2 + k * 0.45)} rx={0.34} ry={0.12} transform={`rotate(-35 ${gcx - 0.38} ${-(1.2 + k * 0.45)})`} fill={th.gold} />
+                  <ellipse cx={gcx + 0.38} cy={-(1.2 + k * 0.45)} rx={0.34} ry={0.12} transform={`rotate(35 ${gcx + 0.38} ${-(1.2 + k * 0.45)})`} fill={th.gold} />
+                </g>
+              ))}
+            </g>
+          )}
+          <rect {...box(gt.a, gt.b, -0.3, 0)} fill="#d4d0c8" />
+          {main && <rect {...box(gt.a + 0.4, gt.b - 0.4, -0.65, -0.3)} fill="#c3beb5" />}
+          {(() => {
+            addLight(gt.a - 0.45, Hw + 1.3, 1.1);
+            addLight(gt.b + 0.45, Hw + 1.3, 1.1);
+            return null;
+          })()}
+        </g>
+      );
+    });
 
     return (
       <g>
         {wallPieces}
-        {gate}
+        {gates}
       </g>
     );
   })();

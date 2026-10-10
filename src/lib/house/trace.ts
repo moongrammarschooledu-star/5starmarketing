@@ -61,6 +61,13 @@ const SYNONYMS: Record<string, RoomType> = {
 
 /** Words that give a room type away, checked in this order ("attached bath" must not become a bedroom). */
 const KEYWORDS: [string, RoomType][] = [
+  ["footpath", "footpath"],
+  ["pavement", "footpath"],
+  ["path", "footpath"],
+  ["grass", "grass"],
+  ["plant", "plants"],
+  ["planter", "plants"],
+  ["tree", "tree"],
   ["bath", "bathroom"],
   ["toilet", "bathroom"],
   ["wash", "bathroom"],

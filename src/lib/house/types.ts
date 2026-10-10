@@ -18,6 +18,10 @@ export type RoomType =
   | "garage"
   | "porch"
   | "lawn"
+  | "grass"
+  | "footpath"
+  | "plants"
+  | "tree"
   | "balcony"
   | "other";
 
@@ -49,12 +53,34 @@ export interface Floor {
   rooms: Room[];
 }
 
+/** A gate in the boundary wall: the big main gate (for the car) or a small walking gate. */
+export type GateKind = "main" | "small";
+
+export interface Gate {
+  id: string;
+  kind: GateKind;
+  /** Which boundary wall it is in. */
+  side: Side;
+  /** Feet from the start of that wall (left end of front/back, top end of left/right). */
+  offset: number;
+  width: number;
+}
+
+/** The wall around the plot: which sides have a wall, how high, and the gates. */
+export interface Boundary {
+  walls: Record<Side, boolean>;
+  height: number;
+  gates: Gate[];
+}
+
 export interface DesignData {
   version: 1;
   plot: { width: number; length: number };
   /** Clear height of every storey, floor to ceiling, in feet. */
   floorHeight: number;
   floors: Floor[];
+  /** The boundary wall and gates. Old designs do not have it. */
+  boundary?: Boundary;
 }
 
 export type ViewName = "front" | "back" | "left" | "right";

@@ -29,7 +29,7 @@ Rules:
 - Use the dimensions written on the drawing when you can read them (for example 12'-6", 12 x 14, 12'6" x 14'). A plot size in "marla" is not a room dimension. When a room has no dimension, estimate from the proportions of the drawing so that the whole house fits inside the plot.
 - Rooms must not overlap and should touch along shared walls. Round every number to 0.5.
 - The FRONT of the house (the road / main gate side) must be at the BOTTOM of the plan (large y). If the drawing shows the road or gate on another side, rotate the whole plan so the road is at the bottom.
-- Room "type" must be one of: bedroom, bathroom, kitchen, lounge (TV lounge / hall), drawing (drawing room), dining, office (study), prayer, store, stairs, garage, porch, lawn, balcony, other.
+- Room "type" must be one of: bedroom, bathroom, kitchen, lounge (TV lounge / hall), drawing (drawing room), dining, office (study), prayer, store, stairs, garage, porch, lawn, grass (a grass area), footpath (paved path), plants (a planter bed), tree, balcony, other.
 - "name" is the label written on the drawing, kept short (for example "Master Bed", "Kitchen"). If nothing is written, use the type's usual name.
 - "openings" lists the doors and windows drawn on that room's walls. Each opening: {"kind": "door" | "main_door" | "window" | "ventilator", "side": "top" | "bottom" | "left" | "right" (the wall of THAT room), "offset": feet from the left end of that wall (top / bottom walls) or from the top end (left / right walls) to the START of the opening, "width": feet}. The main entrance is "main_door". Include only what is drawn.
 - Only include rooms that are drawn. Never invent rooms.

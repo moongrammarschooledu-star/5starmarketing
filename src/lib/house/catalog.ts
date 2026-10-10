@@ -1,4 +1,4 @@
-import type { DesignData, OpeningKind, Room, RoomType } from "./types";
+import type { Boundary, DesignData, Gate, GateKind, OpeningKind, Room, RoomType } from "./types";
 
 export const SQFT_PER_MARLA = 225;
 
@@ -30,12 +30,16 @@ export const ROOM_SPECS: Record<RoomType, RoomSpec> = {
   garage: { label: "Garage", color: "#d9dbe0", floor: "#8e9199", w: 10, h: 18, open: false, covered: true },
   porch: { label: "Porch", color: "#efe1cf", floor: "#c9b79f", w: 10, h: 10, open: true, covered: true },
   lawn: { label: "Lawn", color: "#cfeab8", floor: "#6fae4b", w: 10, h: 15, open: true, covered: false },
+  grass: { label: "Grass Area", color: "#bfe3a0", floor: "#5f9f3f", w: 10, h: 10, open: true, covered: false },
+  footpath: { label: "Footpath", color: "#dcd8cf", floor: "#a9a59b", w: 4, h: 15, open: true, covered: false },
+  plants: { label: "Plants / Planter", color: "#b7dc9c", floor: "#4f8f3a", w: 8, h: 3, open: true, covered: false },
+  tree: { label: "Tree", color: "#c2e0a8", floor: "#3f7f32", w: 6, h: 6, open: true, covered: false },
   balcony: { label: "Balcony", color: "#e7efe0", floor: "#b9c7ac", w: 4, h: 10, open: true, covered: true },
   other: { label: "Room", color: "#eeeeee", floor: "#bdbdbd", w: 10, h: 10, open: false, covered: true },
 };
 
 export const ROOM_TYPE_ORDER: RoomType[] = [
-  "bedroom", "bathroom", "kitchen", "lounge", "drawing", "dining", "office", "prayer", "store", "stairs", "garage", "porch", "lawn", "balcony", "other",
+  "bedroom", "bathroom", "kitchen", "lounge", "drawing", "dining", "office", "prayer", "store", "stairs", "garage", "porch", "lawn", "grass", "footpath", "plants", "tree", "balcony", "other",
 ];
 
 export interface OpeningSpec {
@@ -64,6 +68,31 @@ export const PLINTH = 1.5;
 export const PARAPET = 3;
 
 export const DEFAULT_FLOOR_HEIGHT = 10;
+
+/** Thickness of the boundary wall (9 inch) and its usual height. */
+export const BOUNDARY_T = 0.75;
+export const BOUNDARY_HEIGHT = 4.5;
+
+export interface GateSpec {
+  label: string;
+  width: number;
+  min: number;
+  max: number;
+}
+
+export const GATE_SPECS: Record<GateKind, GateSpec> = {
+  main: { label: "Main gate", width: 10, min: 6, max: 24 },
+  small: { label: "Small gate", width: 3.5, min: 2.5, max: 6 },
+};
+
+/** A boundary wall on the front of the plot with a main gate (centred on `centre`
+ *  feet from the left, or near the right end when not given). */
+export function defaultBoundary(plotWidth: number, centre?: number): Boundary {
+  const width = Math.min(GATE_SPECS.main.width, Math.max(GATE_SPECS.main.min, Math.round(plotWidth * 0.4 * 2) / 2));
+  const wanted = centre !== undefined ? centre - width / 2 : plotWidth - width - 1.5;
+  const gate: Gate = { id: newId("g"), kind: "main", side: "bottom", offset: Math.round(Math.min(Math.max(1.5, wanted), Math.max(1.5, plotWidth - width - 1.5)) * 2) / 2, width };
+  return { walls: { top: false, bottom: true, left: false, right: false }, height: BOUNDARY_HEIGHT, gates: [gate] };
+}
 
 export interface PlotPreset {
   key: string;
@@ -97,6 +126,7 @@ export function emptyDesign(width: number, length: number, floors = 1, floorHeig
     plot: { width, length },
     floorHeight,
     floors: Array.from({ length: Math.max(1, Math.min(4, floors)) }, (_, i) => ({ id: newId("f"), name: floorName(i), rooms: [] })),
+    boundary: defaultBoundary(width),
   };
 }
 

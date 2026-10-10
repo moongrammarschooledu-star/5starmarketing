@@ -1,6 +1,6 @@
 import type { ReactNode, Ref } from "react";
-import { ROOM_SPECS, WALL_INNER, WALL_OUTER } from "@/lib/house/catalog";
-import { absOpenings, roomArea, wallSegments, type AbsOpening } from "@/lib/house/geometry";
+import { BOUNDARY_T, GATE_SPECS, ROOM_SPECS, WALL_INNER, WALL_OUTER } from "@/lib/house/catalog";
+import { absOpenings, boundaryLayout, roomArea, wallSegments, type AbsOpening } from "@/lib/house/geometry";
 import type { DesignData, Floor, Room } from "@/lib/house/types";
 
 /** Plan margin around the plot (feet) for dimension lines and the road label. */
@@ -81,6 +81,36 @@ function StairSteps({ room }: { room: Room }) {
   return <g>{lines}</g>;
 }
 
+/** Little plant and tree drawings for the planter and tree areas. */
+function PlantSymbols({ room }: { room: Room }) {
+  if (room.type === "tree") {
+    const cx = room.x + room.w / 2;
+    const cy = room.y + room.h / 2;
+    const r = Math.min(room.w, room.h) / 2 - 0.2;
+    return (
+      <g pointerEvents="none">
+        <circle cx={cx} cy={cy} r={r} fill="#6fae4b" fillOpacity={0.55} stroke="#3f7f32" strokeWidth={0.1} />
+        <circle cx={cx - r * 0.25} cy={cy - r * 0.2} r={r * 0.55} fill="#8cc765" fillOpacity={0.6} />
+        <circle cx={cx} cy={cy} r={0.3} fill="#5a4030" />
+      </g>
+    );
+  }
+  if (room.type === "plants") {
+    const dots: ReactNode[] = [];
+    const along = room.w >= room.h;
+    const n = Math.max(1, Math.floor((along ? room.w : room.h) / 1.6));
+    for (let i = 0; i < n; i++) {
+      const t = ((i + 0.5) / n) * (along ? room.w : room.h);
+      const x = along ? room.x + t : room.x + room.w / 2;
+      const y = along ? room.y + room.h / 2 : room.y + t;
+      const r = Math.min(0.75, (along ? room.h : room.w) / 2 - 0.1);
+      dots.push(<circle key={i} cx={x} cy={y} r={Math.max(0.3, r)} fill="#5aa247" stroke="#3f7f32" strokeWidth={0.07} />);
+    }
+    return <g pointerEvents="none">{dots}</g>;
+  }
+  return null;
+}
+
 function RoomLabel({ room }: { room: Room }) {
   const spec = ROOM_SPECS[room.type];
   const name = room.name || spec.label;
@@ -156,6 +186,9 @@ export function PlanSvg({ design, floor, selectedRoomId, showGrid, showDimension
   const M = PLAN_MARGIN;
   const segments = wallSegments(floor.rooms);
   const openings = absOpenings(floor.rooms);
+  const boundary = boundaryLayout(design);
+  // The boundary belongs to the plot, so it is drawn on every floor but strongest on the ground floor.
+  const boundaryOpacity = floor.id === design.floors[0]?.id ? 1 : 0.3;
 
   return (
     <svg
@@ -181,6 +214,38 @@ export function PlanSvg({ design, floor, selectedRoomId, showGrid, showDimension
 
       <rect x={0} y={0} width={W} height={L} fill="none" stroke="#9a9aa2" strokeWidth={0.12} strokeDasharray="0.8 0.5" />
 
+      {boundary.pieces.length > 0 && (
+        <g opacity={boundaryOpacity}>
+          {boundary.pieces.map((b, i) =>
+            b.orient === "h" ? (
+              <rect key={`bw${i}`} x={b.a - (b.a === 0 ? BOUNDARY_T / 2 : 0)} y={b.c - BOUNDARY_T / 2} width={b.b - b.a + (b.a === 0 ? BOUNDARY_T / 2 : 0) + (b.b === W ? BOUNDARY_T / 2 : 0)} height={BOUNDARY_T} fill="#6b6b73" />
+            ) : (
+              <rect key={`bw${i}`} x={b.c - BOUNDARY_T / 2} y={b.a - (b.a === 0 ? BOUNDARY_T / 2 : 0)} width={BOUNDARY_T} height={b.b - b.a + (b.a === 0 ? BOUNDARY_T / 2 : 0) + (b.b === L ? BOUNDARY_T / 2 : 0)} fill="#6b6b73" />
+            )
+          )}
+          {boundary.gates.map((gt) => {
+            const asOpening: AbsOpening = { id: gt.id, kind: gt.kind === "main" ? "main_door" : "door", orient: gt.orient, c: gt.c, a: gt.a, b: gt.b, side: gt.side, roomId: "" };
+            const mid = (gt.a + gt.b) / 2;
+            const label = GATE_SPECS[gt.kind].label.toUpperCase();
+            const out = gt.side === "bottom" || gt.side === "right" ? 1.2 : -0.7;
+            return (
+              <g key={gt.id}>
+                <OpeningSymbol o={asOpening} />
+                {gt.orient === "h" ? (
+                  <text x={mid} y={gt.c + out} textAnchor="middle" fontSize={0.8} fontWeight={700} fontFamily="system-ui, sans-serif" fill="#444">
+                    {label}
+                  </text>
+                ) : (
+                  <text x={gt.c + out} y={mid} textAnchor="middle" fontSize={0.8} fontWeight={700} fontFamily="system-ui, sans-serif" fill="#444" transform={`rotate(-90 ${gt.c + out} ${mid})`}>
+                    {label}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      )}
+
       {floor.rooms.map((r) => (
         <rect
           key={r.id}
@@ -197,6 +262,10 @@ export function PlanSvg({ design, floor, selectedRoomId, showGrid, showDimension
 
       {floor.rooms.filter((r) => r.type === "stairs").map((r) => (
         <StairSteps key={r.id} room={r} />
+      ))}
+
+      {floor.rooms.filter((r) => r.type === "plants" || r.type === "tree").map((r) => (
+        <PlantSymbols key={`pl${r.id}`} room={r} />
       ))}
 
       {segments.map((s, i) => {

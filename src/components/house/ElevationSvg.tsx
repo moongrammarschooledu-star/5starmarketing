@@ -12,6 +12,10 @@ const FILL: Record<ElevKind, string> = {
   pillar: "#d8d0c0",
   plinth: "#a8a294",
   railing: "#f4f1ea",
+  boundary: "#e7e2d8",
+  gate: "#4a4a52",
+  plants: "#7bbd5f",
+  tree: "#5aa247",
 };
 
 /** The elevation drawing of one side of the house. Heights run up the page. */
@@ -45,6 +49,14 @@ export function ElevationSvg({ design, view, svgRef, className }: { design: Desi
         const h = s.z1 - s.z0;
         const cx = (s.u0 + s.u1) / 2;
         const cy = -(s.z0 + s.z1) / 2;
+        if (s.kind === "tree") {
+          return (
+            <g key={i}>
+              <rect x={cx - 0.25} y={-s.z1 * 0.45} width={0.5} height={s.z1 * 0.45} fill="#6b4a32" />
+              <ellipse cx={cx} cy={-s.z1 * 0.68} rx={Math.max(2.2, w * 0.75)} ry={s.z1 * 0.32} fill={FILL.tree} stroke="#3f7f32" strokeWidth={0.1} />
+            </g>
+          );
+        }
         return (
           <g key={i}>
             <rect

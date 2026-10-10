@@ -1,4 +1,4 @@
-import { DEFAULT_FLOOR_HEIGHT, OPENING_SPECS, ROOM_SPECS, SQFT_PER_MARLA, emptyDesign, newId } from "./catalog";
+import { BOUNDARY_HEIGHT, DEFAULT_FLOOR_HEIGHT, GATE_SPECS, OPENING_SPECS, ROOM_SPECS, SQFT_PER_MARLA, defaultBoundary, emptyDesign, newId } from "./catalog";
 import type { DesignData, Opening, OpeningKind, Room, RoomType, Side } from "./types";
 
 // Makes a complete house plan from a plot size and a list of the rooms the
@@ -735,6 +735,7 @@ export function generateDesign(input: AutoSpec): AutoResult {
 
   // ---- doors, windows and finishing touches, floor by floor
   const floorRooms: Room[][] = floorsPlaced.map((pl) => pl.map((p) => p.room));
+  let doorCentre: number | undefined;
   floorsPlaced.forEach((placed, f) => {
     const rooms = placed.map((p) => p.room);
     const all = f === 0 ? [...rooms, ...strip] : rooms;
@@ -750,6 +751,7 @@ export function generateDesign(input: AutoSpec): AutoResult {
         const overlapTo = porch ? Math.min(entrance.x + entrance.w, porch.x + porch.w) : entrance.x + entrance.w;
         const centre = overlapTo > overlapFrom ? (overlapFrom + overlapTo) / 2 : entrance.x + entrance.w / 2;
         addOpening(entrance, "main_door", "bottom", centre, 4);
+        doorCentre = centre;
         skip.set(entrance.id, ["bottom", centre - 2.5, centre + 2.5]);
       }
     } else {
@@ -782,6 +784,21 @@ export function generateDesign(input: AutoSpec): AutoResult {
   design.floors.forEach((fl, i) => {
     fl.rooms = floorRooms[i] ?? [];
   });
+
+  // Front wall with the gate(s): the entrance gate faces the main door; a garage gets its own big gate.
+  const boundary = defaultBoundary(W, doorCentre);
+  const garageRoom = floorRooms[0]?.find((r) => r.type === "garage");
+  if (garageRoom) {
+    const gwid = Math.min(GATE_SPECS.main.width, Math.max(GATE_SPECS.main.min, garageRoom.w - 1.5));
+    const walking = GATE_SPECS.small.width;
+    const at = doorCentre ?? W * 0.3;
+    boundary.gates = [
+      { id: newId("g"), kind: "small", side: "bottom", offset: Math.max(0.5, Math.round((at - walking / 2) * 2) / 2), width: walking },
+      { id: newId("g"), kind: "main", side: "bottom", offset: Math.round((garageRoom.x + garageRoom.w / 2 - gwid / 2) * 2) / 2, width: gwid },
+    ];
+  }
+  boundary.height = BOUNDARY_HEIGHT;
+  design.boundary = boundary;
 
   const bedsMade = floorRooms.flat().filter((r) => r.type === "bedroom").length;
   if (bedsMade !== spec.bedrooms) notes.push("Some bedrooms could not be placed. Please check the plan.");

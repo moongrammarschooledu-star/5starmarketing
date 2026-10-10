@@ -11,6 +11,8 @@ import { DEFAULT_STYLISH, STYLE_THEMES, StylishElevationSvg, type StyleThemeKey,
 import { House3DView } from "./House3DView";
 import { saveHouseDesignAction } from "@/lib/actions/houseDesign.actions";
 import {
+  GATE_SPECS,
+  defaultBoundary,
   OPENING_KIND_ORDER,
   OPENING_SPECS,
   ROOM_SPECS,
@@ -22,7 +24,7 @@ import {
 import { buildSchedule, cloneRooms, designWarnings, roomArea } from "@/lib/house/geometry";
 import { VIEW_LABELS } from "@/lib/house/elevation";
 import { downloadSvgAsPng, downloadUrl, safeFileName } from "@/lib/house/exportImage";
-import type { DesignData, HouseDesign, Opening, OpeningKind, Room, RoomType, Side, ViewName } from "@/lib/house/types";
+import type { DesignData, Gate, GateKind, HouseDesign, Opening, OpeningKind, Room, RoomType, Side, ViewName } from "@/lib/house/types";
 
 type Tab = "plan" | "3d" | "elevation" | "details";
 
@@ -247,6 +249,26 @@ export function HouseDesignerEditor({ design, projects, startMix = false }: { de
     editSelected((r) => {
       const o = r.openings.find((x) => x.id === id);
       if (o) Object.assign(o, patch);
+    });
+  };
+
+  // ---- boundary wall and gates ----
+  const wallLabels: Record<Side, string> = { bottom: "Front wall (road side)", left: "Left wall", right: "Right wall", top: "Back wall" };
+  const addGate = (kind: GateKind) => {
+    edit((d) => {
+      if (!d.boundary) d.boundary = defaultBoundary(d.plot.width);
+      const width = GATE_SPECS[kind].width;
+      const gate: Gate = { id: newId("g"), kind, side: "bottom", offset: round(Math.max(0.5, d.plot.width - width - (kind === "main" ? 1.5 : 0.8))), width };
+      d.boundary.walls.bottom = true;
+      d.boundary.gates.push(gate);
+    });
+  };
+  const patchGate = (gateId: string, patch: Partial<Gate>) => {
+    edit((d) => {
+      const g = d.boundary?.gates.find((x) => x.id === gateId);
+      if (!g || !d.boundary) return;
+      Object.assign(g, patch);
+      if (patch.side) d.boundary.walls[patch.side] = true;
     });
   };
 
@@ -607,6 +629,74 @@ export function HouseDesignerEditor({ design, projects, startMix = false }: { de
                 <NumberField label="Plot length (ft)" value={data.plot.length} min={10} max={400} onCommit={(n) => edit((d) => (d.plot.length = n))} />
                 <NumberField label="Floor height (ft)" value={data.floorHeight} min={8} max={16} onCommit={(n) => edit((d) => (d.floorHeight = n))} />
               </div>
+            </section>
+
+            <section className="rounded-xl border border-border bg-surface p-4">
+              <h2 className="font-heading text-sm font-bold text-ink">Boundary wall and gates</h2>
+              {!data.boundary ? (
+                <>
+                  <p className="mt-2 text-xs text-muted">No wall around the plot is drawn yet.</p>
+                  <button type="button" onClick={() => edit((d) => (d.boundary = defaultBoundary(d.plot.width)))} className={`${smallBtn} mt-3`}>
+                    + Add front wall and main gate
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
+                    {(["bottom", "left", "right", "top"] as Side[]).map((s) => (
+                      <label key={s} className="flex items-center gap-2 text-xs font-semibold text-ink">
+                        <input type="checkbox" checked={data.boundary!.walls[s]} onChange={(ev) => edit((d) => { if (d.boundary) d.boundary.walls[s] = ev.target.checked; })} className="h-4 w-4 rounded border-border text-primary" />
+                        {wallLabels[s]}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-3 max-w-[160px]">
+                    <NumberField label="Wall height (ft)" value={data.boundary.height} min={2} max={10} onCommit={(n) => edit((d) => { if (d.boundary) d.boundary.height = n; })} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <button type="button" onClick={() => addGate("main")} className={smallBtn}>
+                      + Main gate
+                    </button>
+                    <button type="button" onClick={() => addGate("small")} className={smallBtn}>
+                      + Small gate
+                    </button>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {data.boundary.gates.map((g) => (
+                      <div key={g.id} className="rounded-lg bg-surface-muted/60 p-2">
+                        <div className="flex items-center gap-2">
+                          <select value={g.kind} onChange={(ev) => patchGate(g.id, { kind: ev.target.value as GateKind, width: GATE_SPECS[ev.target.value as GateKind].width })} className={`${inputClass} flex-1`}>
+                            {(Object.keys(GATE_SPECS) as GateKind[]).map((k) => (
+                              <option key={k} value={k}>
+                                {GATE_SPECS[k].label}
+                              </option>
+                            ))}
+                          </select>
+                          <select value={g.side} onChange={(ev) => patchGate(g.id, { side: ev.target.value as Side })} className={`${inputClass} flex-1`}>
+                            {(["bottom", "left", "right", "top"] as Side[]).map((s) => (
+                              <option key={s} value={s}>
+                                {wallLabels[s]}
+                              </option>
+                            ))}
+                          </select>
+                          <button type="button" onClick={() => edit((d) => { if (d.boundary) d.boundary.gates = d.boundary.gates.filter((x) => x.id !== g.id); })} className="text-danger" aria-label="Remove gate">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <NumberField label="Distance from corner (ft)" value={g.offset} min={0} max={500} onCommit={(n) => patchGate(g.id, { offset: n })} />
+                          <NumberField label="Width (ft)" value={g.width} min={GATE_SPECS[g.kind].min} max={GATE_SPECS[g.kind].max} onCommit={(n) => patchGate(g.id, { width: n })} />
+                        </div>
+                        {!data.boundary!.walls[g.side] && <p className="mt-1 text-[11px] text-amber-700">This wall is switched off, so the gate is not shown.</p>}
+                      </div>
+                    ))}
+                    {data.boundary.gates.length === 0 && <p className="text-xs text-muted">No gate yet. Add a main gate for the car or a small gate for walking.</p>}
+                  </div>
+                  <button type="button" onClick={() => edit((d) => { delete d.boundary; })} className={`${smallBtn} mt-3 text-danger`}>
+                    <Trash2 className="h-3.5 w-3.5" /> Remove the boundary wall
+                  </button>
+                </>
+              )}
             </section>
 
             {warnings.length > 0 && (

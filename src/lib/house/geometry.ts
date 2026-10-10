@@ -1,5 +1,5 @@
 import { newId, OPENING_SPECS, PARAPET, PLINTH, ROOM_SPECS, SLAB, SQFT_PER_MARLA } from "./catalog";
-import type { DesignData, Floor, Room, Side } from "./types";
+import type { DesignData, Floor, GateKind, Room, Side } from "./types";
 
 const EPS = 0.01;
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -152,6 +152,61 @@ export function cutWall(seg: WallSegment, openings: AbsOpening[], storeyHeight: 
   }
   if (seg.b > cursor + EPS) pieces.push({ a: cursor, b: seg.b, z0: 0, z1: storeyHeight });
   return { pieces, cuts: kept };
+}
+
+// ----------------------------------------------------------- boundary wall
+
+export interface BoundaryPiece {
+  side: Side;
+  /** "h" runs along x (front / back wall), "v" along y (left / right wall). */
+  orient: "h" | "v";
+  /** The fixed coordinate of the wall line. */
+  c: number;
+  a: number;
+  b: number;
+}
+
+export interface BoundaryGateRect {
+  id: string;
+  kind: GateKind;
+  side: Side;
+  orient: "h" | "v";
+  c: number;
+  a: number;
+  b: number;
+}
+
+/** The boundary wall as solid pieces between its gates, plus the gates, in plan feet. */
+export function boundaryLayout(design: DesignData): { pieces: BoundaryPiece[]; gates: BoundaryGateRect[]; height: number } {
+  const bd = design.boundary;
+  if (!bd) return { pieces: [], gates: [], height: 0 };
+  const { width: W, length: L } = design.plot;
+  const sides: Side[] = ["top", "bottom", "left", "right"];
+  const pieces: BoundaryPiece[] = [];
+  const gates: BoundaryGateRect[] = [];
+
+  for (const side of sides) {
+    if (!bd.walls[side]) continue;
+    const orient = side === "top" || side === "bottom" ? "h" : "v";
+    const len = orient === "h" ? W : L;
+    const c = side === "top" ? 0 : side === "bottom" ? L : side === "left" ? 0 : W;
+    const onSide = bd.gates
+      .filter((gt) => gt.side === side)
+      .map((gt) => {
+        const width = Math.min(gt.width, len);
+        const a = Math.min(Math.max(0, gt.offset), Math.max(0, len - width));
+        return { gt, a, b: a + width };
+      })
+      .sort((p, q) => p.a - q.a);
+    let cursor = 0;
+    for (const o of onSide) {
+      if (o.a > cursor + EPS) pieces.push({ side, orient, c, a: cursor, b: o.a });
+      gates.push({ id: o.gt.id, kind: o.gt.kind, side, orient, c, a: o.a, b: o.b });
+      cursor = Math.max(cursor, o.b);
+    }
+    if (len > cursor + EPS) pieces.push({ side, orient, c, a: cursor, b: len });
+  }
+  return { pieces, gates, height: bd.height };
 }
 
 // --------------------------------------------------------------- levels

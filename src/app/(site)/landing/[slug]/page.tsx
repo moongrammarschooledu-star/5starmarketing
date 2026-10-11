@@ -7,7 +7,10 @@ import { LandingPageInquiryForm } from "@/components/LandingPageInquiryForm";
 import { JsonLd } from "@/components/JsonLd";
 import { site } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+// Public page: built once and kept for a few minutes (and rebuilt at once when
+// the admin changes the related data), so visitors do not each run the server.
+export const dynamic = "force-static";
+export const revalidate = 180;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

@@ -32,7 +32,10 @@ import type { Property } from "@/lib/models/property";
 
 // Properties are added/edited/removed live via the admin dashboard, so
 // this route is rendered per-request rather than pre-built at deploy time.
-export const dynamic = "force-dynamic";
+// Public page: built once and kept for a few minutes (and rebuilt at once when
+// the admin changes the related data), so visitors do not each run the server.
+export const dynamic = "force-static";
+export const revalidate = 180;
 
 /** "5 Marla House for Sale in Lahore" — built from real property fields,
  *  never invented. */

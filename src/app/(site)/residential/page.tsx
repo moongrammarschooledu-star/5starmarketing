@@ -3,6 +3,11 @@ import Link from "next/link";
 import { Home, Building2, MapPin, ArrowRight } from "lucide-react";
 import { site } from "@/lib/site";
 
+// Public page: built once and kept for a few minutes (and rebuilt at once when
+// the admin changes the related data), so visitors do not each run the server.
+export const dynamic = "force-static";
+export const revalidate = 180;
+
 // Unlike /buy, /rent, /commercial (each a single filter value the
 // search page already supports), "Residential" spans three distinct
 // property_type values (house/flat/residential_plot) — the search

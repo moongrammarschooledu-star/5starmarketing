@@ -6,6 +6,7 @@ import { Menu, X, Phone, MessageCircle, User } from "lucide-react";
 import { Logo } from "./Logo";
 import { site, whatsappLink } from "@/lib/site";
 import { trackEvent } from "@/lib/analytics";
+import { useFavorites } from "@/components/customer/FavoritesProvider";
 
 const links = [
   { href: "/", label: "Home" },
@@ -17,7 +18,8 @@ const links = [
   { href: "/#contact", label: "Contact" },
 ];
 
-export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
+export function Navbar() {
+  const { isLoggedIn } = useFavorites();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 

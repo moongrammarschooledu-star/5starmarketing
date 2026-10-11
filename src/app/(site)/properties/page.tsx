@@ -5,7 +5,6 @@ import { RetryLink } from "@/components/properties/RetryLink";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { settingsService } from "@/services/settingsService";
-import { customerService } from "@/services/customerService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { parsePropertySearchParams, isDeepFilterCombination, type RawSearchParams } from "@/lib/propertySearchParams";
 import { site } from "@/lib/site";
@@ -59,26 +58,23 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   let cityOptions: string[] = [];
   let amenityOptions: string[] = [];
   let projects: { id: string; name: string }[] = [];
-  let isLoggedIn = false;
   let businessCenter: { latitude: number; longitude: number } | undefined;
 
   if (!loadError) {
     try {
-      const [searchResult, mapResult, cities, amenities, projectList, settings, customer] = await Promise.all([
+      const [searchResult, mapResult, cities, amenities, projectList, settings] = await Promise.all([
         propertyService.search(filters),
         propertyService.searchForMap(filters),
         propertyService.listDistinctCities(),
         propertyService.listDistinctAmenities(),
         projectService.list(),
         settingsService.get().catch(() => null),
-        customerService.getCurrentCustomer().catch(() => null),
       ]);
       result = searchResult;
       mapProperties = mapResult;
       cityOptions = cities;
       amenityOptions = amenities;
       projects = projectList.map((p) => ({ id: p.id, name: p.name }));
-      isLoggedIn = !!customer;
       if (settings?.latitude !== undefined && settings?.longitude !== undefined) {
         businessCenter = { latitude: settings.latitude, longitude: settings.longitude };
       }
@@ -120,7 +116,6 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
               cityOptions={cityOptions}
               amenityOptions={amenityOptions}
               projects={projects}
-              isLoggedIn={isLoggedIn}
               businessCenter={businessCenter}
             />
           )}

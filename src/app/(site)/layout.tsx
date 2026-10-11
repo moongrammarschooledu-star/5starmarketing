@@ -6,31 +6,16 @@ import { WhatsAppFloatButton } from "@/components/WhatsAppButton";
 import { FavoritesProvider } from "@/components/customer/FavoritesProvider";
 import { CompareProvider } from "@/components/customer/CompareProvider";
 import { CompareBar } from "@/components/customer/CompareBar";
-import { customerService } from "@/services/customerService";
-import { favoritesService } from "@/services/favoritesService";
-import { isSupabaseConfigured } from "@/lib/supabase/server";
 
-export default async function SiteLayout({ children }: { children: ReactNode }) {
-  let isLoggedIn = false;
-  let favoriteIds: string[] = [];
-
-  if (isSupabaseConfigured()) {
-    try {
-      const customer = await customerService.getCurrentCustomer();
-      if (customer) {
-        isLoggedIn = true;
-        favoriteIds = [...(await favoritesService.listPropertyIds(customer.id))];
-      }
-    } catch {
-      // Public pages must render even if this lookup fails.
-    }
-  }
-
+// The public pages are the same HTML for every visitor, so the CDN can cache
+// them. Who is signed in (the "My Account" button, saved properties) is looked
+// up by the browser after the page loads - see FavoritesProvider.
+export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
-    <FavoritesProvider initialFavoriteIds={favoriteIds} isLoggedIn={isLoggedIn}>
+    <FavoritesProvider>
       <CompareProvider>
         <NewsTicker />
-        <Navbar isLoggedIn={isLoggedIn} />
+        <Navbar />
         {children}
         <Footer />
         <WhatsAppFloatButton />

@@ -59,6 +59,38 @@ const nextConfig: NextConfig = {
           { key: "Content-Security-Policy", value: csp },
         ],
       },
+      // The public pages are the same HTML for every visitor (who is signed in
+      // is looked up by the browser, see FavoritesProvider), so Vercel's CDN may
+      // keep them for a few minutes instead of running the server for every
+      // visit. This is what keeps the free plan's CPU hours from running out.
+      // Admin, customer, login, forms and API routes are not in this list.
+      ...[
+        "/",
+        "/properties",
+        "/properties/:slug",
+        "/projects",
+        "/projects/:slug",
+        "/services",
+        "/about",
+        "/contact",
+        "/locations",
+        "/locations/:slug",
+        "/property-types/:slug",
+        "/blog",
+        "/blog/:slug",
+        "/landing/:slug",
+        "/faq",
+        "/support/faq",
+        "/investment",
+        "/construction",
+        "/buy",
+        "/rent",
+        "/commercial",
+        "/residential",
+      ].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, s-maxage=180, stale-while-revalidate=600" }],
+      })),
     ];
   },
 };

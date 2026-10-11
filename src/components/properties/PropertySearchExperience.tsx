@@ -20,6 +20,7 @@ import { PropertyResultsSkeleton } from "./SearchLoadingState";
 import { SearchEmptyState, SearchErrorState } from "./SearchEmptyState";
 import { PropertyMapLoader } from "./PropertyMapLoader";
 import { SaveSearchButton } from "./SaveSearchButton";
+import { useFavorites } from "@/components/customer/FavoritesProvider";
 
 type ViewMode = "list" | "map" | "split";
 
@@ -29,7 +30,6 @@ export function PropertySearchExperience({
   cityOptions,
   amenityOptions,
   projects,
-  isLoggedIn,
   businessCenter,
 }: {
   initialResult: PropertySearchResult;
@@ -37,12 +37,12 @@ export function PropertySearchExperience({
   cityOptions: string[];
   amenityOptions: string[];
   projects: { id: string; name: string }[];
-  isLoggedIn: boolean;
   businessCenter?: { latitude: number; longitude: number };
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isLoggedIn } = useFavorites();
   const [isPending, startTransition] = useTransition();
 
   const filters = parsePropertySearchParams(Object.fromEntries(searchParams.entries()));

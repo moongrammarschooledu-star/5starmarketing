@@ -1,5 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  ADMIN_2FA_COOKIE,
+  ADMIN_2FA_VERIFY_PATH,
+  isAdminTwoFactorEnabled,
+  isVerifiedCookieValid,
+} from "@/lib/adminTwoFactor";
 
 const ADMIN_PREFIX = "/admin";
 const ADMIN_LOGIN_PATH = "/admin/login";
@@ -81,6 +87,18 @@ export async function updateSession(request: NextRequest) {
       const loginUrl = new URL(ADMIN_LOGIN_PATH, request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Email-code step: the password alone is not enough. A genuine cookie
+    // (set after the code is entered) is needed for every staff page except
+    // the code page itself.
+    if (isAdminTwoFactorEnabled() && pathname !== ADMIN_2FA_VERIFY_PATH) {
+      const verified = await isVerifiedCookieValid(user.id, request.cookies.get(ADMIN_2FA_COOKIE)?.value);
+      if (!verified) {
+        const verifyUrl = new URL(ADMIN_2FA_VERIFY_PATH, request.url);
+        verifyUrl.searchParams.set("redirect", pathname);
+        return NextResponse.redirect(verifyUrl);
+      }
     }
   }
 

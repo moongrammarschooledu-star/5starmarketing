@@ -1,7 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { ADMIN_2FA_COOKIE, ADMIN_2FA_VERIFY_PATH, isAdminTwoFactorEnabled } from "@/lib/adminTwoFactor";
+import { issueLoginCode } from "@/lib/adminLoginCode";
 
 export interface LoginState {
   error?: string;
@@ -35,10 +38,28 @@ export async function loginAction(
     return { error: error.message || "Invalid email or password." };
   }
 
-  redirect(redirectTo.startsWith("/admin") ? redirectTo : "/admin/dashboard");
+  const target = redirectTo.startsWith("/admin") ? redirectTo : "/admin/dashboard";
+
+  // Second step: a code is emailed and must be entered on /admin/verify.
+  // (Only when the switch is on - see src/lib/adminTwoFactor.ts.)
+  if (isAdminTwoFactorEnabled()) {
+    (await cookies()).delete(ADMIN_2FA_COOKIE);
+    const { data } = await supabase.auth.getUser();
+    if (data.user?.email) {
+      const sent = await issueLoginCode(data.user.id, data.user.email);
+      if (!sent.ok) {
+        await supabase.auth.signOut();
+        return { error: sent.error };
+      }
+    }
+    redirect(`${ADMIN_2FA_VERIFY_PATH}?redirect=${encodeURIComponent(target)}`);
+  }
+
+  redirect(target);
 }
 
 export async function logoutAction() {
+  (await cookies()).delete(ADMIN_2FA_COOKIE);
   if (isSupabaseConfigured()) {
     try {
       const supabase = await createClient();

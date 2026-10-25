@@ -15,7 +15,7 @@ function maskEmail(email: string): string {
 
 /** Creates a fresh code for this signed-in user and emails it to them. Used
  *  right after the password step and by the "Send a new code" button. */
-export async function issueLoginCode(
+async function issueLoginCodeUnsafe(
   userId: string,
   email: string,
 ): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
@@ -71,4 +71,18 @@ export async function issueLoginCode(
     return { ok: false, error: "The email could not be sent. Check the email (SMTP) settings." };
   }
   return { ok: true, sentTo: maskEmail(email) };
+}
+
+/** Never throws: any failure (missing key, database, email) comes back as a
+ *  readable error instead of crashing the login page. */
+export async function issueLoginCode(
+  userId: string,
+  email: string,
+): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
+  try {
+    return await issueLoginCodeUnsafe(userId, email);
+  } catch (e) {
+    console.error("issueLoginCode failed:", e);
+    return { ok: false, error: "Could not send a login code. Please try again." };
+  }
 }

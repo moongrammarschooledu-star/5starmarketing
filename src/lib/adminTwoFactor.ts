@@ -11,10 +11,16 @@ export const ADMIN_2FA_VERIFY_PATH = "/admin/verify";
 export const ADMIN_2FA_SESSION_SECONDS = 12 * 60 * 60;
 export const ADMIN_2FA_CODE_MINUTES = 10;
 
-/** The second step is applied only when this switch is on, so the site can
- *  never lock its admins out before email sending has been set up. */
+/** The second step is applied only when the switch is on AND everything it
+ *  needs is set up (the server key that signs the cookie and stores the
+ *  codes, and email sending), so a missing setting can never lock the admins
+ *  out - the login simply stays password-only until it is complete. */
 export function isAdminTwoFactorEnabled(): boolean {
-  return process.env.ADMIN_EMAIL_2FA === "on";
+  return (
+    process.env.ADMIN_EMAIL_2FA === "on" &&
+    Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) &&
+    Boolean(process.env.SMTP_HOST && process.env.SMTP_FROM)
+  );
 }
 
 const encoder = new TextEncoder();

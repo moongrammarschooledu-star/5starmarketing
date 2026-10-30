@@ -22,7 +22,8 @@ const social = [
   { href: site.social.instagram, icon: Instagram, label: "Instagram" },
   { href: site.social.tiktok, icon: TikTokIcon, label: "TikTok" },
   { href: site.social.youtube, icon: Youtube, label: "YouTube" },
-];
+  // An account without a real link yet stays hidden instead of showing a dead icon.
+].filter((item) => item.href && item.href !== "#");
 
 export function Footer() {
   return (

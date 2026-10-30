@@ -7,7 +7,7 @@ import type { NextConfig } from "next";
 // break the site" over maximum strictness.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   // blob: lets the Ad Maker show thumbnails of pictures the admin picked
@@ -17,7 +17,7 @@ const csp = [
   // blob: lets the admin preview a reel video it just recorded in the browser.
   "media-src 'self' blob: https://*.supabase.co",
   "frame-src 'self' https://maps.google.com https://www.google.com",
-  "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com wss://*.supabase.co",
+  "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net wss://*.supabase.co",
   "form-action 'self'",
   "base-uri 'self'",
   // STEP 31 — the service worker registers as a same-origin worker.

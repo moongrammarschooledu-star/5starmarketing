@@ -29,7 +29,7 @@ export const site = {
   addressShort: "1037-E-1 Johar Town, Lahore",
   mapsQuery: "1037-E-1 Johar Town, Lahore, Pakistan",
   social: {
-    facebook: "#",
+    facebook: "https://www.facebook.com/5star.marketing.23",
     instagram: "#",
     tiktok: "#",
     youtube: "#",

@@ -6,6 +6,7 @@ import { settingsService } from "@/services/settingsService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JsonLd } from "@/components/JsonLd";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { MetaPixel } from "@/components/MetaPixel";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { PwaRuntime } from "@/components/pwa/PwaRuntime";
 
@@ -130,6 +131,7 @@ export default async function RootLayout({
         {children}
         <PwaRuntime />
         <GoogleAnalytics />
+        <MetaPixel />
       </body>
     </html>
   );

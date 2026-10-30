@@ -21,10 +21,39 @@ export type AnalyticsEvent =
 declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
+    fbq?: (...args: unknown[]) => void;
   }
 }
 
+// Meta Pixel standard events, so ads can optimise for real enquiries.
+// Lead = a form was sent; Contact = WhatsApp/phone tapped;
+// ViewContent = a property page was opened.
+const META_EVENTS: Record<AnalyticsEvent, string | null> = {
+  property_view: "ViewContent",
+  property_inquiry: "Lead",
+  contact_form_submit: "Lead",
+  project_inquiry: "Lead",
+  callback_request: "Lead",
+  investment_consultation_request: "Lead",
+  landing_page_inquiry: "Lead",
+  whatsapp_click: "Contact",
+  phone_click: "Contact",
+  brochure_download: null,
+};
+
 export function trackEvent(event: AnalyticsEvent, params?: Record<string, string | number | boolean>) {
-  if (typeof window === "undefined" || typeof window.gtag !== "function") return;
-  window.gtag("event", event, params);
+  if (typeof window === "undefined") return;
+
+  if (typeof window.gtag === "function") {
+    window.gtag("event", event, params);
+  }
+
+  if (typeof window.fbq === "function") {
+    const metaEvent = META_EVENTS[event];
+    if (metaEvent) {
+      window.fbq("track", metaEvent, { content_name: event });
+    } else {
+      window.fbq("trackCustom", event);
+    }
+  }
 }

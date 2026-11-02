@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     langOverride: parsed.ad.lang,
   });
 
-  const speech = await synthesizeSpeech(scripts[part], scripts.lang);
+  const speech = await synthesizeSpeech(scripts[part], scripts.lang, parsed.ad.gender);
   if (!speech.ok) {
     return NextResponse.json(
       { error: speech.reason === "not_configured" ? "voice_not_configured" : "voice_failed", message: speech.message },

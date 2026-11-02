@@ -37,6 +37,7 @@ export function AdMakerPanel() {
   const [description, setDescription] = useState("");
   const [lang, setLang] = useState<Lang>("auto");
   const [voice, setVoice] = useState(true);
+  const [gender, setGender] = useState<"female" | "male">("female");
   const [music, setMusic] = useState(true);
   const [pictures, setPictures] = useState<Picture[]>([]);
   const [pictureError, setPictureError] = useState<string | null>(null);
@@ -130,7 +131,7 @@ export function AdMakerPanel() {
     setFraction(0);
     setLabel("Preparing the ad...");
 
-    const text = { headline, subline, badge, highlight, description, lang: lang === "auto" ? undefined : lang };
+    const text = { headline, subline, badge, highlight, description, lang: lang === "auto" ? undefined : lang, gender };
     const post = (path: string, extra: object = {}) =>
       fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...text, ...extra }), signal: controller.signal });
 
@@ -142,7 +143,7 @@ export function AdMakerPanel() {
       let descriptionAudio: ArrayBuffer | null = null;
       let closingAudio: ArrayBuffer | null = null;
       if (voice) {
-        setLabel("Creating the female voice...");
+        setLabel(gender === "male" ? "Creating the male voice..." : "Creating the female voice...");
         const results = await Promise.all(
           (["description", "closing"] as const).map(async (part) => {
             const res = await post("/admin/ads/voice", { part });
@@ -301,8 +302,12 @@ export function AdMakerPanel() {
           </label>
           <label className="flex items-center gap-2 font-semibold text-ink">
             <input type="checkbox" checked={voice} onChange={(e) => setVoice(e.target.checked)} disabled={busy} className="h-4 w-4 rounded border-border text-primary" />
-            Female voice
+            Voice
           </label>
+          <select value={gender} onChange={(e) => setGender(e.target.value as "female" | "male")} disabled={busy || !voice} className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-normal text-ink outline-none focus:border-primary disabled:opacity-50" aria-label="Voice">
+            <option value="female">Female voice</option>
+            <option value="male">Male voice</option>
+          </select>
           <label className="flex items-center gap-2 font-semibold text-ink">
             <input type="checkbox" checked={music} onChange={(e) => setMusic(e.target.checked)} disabled={busy} className="h-4 w-4 rounded border-border text-primary" />
             Background music

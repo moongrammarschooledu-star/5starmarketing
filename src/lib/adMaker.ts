@@ -1,4 +1,4 @@
-import type { NarrationLang } from "./narration";
+import type { NarrationLang, VoiceGender } from "./narration";
 
 // Limits and request reading for the admin "Ad Maker" (a company ad video made
 // from pictures the admin uploads and a description the admin writes).
@@ -21,6 +21,7 @@ export interface AdRequest {
   highlight: string;
   description: string;
   lang?: NarrationLang;
+  gender: VoiceGender;
 }
 
 function str(v: unknown, max: number): string {
@@ -43,6 +44,7 @@ export function parseAdRequest(body: unknown): { ok: true; ad: AdRequest } | { o
       badge: str(b.badge, AD_LIMITS.badge),
       highlight: str(b.highlight, AD_LIMITS.highlight),
       lang: b.lang === "en" || b.lang === "ur" ? b.lang : undefined,
+      gender: b.gender === "male" ? "male" : "female",
     },
   };
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AdMakerPanel } from "@/components/admin/AdMakerPanel";
+import { AdMakerHub } from "@/components/admin/AdMakerHub";
 import { requireSection } from "@/lib/guard";
 
 export const metadata: Metadata = { title: "Ad Maker" };
@@ -9,13 +9,13 @@ export default async function AdMakerPage() {
   await requireSection("brochures");
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <h1 className="font-heading text-2xl font-extrabold text-ink">Ad Maker</h1>
       <p className="mt-1 text-sm text-muted">
-        Make a company ad video from your own pictures and a description. A female voice reads the description, then the company&apos;s contact details.
+        Make an ad for anything: a poster picture with your own details, pictures and colors, or a video ad with a voice.
       </p>
       <div className="mt-6">
-        <AdMakerPanel />
+        <AdMakerHub />
       </div>
     </div>
   );

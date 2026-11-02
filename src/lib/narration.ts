@@ -6,6 +6,7 @@ import "server-only";
 // so the endpoint can't be used as a free text-to-speech proxy.
 
 export type NarrationLang = "en" | "ur";
+export type VoiceGender = "female" | "male";
 
 export interface NarrationScripts {
   lang: NarrationLang;
@@ -150,8 +151,15 @@ function escapeXml(text: string) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
-async function azureSpeech(text: string, lang: NarrationLang, key: string, region: string): Promise<SpeechResult> {
-  const voice = lang === "ur" ? process.env.AZURE_VOICE_UR?.trim() || "ur-PK-UzmaNeural" : process.env.AZURE_VOICE_EN?.trim() || "en-IN-NeerjaNeural";
+async function azureSpeech(text: string, lang: NarrationLang, gender: VoiceGender, key: string, region: string): Promise<SpeechResult> {
+  const voice =
+    gender === "male"
+      ? lang === "ur"
+        ? process.env.AZURE_VOICE_UR_MALE?.trim() || "ur-PK-AsadNeural"
+        : process.env.AZURE_VOICE_EN_MALE?.trim() || "en-IN-PrabhatNeural"
+      : lang === "ur"
+        ? process.env.AZURE_VOICE_UR?.trim() || "ur-PK-UzmaNeural"
+        : process.env.AZURE_VOICE_EN?.trim() || "en-IN-NeerjaNeural";
   const xmlLang = lang === "ur" ? "ur-PK" : "en-IN";
   const ssml = `<speak version='1.0' xml:lang='${xmlLang}'><voice name='${voice}'>${escapeXml(text)}</voice></speak>`;
   const res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
@@ -173,9 +181,12 @@ async function azureSpeech(text: string, lang: NarrationLang, key: string, regio
   return { ok: true, audio: await res.arrayBuffer(), contentType: "audio/mpeg" };
 }
 
-async function elevenLabsSpeech(text: string, key: string): Promise<SpeechResult> {
-  // Rachel - a premade female voice available on every plan.
-  const voiceId = process.env.ELEVENLABS_VOICE_ID?.trim() || "21m00Tcm4TlvDq8ikWAM";
+async function elevenLabsSpeech(text: string, gender: VoiceGender, key: string): Promise<SpeechResult> {
+  // Premade voices available on every plan: Rachel (female) and Adam (male).
+  const voiceId =
+    gender === "male"
+      ? process.env.ELEVENLABS_VOICE_ID_MALE?.trim() || "pNInz6obpgDQGcFmaJgB"
+      : process.env.ELEVENLABS_VOICE_ID?.trim() || "21m00Tcm4TlvDq8ikWAM";
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
@@ -190,9 +201,9 @@ async function elevenLabsSpeech(text: string, key: string): Promise<SpeechResult
   return { ok: true, audio: await res.arrayBuffer(), contentType: "audio/mpeg" };
 }
 
-/** Female neural voice via whichever provider has a key configured
- *  (Azure Speech preferred - better Urdu - then ElevenLabs). */
-export async function synthesizeSpeech(text: string, lang: NarrationLang): Promise<SpeechResult> {
+/** Female (default) or male neural voice via whichever provider has a key
+ *  configured (Azure Speech preferred - better Urdu - then ElevenLabs). */
+export async function synthesizeSpeech(text: string, lang: NarrationLang, gender: VoiceGender = "female"): Promise<SpeechResult> {
   let azureKey: string | null;
   let azureRegion: string | null;
   let elevenKey: string | null;
@@ -205,8 +216,8 @@ export async function synthesizeSpeech(text: string, lang: NarrationLang): Promi
   }
 
   try {
-    if (azureKey && azureRegion) return await azureSpeech(text, lang, azureKey, azureRegion);
-    if (elevenKey) return await elevenLabsSpeech(text, elevenKey);
+    if (azureKey && azureRegion) return await azureSpeech(text, lang, gender, azureKey, azureRegion);
+    if (elevenKey) return await elevenLabsSpeech(text, gender, elevenKey);
   } catch (e) {
     console.error("synthesizeSpeech error:", e);
     return { ok: false, reason: "failed", message: "The voice service did not respond. Please try again." };

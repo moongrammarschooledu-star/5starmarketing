@@ -8,6 +8,8 @@ import { settingsService } from "@/services/settingsService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { parsePropertySearchParams, isDeepFilterCombination, type RawSearchParams } from "@/lib/propertySearchParams";
 import { site } from "@/lib/site";
+import { PurposeTabs } from "@/components/properties/PurposeTabs";
+import { PURPOSE_PAGE } from "@/lib/propertyPurpose";
 
 export const dynamic = "force-dynamic";
 
@@ -90,14 +92,19 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
         <div className="max-w-2xl">
           <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
             <span className="h-px w-8 bg-current" />
-            Property Discovery
+            {filters.purpose ?? "Property Discovery"}
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">Find Your Perfect Property</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+            {filters.purpose ? PURPOSE_PAGE[filters.purpose].title : "Find Your Perfect Property"}
+          </h1>
           <p className="mt-4 text-base leading-relaxed text-muted">
-            Search, filter and explore houses, flats, plots and commercial properties with 5STAR.M Estate &amp; Builders — by
-            keyword, location, budget or directly on the map.
+            {filters.purpose
+              ? PURPOSE_PAGE[filters.purpose].text
+              : "Search, filter and explore houses, flats, plots and commercial properties with 5STAR.M Estate & Builders — by keyword, location, budget or directly on the map."}
           </p>
         </div>
+
+        <PurposeTabs active={filters.purpose} />
 
         <div className="mt-8">
           {loadError ? (

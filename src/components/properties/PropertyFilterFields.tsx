@@ -102,7 +102,7 @@ export function PropertyFilterFields({
         )}
       </FilterGroup>
 
-      <FilterGroup label="Price (PKR)">
+      <FilterGroup label={value.purpose === "For Rent" ? "Monthly rent (PKR)" : "Price (PKR)"}>
         <div className="grid grid-cols-2 gap-2.5">
           <input
             type="number"

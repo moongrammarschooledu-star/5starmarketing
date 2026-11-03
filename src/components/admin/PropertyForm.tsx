@@ -11,8 +11,10 @@ import {
   locationAreas,
   sizeCategories,
   type Property,
+  type Purpose,
   type SizeCategory,
 } from "@/lib/models/property";
+import { PURPOSE_HINT } from "@/lib/propertyPurpose";
 import type { Project } from "@/lib/models/project";
 import type { PropertyFormState } from "@/lib/actions/properties.actions";
 import { ImageUploader } from "./ImageUploader";
@@ -47,6 +49,8 @@ export function PropertyForm({
   const [sizeCategory, setSizeCategory] = useState<SizeCategory>(initialValues?.sizeCategory ?? sizeCategories[0]);
   const sizeInputRef = useRef<HTMLInputElement>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [purpose, setPurpose] = useState<Purpose>(initialValues?.purpose ?? "For Sale");
+  const isRent = purpose === "For Rent";
 
   return (
     <form action={formAction} className="space-y-8">
@@ -59,9 +63,37 @@ export function PropertyForm({
       <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="font-heading text-base font-bold text-ink">Basic Information</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <fieldset className="sm:col-span-2">
+            <legend className="mb-2 text-sm font-semibold text-ink">
+              This property is <span className="text-primary">*</span>
+            </legend>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {purposes.map((p) => (
+                <label
+                  key={p}
+                  className={`flex cursor-pointer flex-col gap-0.5 rounded-xl border px-4 py-3 transition-colors ${
+                    purpose === p ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                    <input
+                      type="radio"
+                      name="purpose"
+                      value={p}
+                      checked={purpose === p}
+                      onChange={() => setPurpose(p)}
+                      required
+                      className="h-4 w-4 text-primary focus:ring-primary"
+                    />
+                    {p}
+                  </span>
+                  <span className="pl-6 text-xs text-muted">{PURPOSE_HINT[p]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <Field label="Property Title" name="title" required defaultValue={initialValues?.title} className="sm:col-span-2" />
           <Select label="Property Type" name="type" options={propertyTypes} defaultValue={initialValues?.type} />
-          <Select label="Purpose" name="purpose" options={purposes} defaultValue={initialValues?.purpose} />
           <Field label="Location (display)" name="location" required defaultValue={initialValues?.location} placeholder="e.g. Johar Town, Lahore" />
           <Field label="City" name="city" defaultValue={initialValues?.city ?? "Lahore"} placeholder="Lahore" />
           <label className="flex flex-col gap-1.5 text-sm">
@@ -109,7 +141,13 @@ export function PropertyForm({
             type="number"
             defaultValue={initialValues?.bathrooms}
           />
-          <Field label="Price (display)" name="price" required defaultValue={initialValues?.price} placeholder="e.g. PKR 2.5 Crore" />
+          <Field
+            label={isRent ? "Monthly Rent (display)" : "Price (display)"}
+            name="price"
+            required
+            defaultValue={initialValues?.price}
+            placeholder={isRent ? "e.g. PKR 85,000 per month" : "e.g. PKR 2.5 Crore"}
+          />
           <Select label="Status" name="status" options={propertyStatuses} defaultValue={initialValues?.status} />
         </div>
         <label className="mt-4 flex items-center gap-2.5 text-sm font-semibold text-ink">
@@ -172,7 +210,7 @@ export function PropertyForm({
                 placeholder="e.g. 2250"
               />
               <Field
-                label="Price Value (PKR, for filtering)"
+                label={isRent ? "Monthly Rent Value (PKR, for filtering)" : "Price Value (PKR, for filtering)"}
                 name="priceValue"
                 type="number"
                 defaultValue={initialValues?.priceValue}

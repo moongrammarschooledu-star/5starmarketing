@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Ruler, MessageCircle, Star, BedDouble, Bath } from "lucide-react";
 import clsx from "clsx";
+import { PURPOSE_PILL, priceWithPeriod } from "@/lib/propertyPurpose";
 import type { Property } from "@/lib/models/property";
 import { WhatsAppInquiryButton } from "@/components/WhatsAppInquiryButton";
 import { getOrCreateSessionId } from "@/lib/session";
@@ -71,7 +72,7 @@ export function PropertyCard({
           <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-primary-foreground">
             {property.type}
           </span>
-          <span className="rounded-full bg-ink/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
+          <span className={clsx("rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide backdrop-blur", PURPOSE_PILL[property.purpose])}>
             {property.purpose}
           </span>
         </div>
@@ -129,7 +130,7 @@ export function PropertyCard({
 
         <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
           <div>
-            <div className="text-base font-extrabold text-primary">{property.price}</div>
+            <div className="text-base font-extrabold text-primary">{priceWithPeriod(property.price, property.purpose)}</div>
             <div className="text-[11px] font-medium text-muted-foreground">
               {property.paymentOption}
             </div>

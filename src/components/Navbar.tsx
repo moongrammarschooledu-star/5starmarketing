@@ -11,7 +11,8 @@ import { useFavorites } from "@/components/customer/FavoritesProvider";
 const links = [
   { href: "/", label: "Home" },
   { href: "/#about", label: "About" },
-  { href: "/properties", label: "Properties" },
+  { href: "/properties?purpose=sale", label: "For Sale" },
+  { href: "/properties?purpose=rent", label: "For Rent" },
   { href: "/#services", label: "Services" },
   { href: "/projects", label: "Projects" },
   { href: "/#investment", label: "Investment" },

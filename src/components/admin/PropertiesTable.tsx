@@ -6,7 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, Eye, Pencil, Trash2, Star } from "lucide-react";
 import type { Property, PropertyStatus } from "@/lib/models/property";
-import { propertyTypes, locationAreas, propertyStatuses, paymentOptions } from "@/lib/models/property";
+import { propertyTypes, locationAreas, propertyStatuses, paymentOptions, purposes } from "@/lib/models/property";
+import { PURPOSE_PILL } from "@/lib/propertyPurpose";
 import { deletePropertyAction, toggleFeaturedAction, changeStatusAction } from "@/lib/actions/properties.actions";
 import { ConfirmDialog, useConfirmDelete } from "./ConfirmDialog";
 import { useToast } from "./ToastProvider";
@@ -19,6 +20,7 @@ export function PropertiesTable({ properties }: { properties: Property[] }) {
   const [locationArea, setLocationArea] = useState<string>(ALL);
   const [status, setStatus] = useState<string>(ALL);
   const [paymentOption, setPaymentOption] = useState<string>(ALL);
+  const [purposeTab, setPurposeTab] = useState<string>(ALL);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const toast = useToast();
@@ -37,9 +39,10 @@ export function PropertiesTable({ properties }: { properties: Property[] }) {
       if (locationArea !== ALL && p.locationArea !== locationArea) return false;
       if (status !== ALL && p.status !== status) return false;
       if (paymentOption !== ALL && !p.paymentOption.includes(paymentOption)) return false;
+      if (purposeTab !== ALL && p.purpose !== purposeTab) return false;
       return true;
     });
-  }, [properties, search, type, locationArea, status, paymentOption]);
+  }, [properties, search, type, locationArea, status, paymentOption, purposeTab]);
 
   function toggleFeatured(id: string) {
     startTransition(async () => {
@@ -59,6 +62,26 @@ export function PropertiesTable({ properties }: { properties: Property[] }) {
 
   return (
     <div>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {[ALL, ...purposes].map((tab) => {
+          const count = tab === ALL ? properties.length : properties.filter((p) => p.purpose === tab).length;
+          const on = purposeTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setPurposeTab(tab)}
+              className={
+                on
+                  ? "rounded-full border-2 border-primary bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground"
+                  : "rounded-full border-2 border-ink/15 bg-surface px-4 py-1.5 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+              }
+            >
+              {tab === ALL ? "All" : tab} ({count})
+            </button>
+          );
+        })}
+      </div>
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -115,6 +138,7 @@ export function PropertiesTable({ properties }: { properties: Property[] }) {
                 </td>
                 <td className="max-w-[220px] px-4 py-3 font-semibold text-ink">
                   <span className="line-clamp-1">{p.title}</span>
+                  <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${PURPOSE_PILL[p.purpose]}`}>{p.purpose}</span>
                 </td>
                 <td className="px-4 py-3 text-muted">{p.type}</td>
                 <td className="max-w-[160px] px-4 py-3 text-muted">

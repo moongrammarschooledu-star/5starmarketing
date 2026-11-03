@@ -1,5 +1,6 @@
 import { Home, Tag, MapPin, Ruler, Wallet, CreditCard, Activity } from "lucide-react";
 import type { Property } from "@/lib/models/property";
+import { priceWithPeriod } from "@/lib/propertyPurpose";
 
 export function PropertyInfoPanel({ property }: { property: Property }) {
   const rows = [
@@ -7,7 +8,7 @@ export function PropertyInfoPanel({ property }: { property: Property }) {
     { icon: Tag, label: "Purpose", value: property.purpose },
     { icon: MapPin, label: "Location", value: property.location },
     { icon: Ruler, label: "Size", value: property.size },
-    { icon: Wallet, label: "Price", value: property.price },
+    { icon: Wallet, label: property.purpose === "For Rent" ? "Monthly Rent" : "Price", value: priceWithPeriod(property.price, property.purpose) },
     { icon: CreditCard, label: "Payment Option", value: property.paymentOption },
     { icon: Activity, label: "Status", value: property.status },
   ];

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { priceWithPeriod } from "@/lib/propertyPurpose";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FolderKanban, Phone, CalendarClock, Calculator, FileDown } from "lucide-react";
@@ -240,7 +241,7 @@ export default async function PropertyDetailsPage({
 
           <div className="lg:sticky lg:top-24 lg:h-fit">
             <div className="rounded-2xl border border-border bg-surface-muted p-6">
-              <div className="text-2xl font-extrabold text-primary">{property.price}</div>
+              <div className="text-2xl font-extrabold text-primary">{priceWithPeriod(property.price, property.purpose)}</div>
               <div className="mt-1 text-sm font-medium text-muted">{property.paymentOption}</div>
               {estimatedInstallment && (
                 <div className="mt-1 text-xs font-semibold text-muted-foreground">

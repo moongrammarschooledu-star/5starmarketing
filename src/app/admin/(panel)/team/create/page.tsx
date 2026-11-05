@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { profileService } from "@/services/profileService";
 import { TeamMemberForm } from "@/components/admin/TeamMemberForm";
+import { assignableRoles } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function AdminTeamCreatePage() {
         Creates a real Supabase Auth account for this person — no duplicate accounts are ever created for the same email.
       </p>
       <div className="mt-6">
-        <TeamMemberForm />
+        <TeamMemberForm roles={assignableRoles(admin.role)} />
       </div>
     </div>
   );

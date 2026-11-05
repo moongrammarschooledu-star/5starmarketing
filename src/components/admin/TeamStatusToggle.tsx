@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import { setTeamMemberStatusAction } from "@/lib/actions/team.actions";
 import { useToast } from "./ToastProvider";
 
-export function TeamStatusToggle({ id, status }: { id: string; status: "Active" | "Inactive" }) {
+export function TeamStatusToggle({ id, status, canManage = true }: { id: string; status: "Active" | "Inactive"; canManage?: boolean }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const toast = useToast();
+
+  // a Super Admin's or another Admin's account can only be changed by a Super Admin
+  if (!canManage) return <span className="text-xs text-muted-foreground">Super Admin only</span>;
 
   return (
     <button
@@ -17,7 +20,11 @@ export function TeamStatusToggle({ id, status }: { id: string; status: "Active" 
       onClick={() =>
         startTransition(async () => {
           const next = status === "Active" ? "Inactive" : "Active";
-          await setTeamMemberStatusAction(id, next);
+          const res = await setTeamMemberStatusAction(id, next);
+          if (!res.ok) {
+            toast.show(res.error ?? "Could not update this team member.");
+            return;
+          }
           toast.show(next === "Active" ? "Team member activated." : "Team member deactivated.");
           router.refresh();
         })

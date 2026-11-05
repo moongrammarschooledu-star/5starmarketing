@@ -7,7 +7,7 @@ import { appointmentService } from "@/services/appointmentService";
 import { activityService } from "@/services/activityService";
 import { profileService } from "@/services/profileService";
 import { requireSection } from "@/lib/guard";
-import { roleLabels, canManageFinance } from "@/lib/permissions";
+import { roleLabels, canManageFinance, canManageRole } from "@/lib/permissions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { TeamStatusToggle } from "@/components/admin/TeamStatusToggle";
 import { TeamMemberTabs } from "@/components/admin/TeamMemberTabs";
@@ -54,7 +54,7 @@ export default async function AdminTeamMemberPage({ params }: { params: Promise<
           >
             {member.status}
           </span>
-          <TeamStatusToggle id={member.id} status={member.status} />
+          <TeamStatusToggle id={member.id} status={member.status} canManage={viewer ? canManageRole(viewer.role, member.role) : false} />
           <Link href={`/admin/team/${member.id}/performance`} className="rounded-full border-2 border-ink/15 px-3.5 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary">
             Full Performance
           </Link>

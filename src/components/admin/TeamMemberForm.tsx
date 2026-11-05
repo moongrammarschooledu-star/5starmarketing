@@ -4,11 +4,11 @@ import { useActionState, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, UserCircle, Copy } from "lucide-react";
-import { adminRoles } from "@/lib/models/user";
+import type { AdminRole } from "@/lib/models/user";
 import { roleLabels } from "@/lib/permissions";
 import { createTeamMemberFormAction, type CreateTeamMemberFormState } from "@/lib/actions/team.actions";
 
-export function TeamMemberForm() {
+export function TeamMemberForm({ roles }: { roles: AdminRole[] }) {
   const [state, formAction, pending] = useActionState<CreateTeamMemberFormState, FormData>(createTeamMemberFormAction, {});
   const [preview, setPreview] = useState<string | undefined>(undefined);
   const [copied, setCopied] = useState(false);
@@ -105,7 +105,7 @@ export function TeamMemberForm() {
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-semibold text-ink">Role *</span>
             <select name="role" defaultValue="sales_agent" className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary">
-              {adminRoles.map((r) => (
+              {roles.map((r) => (
                 <option key={r} value={r}>
                   {roleLabels[r]}
                 </option>

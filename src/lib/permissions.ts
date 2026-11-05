@@ -46,10 +46,8 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "whatsapp",
     "services",
     "seo",
-    "settings",
     "profile",
     "reports",
-    "activity",
     "customers",
     "appointments",
     "brochures",
@@ -60,7 +58,6 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "inventory",
     "documents",
     "communications",
-    "accounting",
     "investment",
     "maintenance",
     "construction",
@@ -75,6 +72,24 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   editor: ["dashboard", "properties", "projects", "services", "profile", "brochures", "content", "demands"],
   sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support", "ai", "demands"],
 };
+
+/** Who may create, edit, switch off or promote whose account.
+ *  - Super Admin: everyone.
+ *  - Admin: only Sales Managers, Sales Agents and Editors - never a Super Admin
+ *    or another Admin, and never to make someone one.
+ *  - everyone else: nobody. */
+const ADMIN_MANAGES: AdminRole[] = ["sales_manager", "sales_agent", "editor"];
+
+export function assignableRoles(actor: AdminRole): AdminRole[] {
+  if (actor === "super_admin") return ["super_admin", "admin", "sales_manager", "sales_agent", "editor"];
+  if (actor === "admin") return ADMIN_MANAGES;
+  return [];
+}
+
+/** True when `actor` may change the account of someone whose current role is `target`. */
+export function canManageRole(actor: AdminRole, target: AdminRole): boolean {
+  return assignableRoles(actor).includes(target);
+}
 
 /** AI Settings (STEP 30) — enabling/disabling assistants, editing tool
  *  permissions, and approval-queue review is restricted the same way

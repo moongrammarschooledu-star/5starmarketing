@@ -2,7 +2,8 @@ import Link from "next/link";
 import { AlertTriangle, Users, UserCheck, PlusCircle } from "lucide-react";
 import { teamService } from "@/services/teamService";
 import { requireSection } from "@/lib/guard";
-import { roleLabels } from "@/lib/permissions";
+import { roleLabels, canManageRole } from "@/lib/permissions";
+import { profileService } from "@/services/profileService";
 import { StatCard } from "@/components/admin/StatCard";
 import { TeamStatusToggle } from "@/components/admin/TeamStatusToggle";
 import { TeamSearchBox } from "@/components/admin/TeamSearchBox";
@@ -12,6 +13,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminTeamPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requireSection("team");
   const { q } = await searchParams;
+  const viewer = await profileService.getCurrentAdmin();
+  const canManage = (role: Parameters<typeof canManageRole>[1]) => (viewer ? canManageRole(viewer.role, role) || false : false);
 
   let members: Awaited<ReturnType<typeof teamService.list>> = [];
   let loadError: string | null = null;
@@ -102,7 +105,7 @@ export default async function AdminTeamPage({ searchParams }: { searchParams: Pr
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <TeamStatusToggle id={m.id} status={m.status} />
+                  <TeamStatusToggle id={m.id} status={m.status} canManage={canManage(m.role)} />
                 </td>
               </tr>
             ))}
@@ -137,7 +140,7 @@ export default async function AdminTeamPage({ searchParams }: { searchParams: Pr
               <span>{m.closedLeads} closed</span>
             </div>
             <div className="mt-3">
-              <TeamStatusToggle id={m.id} status={m.status} />
+              <TeamStatusToggle id={m.id} status={m.status} canManage={canManage(m.role)} />
             </div>
           </div>
         ))}

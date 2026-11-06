@@ -215,12 +215,30 @@ export async function synthesizeSpeech(text: string, lang: NarrationLang, gender
     return { ok: false, reason: "failed", message: e instanceof Error ? e.message : "The voice service key is invalid." };
   }
 
-  try {
-    if (azureKey && azureRegion) return await azureSpeech(text, lang, gender, azureKey, azureRegion);
-    if (elevenKey) return await elevenLabsSpeech(text, gender, elevenKey);
-  } catch (e) {
-    console.error("synthesizeSpeech error:", e);
-    return { ok: false, reason: "failed", message: "The voice service did not respond. Please try again." };
+  // Azure first (better Urdu). If it is configured but fails (wrong or expired key,
+  // wrong region, quota used up), the other provider is tried before giving up, so a
+  // problem with one key does not leave the ad without a voice.
+  let last: SpeechResult | null = null;
+  if (azureKey && azureRegion) {
+    try {
+      const res = await azureSpeech(text, lang, gender, azureKey, azureRegion);
+      if (res.ok || !elevenKey) return res;
+      last = res;
+    } catch (e) {
+      console.error("Azure speech error:", e);
+      last = { ok: false, reason: "failed", message: "The voice service (Azure) did not respond. Please try again." };
+      if (!elevenKey) return last;
+    }
+  }
+  if (elevenKey) {
+    try {
+      const res = await elevenLabsSpeech(text, gender, elevenKey);
+      if (res.ok || !last) return res;
+      return { ok: false, reason: "failed", message: `${last.ok ? "" : last.message} (The backup voice service failed too: ${res.ok ? "" : res.message})` };
+    } catch (e) {
+      console.error("ElevenLabs speech error:", e);
+      return last ?? { ok: false, reason: "failed", message: "The voice service did not respond. Please try again." };
+    }
   }
   return { ok: false, reason: "not_configured", message: "No voice service is set up yet." };
 }

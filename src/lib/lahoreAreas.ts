@@ -6,5 +6,5 @@ export const lahoreAreas = [
   { slug: "wapda-town", name: "Wapda Town" },
   { slug: "punjab-housing-society", name: "Punjab Housing Society" },
   { slug: "air-line-society", name: "Air Line Society" },
-  { slug: "vor-society", name: "VOR Society" },
+  { slug: "bor-society", name: "B.O.R Society" },
 ] as const;

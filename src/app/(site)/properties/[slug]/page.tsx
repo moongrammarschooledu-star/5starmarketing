@@ -60,8 +60,10 @@ function seoDescription(property: Property, title: string) {
   if (property.seoDescription?.trim()) return property.seoDescription.trim();
 
   const source = property.description?.replace(/\s+/g, " ").trim();
+  // Lead with the actual property title so each snippet immediately states
+  // the size, property type, purpose, and admin-entered locality.
   const fallback = `${title}. Contact 5STAR.M Estate & Builders for complete details and viewing.`;
-  const description = source || fallback;
+  const description = source ? `${title}. ${source}` : fallback;
   if (description.length <= 155) return description;
 
   const shortened = description.slice(0, 152);

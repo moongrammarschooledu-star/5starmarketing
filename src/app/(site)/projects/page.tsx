@@ -61,7 +61,7 @@ export default async function ProjectsPage() {
 
   return (
     <main className="bg-surface-muted">
-      {!loadError && <JsonLd data={collectionJsonLd} />}
+      {!loadError && projects.length > 0 && <JsonLd data={collectionJsonLd} />}
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
         <div className="max-w-2xl">
           <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">

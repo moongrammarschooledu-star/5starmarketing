@@ -54,6 +54,21 @@ function seoTitle(property: Property) {
   return `${property.size} ${property.type} for ${purpose} in ${location}`;
 }
 
+/** Keep search snippets concise and readable while preserving the admin's
+ * SEO override. Descriptions are plain text in the property model. */
+function seoDescription(property: Property, title: string) {
+  if (property.seoDescription?.trim()) return property.seoDescription.trim();
+
+  const source = property.description?.replace(/\s+/g, " ").trim();
+  const fallback = `${title}. Contact 5STAR.M Estate & Builders for complete details and viewing.`;
+  const description = source || fallback;
+  if (description.length <= 155) return description;
+
+  const shortened = description.slice(0, 152);
+  const lastSpace = shortened.lastIndexOf(" ");
+  return `${shortened.slice(0, lastSpace > 110 ? lastSpace : 152).replace(/[.,;:!?-]+$/, "")}...`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -66,10 +81,7 @@ export async function generateMetadata({
   // STEP 32 — an admin-set SEO override always wins; everything else
   // falls back to the same derived-from-real-fields values as before.
   const title = property.seoTitle || seoTitle(property);
-  const description =
-    property.seoDescription ||
-    property.description ||
-    `${title}. Contact 5STAR.M Estate & Builders for complete details and payment plans.`;
+  const description = seoDescription(property, title);
   const image = property.ogImage || property.images[0];
 
   return {
@@ -78,7 +90,7 @@ export async function generateMetadata({
     alternates: { canonical: `/properties/${property.slug}` },
     openGraph: {
       title: `${title} | 5STAR.M Estate & Builders`,
-      description: `${property.location} · ${description}`,
+      description,
       url: `/properties/${property.slug}`,
       images: image ? [{ url: image, width: 1200, height: 630, alt: title }] : undefined,
     },

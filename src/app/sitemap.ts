@@ -18,7 +18,7 @@ async function withFallback<T>(
   try {
     return await load();
   } catch (error) {
-    console.error(\`sitemap: failed to load \${label}:\`, error);
+    console.error(`sitemap: failed to load ${label}:`, error);
     return fallback;
   }
 }
@@ -26,20 +26,20 @@ async function withFallback<T>(
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: site.url, changeFrequency: "weekly", priority: 1 },
-    { url: \`\${site.url}/about\`, changeFrequency: "monthly", priority: 0.6 },
-    { url: \`\${site.url}/properties\`, changeFrequency: "daily", priority: 0.9 },
-    { url: \`\${site.url}/projects\`, changeFrequency: "weekly", priority: 0.8 },
-    { url: \`\${site.url}/services\`, changeFrequency: "monthly", priority: 0.6 },
-    { url: \`\${site.url}/investment\`, changeFrequency: "monthly", priority: 0.5 },
-    { url: \`\${site.url}/construction\`, changeFrequency: "monthly", priority: 0.5 },
-    { url: \`\${site.url}/contact\`, changeFrequency: "monthly", priority: 0.6 },
-    { url: \`\${site.url}/buy\`, changeFrequency: "daily", priority: 0.7 },
-    { url: \`\${site.url}/rent\`, changeFrequency: "daily", priority: 0.7 },
-    { url: \`\${site.url}/commercial\`, changeFrequency: "weekly", priority: 0.6 },
-    { url: \`\${site.url}/residential\`, changeFrequency: "weekly", priority: 0.6 },
-    { url: \`\${site.url}/locations\`, changeFrequency: "weekly", priority: 0.7 },
-    { url: \`\${site.url}/blog\`, changeFrequency: "weekly", priority: 0.6 },
-    { url: \`\${site.url}/faq\`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${site.url}/about`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${site.url}/properties`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${site.url}/projects`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${site.url}/services`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${site.url}/investment`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${site.url}/construction`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${site.url}/contact`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${site.url}/buy`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${site.url}/rent`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${site.url}/commercial`, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${site.url}/residential`, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${site.url}/locations`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${site.url}/blog`, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${site.url}/faq`, changeFrequency: "monthly", priority: 0.5 },
   ];
 
   if (!isSupabaseConfigured()) return staticPages;
@@ -56,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const areaResults = await Promise.all(
     lahoreAreas.map(async (area) => {
       const result = await withFallback(
-        \`Lahore area \${area.name}\`,
+        `Lahore area ${area.name}`,
         () => propertyService.search({ city: "Lahore", area: area.name, pageSize: 1 }),
         null,
       );
@@ -65,14 +65,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
-    url: \`\${site.url}/blog/\${p.slug}\`,
+    url: `${site.url}/blog/${p.slug}`,
     lastModified: p.updatedAt,
     changeFrequency: "monthly",
     priority: 0.5,
   }));
 
   const locationPages: MetadataRoute.Sitemap = cities.map((city) => ({
-    url: \`\${site.url}/locations/\${slugifyCity(city)}\`,
+    url: `${site.url}/locations/${slugifyCity(city)}`,
     changeFrequency: "weekly",
     priority: 0.6,
   }));
@@ -81,7 +81,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const areaPages: MetadataRoute.Sitemap = areaResults
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null && entry.result.total > 0)
     .map(({ area }) => ({
-      url: \`\${site.url}/areas/\${area.slug}\`,
+      url: `${site.url}/areas/${area.slug}`,
       changeFrequency: "daily",
       priority: 0.7,
     }));
@@ -89,14 +89,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const propertyPages: MetadataRoute.Sitemap = properties
     .filter((p) => p.status !== "Inactive")
     .map((p) => ({
-      url: \`\${site.url}/properties/\${p.slug}\`,
+      url: `${site.url}/properties/${p.slug}`,
       lastModified: p.updatedAt,
       changeFrequency: "weekly",
       priority: 0.7,
     }));
 
   const projectPages: MetadataRoute.Sitemap = projects.map((p) => ({
-    url: \`\${site.url}/projects/\${p.slug}\`,
+    url: `${site.url}/projects/${p.slug}`,
     lastModified: p.updatedAt,
     changeFrequency: "weekly",
     priority: 0.7,

@@ -1,6 +1,7 @@
 import { Hero } from "@/components/Hero";
 import { About } from "@/components/About";
 import { FeaturedProperties } from "@/components/FeaturedProperties";
+import { LahoreAreaLinks } from "@/components/LahoreAreaLinks";
 import { Services } from "@/components/Services";
 import { Projects } from "@/components/Projects";
 import { WhyChooseUs } from "@/components/WhyChooseUs";
@@ -23,6 +24,7 @@ export default function Home() {
       <Hero />
       <About />
       <FeaturedProperties />
+      <LahoreAreaLinks />
       <Services />
       <Projects />
       <WhyChooseUs />

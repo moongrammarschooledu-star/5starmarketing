@@ -4,21 +4,26 @@ import { ProjectsBrowser } from "@/components/ProjectsBrowser";
 import { projectService } from "@/services/projectService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
-// Public page: built once and kept for a few minutes (and rebuilt at once when
-// the admin changes the related data), so visitors do not each run the server.
 export const dynamic = "force-static";
 export const revalidate = 180;
 
+const pageTitle = "Real Estate Projects in Lahore | 5STAR.M Estate & Builders";
+const pageDescription =
+  "Explore real estate and development projects in Lahore by 5STAR.M Estate & Builders. View project details and discover property opportunities with our team.";
+
 export const metadata: Metadata = {
-  title: "Projects",
-  description:
-    "Explore property opportunities and development projects from 5STAR.M Estate & Builders in Lahore.",
+  title: pageTitle,
+  description: pageDescription,
   alternates: { canonical: "/projects" },
   openGraph: {
-    title: "Projects | 5STAR.M Estate & Builders",
-    description:
-      "Explore property opportunities and development projects from 5STAR.M Estate & Builders in Lahore.",
+    title: pageTitle,
+    description: pageDescription,
     url: "/projects",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: pageTitle,
+    description: pageDescription,
   },
 };
 
@@ -43,10 +48,10 @@ export default async function ProjectsPage() {
             Our Portfolio
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Explore Our Projects
+            Real Estate Projects in Lahore
           </h1>
           <p className="mt-4 text-base leading-relaxed text-muted">
-            Discover property opportunities and development projects from 5STAR.M Estate &amp;
+            Explore property opportunities and development projects from 5STAR.M Estate &amp;
             Builders.
           </p>
         </div>

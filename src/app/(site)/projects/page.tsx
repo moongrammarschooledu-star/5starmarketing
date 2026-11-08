@@ -3,6 +3,8 @@ import { FolderKanban } from "lucide-react";
 import { ProjectsBrowser } from "@/components/ProjectsBrowser";
 import { projectService } from "@/services/projectService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { JsonLd } from "@/components/JsonLd";
+import { site } from "@/lib/site";
 
 export const dynamic = "force-static";
 export const revalidate = 180;
@@ -39,8 +41,27 @@ export default async function ProjectsPage() {
     }
   }
 
+  const collectionJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Real Estate Projects in Lahore",
+    description: pageDescription,
+    url: `${site.url}/projects`,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: projects.length,
+      itemListElement: projects.map((project, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: project.name,
+        url: `${site.url}/projects/${project.slug}`,
+      })),
+    },
+  };
+
   return (
     <main className="bg-surface-muted">
+      {!loadError && <JsonLd data={collectionJsonLd} />}
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
         <div className="max-w-2xl">
           <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">

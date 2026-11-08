@@ -43,9 +43,13 @@ export const revalidate = 180;
 function seoTitle(property: Property) {
   const purpose = property.purpose.replace(/^For /, "");
   const city = property.city?.trim() || "Lahore";
-  const area = property.locationArea?.trim();
-  const location = area
-    ? `${area}, ${city}`
+  // locationArea is a broad category; location contains the admin-entered
+  // locality/address. Prefer that real detail for more useful search titles.
+  const propertyLocation = property.location?.trim();
+  const location = propertyLocation
+    ? propertyLocation.toLowerCase().includes(city.toLowerCase())
+      ? propertyLocation
+      : `${propertyLocation}, ${city}`
     : city;
   return `${property.size} ${property.type} for ${purpose} in ${location}`;
 }

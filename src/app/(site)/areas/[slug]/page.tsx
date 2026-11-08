@@ -51,7 +51,23 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
     pageSize: 12,
     sort: "newest",
   });
-  const allAreas = lahoreAreas.filter((item) => item.slug !== area.slug);
+  const otherAreaResults = await Promise.all(
+    lahoreAreas
+      .filter((item) => item.slug !== area.slug)
+      .map(async (item) => {
+        try {
+          const areaResult = await propertyService.search({
+            city: "Lahore",
+            area: item.name,
+            pageSize: 1,
+          });
+          return { ...item, hasListings: areaResult.total > 0 };
+        } catch {
+          return { ...item, hasListings: false };
+        }
+      }),
+  );
+  const availableOtherAreas = otherAreaResults.filter((item) => item.hasListings);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
@@ -101,7 +117,7 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
       <section className="mt-14 border-t border-border pt-8">
         <h2 className="font-heading text-xl font-bold text-ink">Explore other Lahore areas</h2>
         <div className="mt-4 flex flex-wrap gap-3">
-          {allAreas.map((item) => (
+          {availableOtherAreas.map((item) => (
             <Link key={item.slug} href={`/areas/${item.slug}`} className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink hover:border-primary hover:text-primary">
               {item.name}
             </Link>

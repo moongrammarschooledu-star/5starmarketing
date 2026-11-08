@@ -71,29 +71,6 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
   const availableOtherAreas = otherAreaResults.filter((item) => item.hasListings);
 
   const areaUrl = `${site.url}/areas/${area.slug}`;
-  const breadcrumbJsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Locations",
-        item: `${site.url}/locations`,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Lahore",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: area.name,
-        item: areaUrl,
-      },
-    ],
-  };
   const collectionJsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -113,7 +90,8 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
   };
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">\n      <JsonLd data={breadcrumbJsonLd} />\n      <JsonLd data={collectionJsonLd} />
+    <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
+      {result.total > 0 && <JsonLd data={collectionJsonLd} />}
       <Breadcrumbs items={[{ label: "Locations", href: "/locations" }, { label: "Lahore" }, { label: area.name }]} />
 
       <div className="mt-5 max-w-3xl">

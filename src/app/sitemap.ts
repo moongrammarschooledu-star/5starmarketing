@@ -4,9 +4,10 @@ import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { blogService } from "@/services/blogService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { lahoreAreas } from "@/lib/lahoreAreas";
 
 function slugifyCity(city: string) {
-  return city.toLowerCase().trim().replace(/\s+/g, "-");
+  return city.toLowerCase().trim().replace(/\\s+/g, "-");
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -19,7 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${site.url}/investment`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${site.url}/construction`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${site.url}/contact`, changeFrequency: "monthly", priority: 0.6 },
-    // STEP 32
     { url: `${site.url}/buy`, changeFrequency: "daily", priority: 0.7 },
     { url: `${site.url}/rent`, changeFrequency: "daily", priority: 0.7 },
     { url: `${site.url}/commercial`, changeFrequency: "weekly", priority: 0.6 },
@@ -27,20 +27,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${site.url}/locations`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${site.url}/blog`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${site.url}/faq`, changeFrequency: "monthly", priority: 0.5 },
-    // Note: campaign landing pages (/landing/*) are deliberately excluded
-    // — they're set noindex on their own page (existing to convert paid
-    // traffic, not to rank organically), so listing them here would send
-    // search engines a contradictory signal.
   ];
 
   if (!isSupabaseConfigured()) return staticPages;
 
   try {
-    const [properties, projects, blogPosts, cities] = await Promise.all([
+    const [properties, projects, blogPosts, cities, areaResults] = await Promise.all([
       propertyService.list(),
       projectService.listPublished(),
       blogService.listPublished(undefined, 1000),
       propertyService.listDistinctCities(),
+      Promise.all(lahoreAreas.map(async (area) => ({
+        area,
+        result: await propertyService.search({ city: "Lahore", area: area.name, pageSize: 1 }),
+      }))),
     ]);
 
     const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
@@ -56,8 +56,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    // Only public/active/published records — never draft projects or
-    // inactive listings, matching what the site actually shows.
+    // Only include curated locality pages when real active listings match.
+    const areaPages: MetadataRoute.Sitemap = areaResults
+      .filter(({ result }) => result.total > 0)
+      .map(({ area }) => ({
+        url: `${site.url}/areas/${area.slug}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      }));
+
     const propertyPages: MetadataRoute.Sitemap = properties
       .filter((p) => p.status !== "Inactive")
       .map((p) => ({
@@ -74,7 +81,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...staticPages, ...propertyPages, ...projectPages, ...blogPages, ...locationPages];
+    return [...staticPages, ...propertyPages, ...projectPages, ...blogPages, ...locationPages, ...areaPages];
   } catch (e) {
     console.error("sitemap: failed to load dynamic pages:", e);
     return staticPages;

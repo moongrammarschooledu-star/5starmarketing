@@ -43,10 +43,10 @@ export const revalidate = 180;
 function seoTitle(property: Property) {
   const purpose = property.purpose.replace(/^For /, "");
   const city = property.city?.trim() || "Lahore";
-  const location =
-    property.locationArea === "Johar Town" && city.toLowerCase() === "lahore"
-      ? "Johar Town, Lahore"
-      : city;
+  const area = property.locationArea?.trim();
+  const location = area
+    ? `${area}, ${city}`
+    : city;
   return `${property.size} ${property.type} for ${purpose} in ${location}`;
 }
 

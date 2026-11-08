@@ -42,8 +42,12 @@ export const revalidate = 180;
  *  never invented. */
 function seoTitle(property: Property) {
   const purpose = property.purpose.replace(/^For /, "");
-  const city = property.locationArea === "Johar Town" ? "Johar Town, Lahore" : "Lahore";
-  return `${property.size} ${property.type} for ${purpose} in ${city}`;
+  const city = property.city?.trim() || "Lahore";
+  const location =
+    property.locationArea === "Johar Town" && city.toLowerCase() === "lahore"
+      ? "Johar Town, Lahore"
+      : city;
+  return `${property.size} ${property.type} for ${purpose} in ${location}`;
 }
 
 export async function generateMetadata({

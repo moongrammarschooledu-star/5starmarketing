@@ -148,23 +148,68 @@ export default async function PropertyDetailsPage({
   const pageUrl = `${site.url}/properties/${property.slug}`;
   const shareText = `Check out this property from 5STAR.M Estate & Builders:\n\n${property.title}\n${property.location}`;
 
-  const productJsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "Product",
+  const placeTypes: Record<Property["type"], string> = {
+    House: "House",
+    Flat: "Apartment",
+    "Residential Plot": "Place",
+    "Commercial Property": "Place",
+  };
+  const propertyEntity: Record<string, unknown> = {
+    "@type": placeTypes[property.type],
     name: property.title,
     description: property.description || undefined,
-    image: property.images,
+    image: property.images.length > 0 ? property.images : undefined,
     url: pageUrl,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: property.location || undefined,
+      addressLocality: property.city || undefined,
+      addressCountry: "PK",
+    },
+  };
+  if (property.bedrooms !== undefined) {
+    propertyEntity.numberOfBedrooms = property.bedrooms;
+  }
+  if (property.bathrooms !== undefined) {
+    propertyEntity.numberOfBathroomsTotal = property.bathrooms;
+  }
+  if (property.latitude !== undefined && property.longitude !== undefined) {
+    propertyEntity.geo = {
+      "@type": "GeoCoordinates",
+      latitude: property.latitude,
+      longitude: property.longitude,
+    };
+  }
+
+  const realEstateListingJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: property.title,
+    description: property.description || undefined,
+    image: property.images.length > 0 ? property.images : undefined,
+    url: pageUrl,
+    datePosted: property.createdAt,
+    mainEntity: propertyEntity,
   };
   if (property.priceValue) {
-    productJsonLd.offers = {
+    const offer: Record<string, unknown> = {
       "@type": "Offer",
       price: property.priceValue,
       priceCurrency: "PKR",
-      availability:
-        property.status === "Available" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: pageUrl,
+      itemOffered: propertyEntity,
     };
+    if (property.status === "Available") {
+      offer.availability = "https://schema.org/InStock";
+    } else if (property.status === "Sold") {
+      offer.availability = "https://schema.org/OutOfStock";
+    }
+    if (property.purpose === "For Sale") {
+      offer.businessFunction = "http://purl.org/goodrelations/v1#Sell";
+    } else if (property.purpose === "For Rent") {
+      offer.businessFunction = "http://purl.org/goodrelations/v1#LeaseOut";
+    }
+    realEstateListingJsonLd.offers = offer;
   }
 
   const breadcrumbJsonLd: Record<string, unknown> = {
@@ -191,7 +236,7 @@ export default async function PropertyDetailsPage({
 
   return (
     <main className="bg-surface">
-      <JsonLd data={productJsonLd} />
+      <JsonLd data={realEstateListingJsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
       <PropertyViewTracker propertyId={property.id} propertyType={property.type} locationArea={property.locationArea} />
 

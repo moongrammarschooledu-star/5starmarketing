@@ -69,6 +69,16 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
       }),
   );
   const availableOtherAreas = otherAreaResults.filter((item) => item.hasListings);
+  // Build a small, factual area summary from the real listings shown on this page.
+  // This gives each indexable Lahore area page useful unique context without
+  // inventing amenities, prices, or neighbourhood claims.
+  const listingExamples = Array.from(
+    new Set(
+      result.properties.slice(0, 3).map((property) =>
+        `${property.size} ${property.type.toLowerCase()} ${property.purpose.toLowerCase()}`,
+      ),
+    ),
+  );
 
   const areaUrl = `${site.url}/areas/${area.slug}`;
   const collectionJsonLd: Record<string, unknown> = {
@@ -108,6 +118,12 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
         <p className="mt-3 text-sm font-semibold text-ink">
           {result.total} matching propert{result.total === 1 ? "y" : "ies"} currently listed
         </p>
+        {listingExamples.length > 0 && (
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Current listings shown on this page include {listingExamples.join(", ")}.
+            Details and availability are shown on each property listing.
+          </p>
+        )}
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

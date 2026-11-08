@@ -6,7 +6,7 @@ import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { settingsService } from "@/services/settingsService";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import { parsePropertySearchParams, isDeepFilterCombination, type RawSearchParams } from "@/lib/propertySearchParams";
+import { parsePropertySearchParams, buildPropertySearchQuery, isDeepFilterCombination, type RawSearchParams } from "@/lib/propertySearchParams";
 import { site } from "@/lib/site";
 import { PurposeTabs } from "@/components/properties/PurposeTabs";
 import { PURPOSE_PAGE } from "@/lib/propertyPurpose";
@@ -38,14 +38,20 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   // canonical; long-tail combinations (3+ filters, a keyword search, a
   // specific page/sort/bounds) are noindexed so search engines never
   // treat every possible filter permutation as a distinct page.
-  const deep = isDeepFilterCombination(filters) || !!filters.page || !!filters.bounds;
+  const deep = isDeepFilterCombination(filters) || filters.page > 1 || !!filters.bounds;
+  const canonicalParams = buildPropertySearchQuery(filters);
+  canonicalParams.delete("sort");
+  canonicalParams.delete("bounds");
+  const canonicalPath = !deep && canonicalParams.size > 0
+    ? `/properties?${canonicalParams.toString()}`
+    : "/properties";
 
   return {
     title,
     description,
-    alternates: { canonical: "/properties" },
+    alternates: { canonical: canonicalPath },
     robots: deep ? { index: false, follow: true } : { index: true, follow: true },
-    openGraph: { title: fullTitle, description, url: `${site.url}/properties` },
+    openGraph: { title: fullTitle, description, url: `${site.url}${canonicalPath}` },
     twitter: { card: "summary_large_image", title: fullTitle, description },
   };
 }

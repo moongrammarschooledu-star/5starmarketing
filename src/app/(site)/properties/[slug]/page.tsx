@@ -212,24 +212,6 @@ export default async function PropertyDetailsPage({
     realEstateListingJsonLd.offers = offer;
   }
 
-  const breadcrumbJsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Properties",
-        item: `${site.url}/properties`,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: property.title,
-      },
-    ],
-  };
-
   const whatsappHref = settings?.whatsapp
     ? whatsappUrlFor(settings.whatsapp, whatsappMessage)
     : whatsappUrlFor(site.whatsappNumber, whatsappMessage);
@@ -237,7 +219,6 @@ export default async function PropertyDetailsPage({
   return (
     <main className="bg-surface">
       <JsonLd data={realEstateListingJsonLd} />
-      <JsonLd data={breadcrumbJsonLd} />
       <PropertyViewTracker propertyId={property.id} propertyType={property.type} locationArea={property.locationArea} />
 
       <div className="mx-auto max-w-7xl px-4 py-10 pb-28 lg:px-8 lg:py-14 lg:pb-14">

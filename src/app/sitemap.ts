@@ -7,7 +7,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { lahoreAreas } from "@/lib/lahoreAreas";
 
 function slugifyCity(city: string) {
-  return city.toLowerCase().trim().replace(/\\s+/g, "-");
+  return city.toLowerCase().trim().replace(/\s+/g, "-");
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

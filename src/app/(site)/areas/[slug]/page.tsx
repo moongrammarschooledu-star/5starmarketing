@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { JsonLd } from "@/components/JsonLd";
 import { PropertyCard } from "@/components/PropertyCard";
 import { propertyService } from "@/services/propertyService";
 import { site } from "@/lib/site";
@@ -69,8 +70,50 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
   );
   const availableOtherAreas = otherAreaResults.filter((item) => item.hasListings);
 
+  const areaUrl = `${site.url}/areas/${area.slug}`;
+  const breadcrumbJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Locations",
+        item: `${site.url}/locations`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Lahore",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: area.name,
+        item: areaUrl,
+      },
+    ],
+  };
+  const collectionJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `Properties in ${area.name}, Lahore`,
+    description: `Browse property listings in ${area.name}, Lahore.`,
+    url: areaUrl,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: result.total,
+      itemListElement: result.properties.map((property, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: property.title,
+        url: `${site.url}/properties/${property.slug}`,
+      })),
+    },
+  };
+
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
+    <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">\n      <JsonLd data={breadcrumbJsonLd} />\n      <JsonLd data={collectionJsonLd} />
       <Breadcrumbs items={[{ label: "Locations", href: "/locations" }, { label: "Lahore" }, { label: area.name }]} />
 
       <div className="mt-5 max-w-3xl">

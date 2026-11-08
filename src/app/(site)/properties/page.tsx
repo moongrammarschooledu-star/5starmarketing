@@ -38,7 +38,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   // canonical; long-tail combinations (3+ filters, a keyword search, a
   // specific page/sort/bounds) are noindexed so search engines never
   // treat every possible filter permutation as a distinct page.
-  const deep = isDeepFilterCombination(filters) || filters.page > 1 || !!filters.bounds;
+  const deep = isDeepFilterCombination(filters) || (filters.page ?? 1) > 1 || !!filters.bounds;
   const canonicalParams = buildPropertySearchQuery(filters);
   canonicalParams.delete("sort");
   canonicalParams.delete("bounds");

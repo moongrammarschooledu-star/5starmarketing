@@ -90,7 +90,7 @@ export default async function LahoreAreaPage({ params }: AreaPageProps) {
       ) : result.total > result.properties.length ? (
         <div className="mt-8 text-center">
           <Link
-            href={`/properties?city=Lahore&area=${encodeURIComponent(area.name.replace(/\\s+/g, "-").toLowerCase())}`}
+            href={`/properties?city=Lahore&area=${encodeURIComponent(area.name.replace(/\s+/g, "-").toLowerCase())}`}
             className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
           >
             View all {result.total} properties <ArrowRight className="h-4 w-4" />

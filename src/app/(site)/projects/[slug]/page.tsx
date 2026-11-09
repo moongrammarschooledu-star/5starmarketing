@@ -36,7 +36,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const project = await projectService.getBySlug(slug);
-  if (!project) return { title: "Project Not Found" };
+  if (!project || !project.published) return { title: "Project Not Found", robots: { index: false, follow: true } };
 
   const description = project.shortDescription || project.description || `${project.name} — ${project.location}.`;
   const image = project.coverImage || project.images[0];
@@ -70,7 +70,7 @@ export default async function ProjectDetailsPage({
     projectService.getBySlug(slug),
     settingsService.get().catch(() => null),
   ]);
-  if (!project) notFound();
+  if (!project || !project.published) notFound();
 
   const [properties, brochure, inventorySummary] = await Promise.all([
     propertyService.listByProject(project.id),

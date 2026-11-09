@@ -19,8 +19,8 @@ export const site = {
   phoneHref: "+923198430458",
   phoneDisplay2: "0308-6010310",
   phoneHref2: "+923086010310",
-  whatsappNumber: "923198430458",
-  whatsappHref: "https://wa.me/923198430458",
+  whatsappNumber: "923086010310",
+  whatsappHref: "https://wa.me/923086010310",
   // The company email - the ONLY email address used anywhere in the app
   // (public pages, PDFs, structured data, outgoing request headers). The
   // owner's personal login email must never be put here or in code.
@@ -54,7 +54,10 @@ export function toWhatsAppNumber(raw: string): string {
 /** Same as whatsappLink, but for any number — an admin-configurable one
  *  (e.g. from website_settings) or a customer/lead's own number. */
 export function whatsappUrlFor(number: string, message?: string) {
-  const digits = toWhatsAppNumber(number);
+  const normalized = toWhatsAppNumber(number);
+  // Redirect the previous company WhatsApp contact to the new official number,
+  // including older values still stored in website/project settings.
+  const digits = normalized === "923198430458" ? site.whatsappNumber : normalized;
   const base = `https://wa.me/${digits}`;
   if (!message) return base;
   return `${base}?text=${encodeURIComponent(message)}`;

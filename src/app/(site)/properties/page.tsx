@@ -75,7 +75,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
         propertyService.searchForMap(filters),
         propertyService.listDistinctCities(),
         propertyService.listDistinctAmenities(),
-        projectService.list(),
+        projectService.listPublished(),
         settingsService.get().catch(() => null),
       ]);
       result = searchResult;

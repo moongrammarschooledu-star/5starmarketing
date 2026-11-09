@@ -56,7 +56,7 @@ function seoTitle(property: Property) {
 
 /** Keep every search snippet concise and readable, including admin overrides. */
 function seoDescription(property: Property, title: string) {
-  const source = property.seoDescription?.trim() || property.description?.replace(/\\s+/g, " ").trim();
+  const source = property.seoDescription?.trim() || property.description?.replace(/\s+/g, " ").trim();
   // Lead with the actual property title so each snippet immediately states
   // the size, property type, purpose, and admin-entered locality.
   const fallback = `${title}. Contact 5STAR.M Estate & Builders for complete details and viewing.`;

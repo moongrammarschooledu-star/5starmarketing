@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: AreaPageProps): Promise<Metad
   const description =
     rawDescription.length <= 155
       ? rawDescription
-      : `${rawDescription.slice(0, 152).replace(/\\s+\\S*$/, "")}...`;
+      : `${rawDescription.slice(0, 152).replace(/\s+\S*$/, "")}...`;
 
   return {
     title,

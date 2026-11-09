@@ -29,7 +29,13 @@ export async function generateMetadata({ params }: AreaPageProps): Promise<Metad
 
   const result = await propertyService.search({ city: "Lahore", area: area.name, pageSize: 1 });
   const title = `Properties in ${area.name}, Lahore`;
-  const description = `Explore currently listed houses, plots, flats and commercial properties in ${area.name}, Lahore. View real listings and contact 5STAR.M Estate & Builders.`;
+  // Make each locality's search snippet reflect a real listing when one exists.
+  // Do not claim a property type, size, or purpose that is not in the database.
+  const sample = result.properties[0];
+  const listingContext = sample
+    ? ` Current listing: ${sample.size} ${sample.type.toLowerCase()} ${sample.purpose.toLowerCase()} in ${sample.location || area.name}.`
+    : "";
+  const description = `Explore properties in ${area.name}, Lahore.${listingContext} View listing details and contact 5STAR.M Estate & Builders.`;
 
   return {
     title,

@@ -54,7 +54,10 @@ export function toWhatsAppNumber(raw: string): string {
 /** Same as whatsappLink, but for any number — an admin-configurable one
  *  (e.g. from website_settings) or a customer/lead's own number. */
 export function whatsappUrlFor(number: string, message?: string) {
-  const digits = toWhatsAppNumber(number);
+  const normalized = toWhatsAppNumber(number);
+  // Redirect the previous company WhatsApp contact to the new official number,
+  // including older values still stored in website/project settings.
+  const digits = normalized === "923198430458" ? site.whatsappNumber : normalized;
   const base = `https://wa.me/${digits}`;
   if (!message) return base;
   return `${base}?text=${encodeURIComponent(message)}`;

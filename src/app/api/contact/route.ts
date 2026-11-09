@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isRateLimited } from "@/lib/rateLimit";
 import type { LeadSource, LeadType, PreferredContactMethod } from "@/lib/models/lead";
 import { leadTypes } from "@/lib/models/lead";
+import { queueNewLeadAlert } from "@/lib/leadAlert";
+import type { LeadInput } from "@/lib/models/lead";
 
 const CONTACT_METHODS: PreferredContactMethod[] = ["Phone", "WhatsApp", "Email"];
 
@@ -139,7 +141,7 @@ export async function POST(request: Request) {
   const resolvedBudgetMax = typeof budgetMax === "number" && Number.isFinite(budgetMax) && budgetMax >= 0 ? budgetMax : undefined;
 
   try {
-    await leadService.create({
+    const leadInput: LeadInput = {
       name: name.trim(),
       phone: phone.trim(),
       whatsapp: typeof whatsapp === "string" && whatsapp.trim() ? whatsapp.trim() : undefined,
@@ -169,7 +171,9 @@ export async function POST(request: Request) {
       lastTouchContent: str(lastTouchContent),
       lastTouchTerm: str(lastTouchTerm),
       lastTouchLandingPage: str(lastTouchLandingPage),
-    });
+    };
+    await leadService.create(leadInput);
+    queueNewLeadAlert(leadInput);
     if (customerId) {
       await notificationService.notify(
         customerId,

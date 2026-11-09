@@ -14,14 +14,13 @@ export function Hero() {
           </div>
 
           <h1 className="font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.4rem]">
-            Now You Will <span className="text-primary">Dream</span>
-            <br />
-            We Will Fulfill It
+            Real Estate &amp; Property Solutions{" "}
+            <span className="text-primary">in Lahore</span>
           </h1>
 
           <p className="mt-6 max-w-lg text-base leading-relaxed text-muted sm:text-lg">
-            Your trusted partner for property buying, selling, investment and
-            construction solutions in Lahore.
+            Now You Will Dream — We Will Fulfill It. Your trusted partner for
+            property buying, selling, investment and construction solutions in Lahore.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
@@ -67,7 +66,7 @@ export function Hero() {
           <div className="relative aspect-[4/5] w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-ink/20 sm:aspect-[5/4] sm:max-w-none lg:aspect-[4/5]">
             <Image
               src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200&auto=format&fit=crop"
-              alt="Modern luxury home built by 5STAR.M Estate & Builders"
+              alt="Modern residential property"
               fill
               priority
               sizes="(min-width: 1024px) 480px, 90vw"

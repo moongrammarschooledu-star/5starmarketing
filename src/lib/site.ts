@@ -19,8 +19,8 @@ export const site = {
   phoneHref: "+923198430458",
   phoneDisplay2: "0308-6010310",
   phoneHref2: "+923086010310",
-  whatsappNumber: "923198430458",
-  whatsappHref: "https://wa.me/923198430458",
+  whatsappNumber: "923086010310",
+  whatsappHref: "https://wa.me/923086010310",
   // The company email - the ONLY email address used anywhere in the app
   // (public pages, PDFs, structured data, outgoing request headers). The
   // owner's personal login email must never be put here or in code.

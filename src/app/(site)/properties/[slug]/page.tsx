@@ -54,16 +54,13 @@ function seoTitle(property: Property) {
   return `${property.size} ${property.type} for ${purpose} in ${location}`;
 }
 
-/** Keep search snippets concise and readable while preserving the admin's
- * SEO override. Descriptions are plain text in the property model. */
+/** Keep every search snippet concise and readable, including admin overrides. */
 function seoDescription(property: Property, title: string) {
-  if (property.seoDescription?.trim()) return property.seoDescription.trim();
-
-  const source = property.description?.replace(/\s+/g, " ").trim();
+  const source = property.seoDescription?.trim() || property.description?.replace(/\\s+/g, " ").trim();
   // Lead with the actual property title so each snippet immediately states
   // the size, property type, purpose, and admin-entered locality.
   const fallback = `${title}. Contact 5STAR.M Estate & Builders for complete details and viewing.`;
-  const description = source ? `${title}. ${source}` : fallback;
+  const description = source ? (property.seoDescription?.trim() ? source : `${title}. ${source}`) : fallback;
   if (description.length <= 155) return description;
 
   const shortened = description.slice(0, 152);
@@ -82,7 +79,7 @@ export async function generateMetadata({
 
   // STEP 32 — an admin-set SEO override always wins; everything else
   // falls back to the same derived-from-real-fields values as before.
-  const title = property.seoTitle || seoTitle(property);
+  const title = property.seoTitle?.trim() || seoTitle(property);
   const description = seoDescription(property, title);
   const image = property.ogImage || property.images[0];
 
@@ -90,6 +87,8 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `/properties/${property.slug}` },
+    // Inactive listings are excluded from the sitemap; keep direct URLs out of the index too.
+    robots: property.status === "Inactive" ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: {
       title: `${title} | 5STAR.M Estate & Builders`,
       description,

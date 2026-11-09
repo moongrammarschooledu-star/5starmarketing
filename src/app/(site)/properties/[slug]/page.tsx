@@ -56,11 +56,12 @@ function seoTitle(property: Property) {
 
 /** Keep every search snippet concise and readable, including admin overrides. */
 function seoDescription(property: Property, title: string) {
-  const source = property.seoDescription?.trim() || property.description?.replace(/\s+/g, " ").trim();
+  const customDescription = property.seoDescription?.replace(/\s+/g, " ").trim();
+  const source = customDescription || property.description?.replace(/\s+/g, " ").trim();
   // Lead with the actual property title so each snippet immediately states
   // the size, property type, purpose, and admin-entered locality.
   const fallback = `${title}. Contact 5STAR.M Estate & Builders for complete details and viewing.`;
-  const description = source ? (property.seoDescription?.trim() ? source : `${title}. ${source}`) : fallback;
+  const description = source ? (customDescription ? source : `${title}. ${source}`) : fallback;
   if (description.length <= 155) return description;
 
   const shortened = description.slice(0, 152);

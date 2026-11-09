@@ -10,6 +10,8 @@ import { notificationService } from "@/services/notificationService";
 import { staffNotificationService } from "@/services/staffNotificationService";
 import { automationService } from "@/services/automationService";
 import type { LeadStatus } from "@/lib/models/lead";
+import { queueNewLeadAlert } from "@/lib/leadAlert";
+import type { LeadInput } from "@/lib/models/lead";
 
 const PHONE_PATTERN = /^[0-9+()\-\s]{7,20}$/;
 
@@ -33,7 +35,7 @@ export async function trackWhatsAppLeadAction(input: {
 
   const { propertyTitle, propertyId } = input;
   try {
-    await leadService.create({
+    const leadInput: LeadInput = {
       name,
       phone,
       whatsapp: phone,
@@ -44,7 +46,9 @@ export async function trackWhatsAppLeadAction(input: {
         : "Started a WhatsApp chat from the website.",
       source: "WhatsApp",
       preferredContactMethod: "WhatsApp",
-    });
+    };
+    await leadService.create(leadInput);
+    queueNewLeadAlert(leadInput);
   } catch (e) {
     // The visitor still gets to WhatsApp - a logging failure never blocks them.
     console.error("trackWhatsAppLeadAction failed:", e);
@@ -75,7 +79,7 @@ export async function trackBrochureDownloadLeadAction(input: {
 
   const { title, propertyId, projectId, projectTitle } = input;
   try {
-    await leadService.create({
+    const leadInput: LeadInput = {
       name,
       phone,
       whatsapp: phone,
@@ -86,7 +90,9 @@ export async function trackBrochureDownloadLeadAction(input: {
       leadType: "Brochure Request",
       message: title ? `Downloaded the brochure for ${title}.` : "Downloaded a brochure.",
       source: "Website",
-    });
+    };
+    await leadService.create(leadInput);
+    queueNewLeadAlert(leadInput);
   } catch (e) {
     console.error("trackBrochureDownloadLeadAction failed:", e);
     return { ok: false };

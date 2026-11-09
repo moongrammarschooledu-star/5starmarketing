@@ -42,6 +42,8 @@ import type {
   VendorStatus,
   ConditionRating,
 } from "@/lib/models/maintenance";
+import { queueNewLeadAlert } from "@/lib/leadAlert";
+import type { LeadInput } from "@/lib/models/lead";
 
 async function requireMaintenanceAccess() {
   const admin = await profileService.getCurrentAdmin();
@@ -371,7 +373,7 @@ export async function createMaintenanceInquiryLeadAction(input: {
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (isRateLimited(`maintenance-lead:${ip}`, 60_000, 5)) throw new Error("Too many submissions. Please try again in a minute.");
 
-  await leadService.create({
+  const leadInput: LeadInput = {
     name: input.name.trim(),
     phone: input.phone.trim(),
     email: input.email,
@@ -380,5 +382,7 @@ export async function createMaintenanceInquiryLeadAction(input: {
     source: "Property Page",
     leadType: "General Inquiry",
     consent: input.consent,
-  });
+  };
+  await leadService.create(leadInput);
+  queueNewLeadAlert(leadInput);
 }

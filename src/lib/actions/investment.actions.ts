@@ -18,6 +18,8 @@ import { pricePerSqft } from "@/lib/investment/calculations";
 import { headers } from "next/headers";
 import type { PropertyValuationInput, MarketDataInput, MarketDataStatus, InvestmentAnalysisInput, InvestmentAlertInput, InvestmentScenarioInput, ValuationSettingsInput, InvestmentEventInput } from "@/lib/models/investment";
 import type { LeadType } from "@/lib/models/lead";
+import { queueNewLeadAlert } from "@/lib/leadAlert";
+import type { LeadInput } from "@/lib/models/lead";
 
 async function requireInvestmentAccess() {
   const admin = await profileService.getCurrentAdmin();
@@ -229,7 +231,7 @@ export async function createInvestmentLeadAction(input: {
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (isRateLimited(`investment-lead:${ip}`, 60_000, 5)) throw new Error("Too many submissions. Please try again in a minute.");
 
-  await leadService.create({
+  const leadInput: LeadInput = {
     name: input.name.trim(),
     phone: input.phone.trim(),
     email: input.email,
@@ -243,7 +245,9 @@ export async function createInvestmentLeadAction(input: {
     budgetMin: input.budgetMin,
     budgetMax: input.budgetMax,
     preferredLocation: input.preferredLocation,
-  });
+  };
+  await leadService.create(leadInput);
+  queueNewLeadAlert(leadInput);
   await investmentEventService.track({ eventType: "investment_lead_created", propertyId: input.propertyId, projectId: input.projectId });
 }
 

@@ -35,7 +35,11 @@ export async function generateMetadata({ params }: AreaPageProps): Promise<Metad
   const listingContext = sample
     ? ` Current listing: ${sample.size} ${sample.type.toLowerCase()} ${sample.purpose.toLowerCase()} in ${sample.location || area.name}.`
     : "";
-  const description = `Explore properties in ${area.name}, Lahore.${listingContext} View listing details and contact 5STAR.M Estate & Builders.`;
+  const rawDescription = `Explore properties in ${area.name}, Lahore.${listingContext} View listing details and contact 5STAR.M Estate & Builders.`;
+  const description =
+    rawDescription.length <= 155
+      ? rawDescription
+      : `${rawDescription.slice(0, 152).replace(/\\s+\\S*$/, "")}...`;
 
   return {
     title,

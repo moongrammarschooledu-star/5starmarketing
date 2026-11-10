@@ -45,6 +45,28 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Facebook ads whose link was set to a general page. The ad's own tracking
+  // words (utm_...) stay on the address, so the visit is still counted for it.
+  async redirects() {
+    return [
+      // "md_rent_owners" (people who want to RENT OUT a property) opened the home page.
+      {
+        source: "/",
+        has: [{ type: "query" as const, key: "utm_campaign", value: "md_rent_owners" }],
+        destination: "/landing/rent-your-property",
+        permanent: false,
+      },
+      // "md_rent_tenants" (people who want to rent a property) opened /properties,
+      // which mixes sale and rent. Show only what is for rent.
+      {
+        source: "/properties",
+        has: [{ type: "query" as const, key: "utm_campaign", value: "md_rent_tenants" }],
+        missing: [{ type: "query" as const, key: "purpose" }],
+        destination: "/properties?purpose=rent",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

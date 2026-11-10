@@ -1,6 +1,18 @@
 import "server-only";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
+
+// Scheduled jobs (see /api/cron/marketing) run with nobody signed in, so row
+// level security would hide everything from them. Inside runAsSystem() every
+// createClient() call returns the server's own (service role) client instead.
+// Nothing else ever enters this scope.
+const systemScope = new AsyncLocalStorage<true>();
+
+export function runAsSystem<T>(job: () => Promise<T>): Promise<T> {
+  return systemScope.run(true, job);
+}
 
 // Server-side Supabase client — for Server Components, Server Actions and
 // Route Handlers. Reads/writes the auth session via cookies so the user
@@ -8,6 +20,9 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 // access control is enforced by Postgres Row Level Security, not by this
 // client holding elevated privileges.
 export async function createClient() {
+  if (systemScope.getStore()) {
+    return createServiceRoleClient() as unknown as ReturnType<typeof createServerClient>;
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

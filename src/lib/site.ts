@@ -62,3 +62,9 @@ export function whatsappUrlFor(number: string, message?: string) {
   if (!message) return base;
   return `${base}?text=${encodeURIComponent(message)}`;
 }
+
+/** sms: link for a phone's messaging app (works from a phone, not from a computer). */
+export function smsUrlFor(number: string, message?: string) {
+  const base = `sms:+${toWhatsAppNumber(number)}`;
+  return message ? `${base}?body=${encodeURIComponent(message)}` : base;
+}

@@ -36,7 +36,9 @@ export type AdminSection =
   // Download copies of the data - Super Admin only (it is not in any other role's list).
   | "backup"
   // Client demands (what customers are looking for) - every staff role.
-  | "demands";
+  | "demands"
+  // Customer Contacts: a general contact book for every visitor or caller - every staff role.
+  | "contacts";
 
 const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
   super_admin: "*",
@@ -69,10 +71,11 @@ const ROLE_SECTIONS: Record<AdminRole, AdminSection[] | "*"> = {
     "ai",
     "content",
     "demands",
+    "contacts",
   ],
-  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal", "support", "ai", "content", "demands"],
-  editor: ["dashboard", "properties", "projects", "services", "profile", "brochures", "content", "demands"],
-  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support", "ai", "demands"],
+  sales_manager: ["dashboard", "leads", "whatsapp", "profile", "appointments", "team", "followUps", "reports", "marketing", "deals", "inventory", "documents", "communications", "accounting", "investment", "maintenance", "construction", "rentals", "legal", "support", "ai", "content", "demands", "contacts"],
+  editor: ["dashboard", "properties", "projects", "services", "profile", "brochures", "content", "demands", "contacts"],
+  sales_agent: ["dashboard", "leads", "whatsapp", "profile", "appointments", "deals", "inventory", "documents", "communications", "maintenance", "construction", "rentals", "legal", "support", "ai", "demands", "contacts"],
 };
 
 /** Who may create, edit, switch off or promote whose account.

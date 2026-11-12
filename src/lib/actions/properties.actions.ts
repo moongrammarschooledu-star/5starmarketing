@@ -6,6 +6,8 @@ import { propertyService } from "@/services/propertyService";
 import { activityService } from "@/services/activityService";
 import { ownerDetailsService } from "@/services/ownerDetailsService";
 import { demandService } from "@/services/demandService";
+import { profileService } from "@/services/profileService";
+import { canAccess } from "@/lib/permissions";
 import { readOwnerDetails } from "@/lib/models/ownerDetails";
 import type {
   PaymentOption,
@@ -207,5 +209,18 @@ export async function changeStatusAction(id: string, status: Property["status"])
     revalidateAll(updated?.slug);
   } catch (e) {
     console.error("changeStatusAction failed:", e);
+  }
+}
+
+/** Remembers in the activity log that the owner of a property was messaged. Never blocks opening WhatsApp or SMS. */
+export async function logOwnerMessagedAction(propertyId: string, channel: "whatsapp" | "sms"): Promise<void> {
+  try {
+    const admin = await profileService.getCurrentAdmin();
+    if (!admin || !canAccess(admin.role, "properties")) return;
+    const property = await propertyService.getById(propertyId);
+    if (!property) return;
+    await activityService.log("Messaged Owner", `Owner of ${property.title} by ${channel === "sms" ? "SMS" : "WhatsApp"}`, "property", propertyId);
+  } catch (e) {
+    console.error("logOwnerMessagedAction failed:", e);
   }
 }

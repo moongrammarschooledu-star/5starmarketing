@@ -3,12 +3,20 @@ import { PlusCircle } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { PropertiesTable } from "@/components/admin/PropertiesTable";
 import { requireSection } from "@/lib/guard";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPropertiesPage() {
   await requireSection("properties");
   const properties = await propertyService.list();
+  let owners: Awaited<ReturnType<typeof ownerDetailsService.listForProperties>> = {};
+  let ownersFailed = false;
+  try {
+    owners = await ownerDetailsService.listForProperties();
+  } catch {
+    ownersFailed = true;
+  }
 
   return (
     <div>
@@ -26,7 +34,7 @@ export default async function AdminPropertiesPage() {
       </div>
 
       <div className="mt-6">
-        <PropertiesTable properties={properties} />
+        <PropertiesTable properties={properties} owners={owners} ownersFailed={ownersFailed} />
       </div>
     </div>
   );

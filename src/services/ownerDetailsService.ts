@@ -62,7 +62,24 @@ async function save(target: Target, input: OwnerDetails): Promise<void> {
   }
 }
 
+/** Owner name and numbers of every property, for the admin properties list.
+ *  Staff only (the table is protected at the database level). */
+async function listForProperties(): Promise<Record<string, { name: string; phone: string; altPhone: string }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("owner_private_details").select("property_id, owner_name, owner_phone, owner_alt_phone").not("property_id", "is", null);
+  if (error) {
+    console.error("ownerDetailsService.listForProperties failed:", error);
+    throw new Error("Could not load the owner numbers.");
+  }
+  const out: Record<string, { name: string; phone: string; altPhone: string }> = {};
+  for (const row of data ?? []) {
+    out[row.property_id as string] = { name: row.owner_name ?? "", phone: row.owner_phone ?? "", altPhone: row.owner_alt_phone ?? "" };
+  }
+  return out;
+}
+
 export const ownerDetailsService = {
+  listForProperties,
   getForProperty: (propertyId: string) => get({ column: "property_id", id: propertyId }),
   getForProject: (projectId: string) => get({ column: "project_id", id: projectId }),
   saveForProperty: (propertyId: string, input: OwnerDetails) => save({ column: "property_id", id: propertyId }, input),

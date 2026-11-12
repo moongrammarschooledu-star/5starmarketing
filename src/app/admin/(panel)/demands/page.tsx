@@ -4,13 +4,11 @@ import { AlertTriangle, ClipboardCheck, PlusCircle, Sparkles, Handshake, XCircle
 import { demandService } from "@/services/demandService";
 import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
-import { propertyService } from "@/services/propertyService";
-import { DemandContactsTable, type ContactRow, type ShareableProperty } from "@/components/admin/DemandContactsTable";
 import { describeBudget, describeSize } from "@/lib/demandText";
 import { formatDateOnlyShort } from "@/lib/date";
 import { demandStatuses, type DemandStatus, type PropertyDemand } from "@/lib/models/demand";
 
-export const metadata: Metadata = { title: "Customer Contacts" };
+export const metadata: Metadata = { title: "Demands" };
 export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<DemandStatus, string> = {
@@ -18,6 +16,13 @@ const STATUS_TONE: Record<DemandStatus, string> = {
   Matched: "bg-success/10 text-success",
   Closed: "bg-ink/10 text-ink",
   Lost: "bg-muted/20 text-muted",
+};
+
+const PRIORITY_TONE: Record<string, string> = {
+  Urgent: "text-primary",
+  High: "text-amber-600",
+  Normal: "text-muted",
+  Low: "text-muted",
 };
 
 export default async function AdminDemandsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -35,36 +40,7 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
     loadError = e instanceof Error ? e.message : "Could not load the demands.";
   }
 
-  // Properties that can be sent to customers (never anything sold or hidden).
-  let properties: ShareableProperty[] = [];
-  try {
-    properties = (await propertyService.list())
-      .filter((p) => p.status === "Available")
-      .map((p) => ({ id: p.id, slug: p.slug, title: p.title, location: p.location, size: p.size, price: p.price, documents: p.documents }));
-  } catch {
-    properties = [];
-  }
-
   const shown = status ? all.filter((d) => d.status === status) : all;
-  const rows: ContactRow[] = shown.map((d) => {
-    const c = counts.get(d.id);
-    return {
-      id: d.id,
-      name: d.clientName,
-      phone: d.clientPhone,
-      whatsapp: d.clientWhatsapp || d.clientPhone,
-      wants: `${d.purpose === "For Sale" ? "Buy" : "Rent"} - ${d.propertyTypes.length ? d.propertyTypes.join(", ") : "any type"}`,
-      where: d.locations.length ? d.locations.join(", ") : "Anywhere",
-      budget: describeBudget(d),
-      size: describeSize(d),
-      remarks: d.notes ?? "",
-      status: d.status,
-      statusTone: STATUS_TONE[d.status],
-      urgent: d.priority === "Urgent" || d.priority === "High" ? d.priority : "",
-      matchLabel: c && c.total > 0 ? (c.good > 0 ? `${c.good} good` : `${c.total} possible`) : "",
-      added: formatDateOnlyShort(d.createdAt.slice(0, 10)),
-    };
-  });
   const tally = (s: DemandStatus) => all.filter((d) => d.status === s).length;
   const waitingWithMatch = all.filter((d) => (d.status === "Open" || d.status === "Matched") && (counts.get(d.id)?.good ?? 0) > 0).length;
 
@@ -72,11 +48,11 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-extrabold text-ink">Customer Contacts</h1>
-          <p className="mt-1 text-sm text-muted">Every customer with their number, what they are looking for and your remarks. Tick customers to send them a WhatsApp or SMS, a property or a document. Private - never shown on the website.</p>
+          <h1 className="font-heading text-2xl font-extrabold text-ink">Demands</h1>
+          <p className="mt-1 text-sm text-muted">What each client is looking for, matched with the properties we have. Private - never shown on the website.</p>
         </div>
         <Link href="/admin/demands/new" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
-          <PlusCircle className="h-4 w-4" /> Add Customer
+          <PlusCircle className="h-4 w-4" /> Add Demand
         </Link>
       </div>
 
@@ -105,7 +81,67 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
         ))}
       </div>
 
-      <DemandContactsTable rows={rows} properties={properties} />
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-border bg-surface">
+        <table className="w-full min-w-[900px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border bg-surface-muted text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <th className="px-4 py-3">Client</th>
+              <th className="px-4 py-3">Looking for</th>
+              <th className="px-4 py-3">Budget</th>
+              <th className="px-4 py-3">Size</th>
+              <th className="px-4 py-3">Matches</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Assigned</th>
+              <th className="px-4 py-3">Added</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-4 py-10 text-center text-muted">
+                  {all.length === 0 ? "No demands yet. Add the first one when a client asks for a property." : "No demands with this status."}
+                </td>
+              </tr>
+            )}
+            {shown.map((d) => {
+              const c = counts.get(d.id);
+              return (
+                <tr key={d.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/demands/${d.id}`} className="font-semibold text-ink hover:text-primary">
+                      {d.clientName}
+                    </Link>
+                    <div className="text-xs text-muted">{d.clientPhone}</div>
+                  </td>
+                  <td className="px-4 py-3 text-ink">
+                    <div>
+                      {d.purpose === "For Sale" ? "Buy" : "Rent"} - {d.propertyTypes.length ? d.propertyTypes.join(", ") : "any type"}
+                    </div>
+                    <div className="text-xs text-muted">{d.locations.length ? d.locations.join(", ") : "Anywhere"}</div>
+                  </td>
+                  <td className="px-4 py-3 text-ink">{describeBudget(d)}</td>
+                  <td className="px-4 py-3 text-ink">{describeSize(d)}</td>
+                  <td className="px-4 py-3">
+                    {c && c.total > 0 ? (
+                      <Link href={`/admin/demands/${d.id}`} className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
+                        <Sparkles className="h-3 w-3" /> {c.good > 0 ? `${c.good} good` : `${c.total} possible`}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted">None yet</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_TONE[d.status]}`}>{d.status}</span>
+                    {(d.priority === "Urgent" || d.priority === "High") && <div className={`mt-1 text-xs font-bold ${PRIORITY_TONE[d.priority]}`}>{d.priority}</div>}
+                  </td>
+                  <td className="px-4 py-3 text-muted">{d.assignedToName ?? "-"}</td>
+                  <td className="px-4 py-3 text-muted">{formatDateOnlyShort(d.createdAt.slice(0, 10))}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

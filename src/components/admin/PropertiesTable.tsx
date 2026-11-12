@@ -4,17 +4,27 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Eye, Pencil, Trash2, Star } from "lucide-react";
+import { Search, Eye, Pencil, Trash2, Star, MessageCircle } from "lucide-react";
 import type { Property, PropertyStatus } from "@/lib/models/property";
 import { propertyTypes, locationAreas, propertyStatuses, paymentOptions, purposes } from "@/lib/models/property";
 import { PURPOSE_PILL } from "@/lib/propertyPurpose";
 import { deletePropertyAction, toggleFeaturedAction, changeStatusAction } from "@/lib/actions/properties.actions";
 import { ConfirmDialog, useConfirmDelete } from "./ConfirmDialog";
 import { useToast } from "./ToastProvider";
+import { OwnerMessageModal, type OwnerInfo } from "./OwnerMessageModal";
 
 const ALL = "All";
 
-export function PropertiesTable({ properties }: { properties: Property[] }) {
+export function PropertiesTable({
+  properties,
+  owners = {},
+  ownersFailed = false,
+}: {
+  properties: Property[];
+  owners?: Record<string, OwnerInfo>;
+  ownersFailed?: boolean;
+}) {
+  const [ownerFor, setOwnerFor] = useState<Property | null>(null);
   const [search, setSearch] = useState("");
   const [type, setType] = useState<string>(ALL);
   const [locationArea, setLocationArea] = useState<string>(ALL);
@@ -197,6 +207,19 @@ export function PropertiesTable({ properties }: { properties: Property[] }) {
                     </Link>
                     <button
                       type="button"
+                      onClick={() => setOwnerFor(p)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
+                        owners[p.id]?.phone || owners[p.id]?.altPhone
+                          ? "border-success/40 text-success hover:bg-success/10"
+                          : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                      }`}
+                      aria-label="Message the owner on WhatsApp"
+                      title={owners[p.id]?.phone || owners[p.id]?.altPhone ? "Message the owner" : "No owner number saved"}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => del.open(p)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted hover:border-primary hover:text-primary"
                       aria-label="Delete"
@@ -210,6 +233,8 @@ export function PropertiesTable({ properties }: { properties: Property[] }) {
           </tbody>
         </table>
       </div>
+
+      {ownerFor && <OwnerMessageModal property={ownerFor} owner={owners[ownerFor.id]} loadFailed={ownersFailed} onClose={() => setOwnerFor(null)} />}
 
       <ConfirmDialog
         open={!!del.target}

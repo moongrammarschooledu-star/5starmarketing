@@ -201,8 +201,10 @@ async function elevenLabsSpeech(text: string, gender: VoiceGender, key: string):
   return { ok: true, audio: await res.arrayBuffer(), contentType: "audio/mpeg" };
 }
 
-/** Female (default) or male neural voice via whichever provider has a key
- *  configured (Azure Speech preferred - better Urdu - then ElevenLabs). */
+/** Female (default) or male neural voice. Providers are tried one after the other and
+ *  the first one that works wins, so one provider having a problem (wrong or expired key,
+ *  a disabled Azure subscription, quota used up) does not leave an ad without a voice.
+ *  ElevenLabs goes first; set VOICE_PROVIDER=azure in Vercel to put Azure (better Urdu) first. */
 export async function synthesizeSpeech(text: string, lang: NarrationLang, gender: VoiceGender = "female"): Promise<SpeechResult> {
   let azureKey: string | null;
   let azureRegion: string | null;
@@ -215,30 +217,22 @@ export async function synthesizeSpeech(text: string, lang: NarrationLang, gender
     return { ok: false, reason: "failed", message: e instanceof Error ? e.message : "The voice service key is invalid." };
   }
 
-  // Azure first (better Urdu). If it is configured but fails (wrong or expired key,
-  // wrong region, quota used up), the other provider is tried before giving up, so a
-  // problem with one key does not leave the ad without a voice.
-  let last: SpeechResult | null = null;
-  if (azureKey && azureRegion) {
+  const azure = azureKey && azureRegion ? { name: "Azure", run: () => azureSpeech(text, lang, gender, azureKey, azureRegion) } : null;
+  const eleven = elevenKey ? { name: "ElevenLabs", run: () => elevenLabsSpeech(text, gender, elevenKey) } : null;
+  const azureFirst = process.env.VOICE_PROVIDER?.trim().toLowerCase() === "azure";
+  const order = (azureFirst ? [azure, eleven] : [eleven, azure]).filter((p): p is NonNullable<typeof p> => p !== null);
+  if (order.length === 0) return { ok: false, reason: "not_configured", message: "No voice service is set up yet." };
+
+  const problems: string[] = [];
+  for (const provider of order) {
     try {
-      const res = await azureSpeech(text, lang, gender, azureKey, azureRegion);
-      if (res.ok || !elevenKey) return res;
-      last = res;
+      const res = await provider.run();
+      if (res.ok) return res;
+      problems.push(res.message);
     } catch (e) {
-      console.error("Azure speech error:", e);
-      last = { ok: false, reason: "failed", message: "The voice service (Azure) did not respond. Please try again." };
-      if (!elevenKey) return last;
+      console.error(`${provider.name} speech error:`, e);
+      problems.push(`The voice service (${provider.name}) did not respond.`);
     }
   }
-  if (elevenKey) {
-    try {
-      const res = await elevenLabsSpeech(text, gender, elevenKey);
-      if (res.ok || !last) return res;
-      return { ok: false, reason: "failed", message: `${last.ok ? "" : last.message} (The backup voice service failed too: ${res.ok ? "" : res.message})` };
-    } catch (e) {
-      console.error("ElevenLabs speech error:", e);
-      return last ?? { ok: false, reason: "failed", message: "The voice service did not respond. Please try again." };
-    }
-  }
-  return { ok: false, reason: "not_configured", message: "No voice service is set up yet." };
+  return { ok: false, reason: "failed", message: problems.join(" ") };
 }

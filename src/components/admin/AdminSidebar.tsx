@@ -42,6 +42,7 @@ import {
   Headset,
   Bot,
   PencilRuler,
+  DatabaseBackup,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -82,6 +83,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/services", label: "Services", icon: Wrench, section: "services" },
   { href: "/admin/reports", label: "Reports", icon: ClipboardList, section: "reports" },
   { href: "/admin/activity", label: "Activity Log", icon: History, section: "activity" },
+  { href: "/admin/backup", label: "Data Backup", icon: DatabaseBackup, section: "backup" },
   { href: "/admin/seo", label: "SEO", icon: Search, section: "seo" },
   { href: "/admin/settings", label: "Website Settings", icon: Settings, section: "settings" },
   { href: "/admin/mobile", label: "Mobile App & PWA", icon: Smartphone, section: "settings" },

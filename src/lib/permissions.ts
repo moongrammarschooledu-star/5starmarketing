@@ -33,6 +33,8 @@ export type AdminSection =
   | "support"
   | "ai"
   | "content"
+  // Download copies of the data - Super Admin only (it is not in any other role's list).
+  | "backup"
   // Client demands (what customers are looking for) - every staff role.
   | "demands";
 

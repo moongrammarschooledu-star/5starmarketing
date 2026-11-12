@@ -175,3 +175,18 @@ export async function markDemandSharedAction(demandId: string, propertyId: strin
     console.error("markDemandSharedAction failed:", e);
   }
 }
+
+/** Remembers in the activity log that a customer was messaged from the Demands
+ *  list. Only signed-in staff are recorded; it never blocks opening WhatsApp or SMS. */
+export async function logDemandContactedAction(demandId: string, channel: "whatsapp" | "sms", propertyTitle?: string): Promise<void> {
+  try {
+    const admin = await profileService.getCurrentAdmin();
+    if (!admin) return;
+    const demand = await demandService.getById(demandId);
+    if (!demand) return;
+    const how = channel === "sms" ? "SMS" : "WhatsApp";
+    await activityService.log("Messaged Client", `${demand.clientName} by ${how}${propertyTitle ? ` - ${propertyTitle}` : ""}`, "demand", demandId);
+  } catch (e) {
+    console.error("logDemandContactedAction failed:", e);
+  }
+}

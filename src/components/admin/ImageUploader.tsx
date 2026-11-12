@@ -10,6 +10,52 @@ import { Upload, Link as LinkIcon, X, Star, ChevronLeft, ChevronRight } from "lu
 // hosted image URL directly instead of uploading a file. The first image
 // in the list is used as the cover/main photo — use "Set as Cover" to
 // reorder without deleting and re-adding.
+// The whole form goes to the server in ONE request and Vercel refuses any
+// request bigger than 4.5 MB (the page then shows a bare "Something went
+// wrong"). Phone photos are 2-5 MB each, so every picture is shrunk here in
+// the browser first, and the total is kept under a safe budget.
+const MAX_SIDE = 1600;
+const JPEG_QUALITY = 0.82;
+const SKIP_SHRINK_BELOW = 350_000; // bytes - already small, keep as it is
+const TOTAL_BUDGET = 2_600_000; // characters of all new (not yet saved) pictures
+
+function readAsDataUrl(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => (typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("read")));
+    reader.onerror = () => reject(reader.error ?? new Error("read"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Shrinks a picture to at most MAX_SIDE px; falls back to the original if the browser cannot decode it. */
+async function shrinkImage(file: File): Promise<string> {
+  const original = await readAsDataUrl(file);
+  if (file.size < SKIP_SHRINK_BELOW || file.type === "image/svg+xml" || file.type === "image/gif") return original;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return original;
+    const keepAlpha = file.type === "image/png" || file.type === "image/webp";
+    if (!keepAlpha) {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    const out = keepAlpha ? canvas.toDataURL("image/webp", JPEG_QUALITY) : canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+    return out.length < original.length ? out : original;
+  } catch {
+    return original;
+  }
+}
+
 export function ImageUploader({
   name,
   initialImages = [],
@@ -19,6 +65,8 @@ export function ImageUploader({
 }) {
   const [images, setImages] = useState<string[]>(initialImages);
   const [urlInput, setUrlInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
 
   function addUrl() {
     const url = urlInput.trim();
@@ -27,17 +75,38 @@ export function ImageUploader({
     setUrlInput("");
   }
 
-  function handleFiles(fileList: FileList | null) {
-    if (!fileList) return;
-    [...fileList].forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setImages((imgs) => [...imgs, reader.result as string]);
+  async function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const files = [...fileList];
+    setBusy(true);
+    setNotice("");
+    const skipped: string[] = [];
+    const added: string[] = [];
+    let used = images.filter((i) => i.startsWith("data:")).reduce((n, i) => n + i.length, 0);
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        skipped.push(file.name);
+        continue;
+      }
+      try {
+        const data = await shrinkImage(file);
+        if (used + data.length > TOTAL_BUDGET) {
+          skipped.push(file.name);
+          continue;
         }
-      };
-      reader.readAsDataURL(file);
-    });
+        used += data.length;
+        added.push(data);
+      } catch {
+        skipped.push(file.name);
+      }
+    }
+    if (added.length) setImages((imgs) => [...imgs, ...added]);
+    if (skipped.length) {
+      setNotice(
+        `Not added: ${skipped.join(", ")}. Too many or too large pictures for one save - save the property first, then open it again (Edit) and add the rest.`,
+      );
+    }
+    setBusy(false);
   }
 
   function removeAt(index: number) {
@@ -123,13 +192,17 @@ export function ImageUploader({
 
       <div className="flex flex-col gap-2.5 sm:flex-row">
         <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-3 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-primary">
-          <Upload className="h-4 w-4" /> Upload images
+          <Upload className="h-4 w-4" /> {busy ? "Preparing pictures..." : "Upload images"}
           <input
             type="file"
             accept="image/*"
             multiple
             className="hidden"
-            onChange={(e) => handleFiles(e.target.files)}
+            disabled={busy}
+            onChange={(e) => {
+              void handleFiles(e.target.files);
+              e.target.value = "";
+            }}
           />
         </label>
 
@@ -159,6 +232,7 @@ export function ImageUploader({
           </button>
         </div>
       </div>
+      {notice && <p className="mt-2 text-xs font-semibold text-red-600">{notice}</p>}
     </div>
   );
 }

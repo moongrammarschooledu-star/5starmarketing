@@ -14,6 +14,10 @@ interface DocEntry {
 // data: URIs, uploads them to the `documents` Storage bucket (see
 // src/services/storage.ts). Nothing here is shown publicly unless an
 // admin actually adds it.
+// Same 4.5 MB request cap as the pictures (see ImageUploader), so the PDFs of
+// one form together are kept under about 1.6 MB of encoded text.
+const DOC_BUDGET = 1_600_000;
+
 export function DocumentUploader({
   name,
   initialDocuments = [],
@@ -23,10 +27,17 @@ export function DocumentUploader({
 }) {
   const [docs, setDocs] = useState<DocEntry[]>(initialDocuments);
   const [label, setLabel] = useState("");
+  const [notice, setNotice] = useState("");
 
   function handleFile(fileList: FileList | null) {
     const file = fileList?.[0];
     if (!file) return;
+    const used = docs.filter((d) => d.url.startsWith("data:")).reduce((n, d) => n + d.url.length, 0);
+    if (used + file.size * 1.37 > DOC_BUDGET) {
+      setNotice("This PDF is too big to attach here (about 1.2 MB is the most). Make the PDF smaller, or share its link in the description instead.");
+      return;
+    }
+    setNotice("");
     const finalLabel = label.trim() || file.name.replace(/\.pdf$/i, "");
     const reader = new FileReader();
     reader.onload = () => {
@@ -79,9 +90,10 @@ export function DocumentUploader({
         />
         <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-primary">
           <Upload className="h-4 w-4" /> Upload PDF
-          <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleFile(e.target.files)} />
+          <input type="file" accept="application/pdf" className="hidden" onChange={(e) => { handleFile(e.target.files); e.target.value = ""; }} />
         </label>
       </div>
+      {notice && <p className="mt-2 text-xs font-semibold text-red-600">{notice}</p>}
     </div>
   );
 }

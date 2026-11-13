@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2 } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2, UserPlus } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
 import { RequestCallbackForm } from "./RequestCallbackForm";
 import { site, whatsappLink } from "@/lib/site";
@@ -137,6 +137,16 @@ export function Contact() {
                     <MessageCircle className="h-4 w-4" />
                   </span>
                   WhatsApp: {site.phoneDisplay}
+                </a>
+                <a
+                  href={site.contactCardPath}
+                  onClick={() => trackEvent("save_contact_click", { context: "contact_section" })}
+                  className="flex items-center gap-3 text-ink/85 hover:text-primary"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <UserPlus className="h-4 w-4" />
+                  </span>
+                  Save our number to your phone
                 </a>
                 <a href={`mailto:${site.displayEmail}`} className="flex items-center gap-3 text-ink/85 hover:text-primary">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">

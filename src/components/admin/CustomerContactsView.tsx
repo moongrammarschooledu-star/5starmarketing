@@ -7,6 +7,7 @@ import {
   Pencil,
   Phone,
   PlusCircle,
+  Download,
   Search,
   Send,
   Smartphone,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { site, whatsappUrlFor, smsUrlFor } from "@/lib/site";
 import { contactSources } from "@/lib/models/contact";
+import { buildVcard } from "@/lib/vcard";
 import { propertyTypes } from "@/lib/models/property";
 import {
   deleteContactAction,
@@ -72,7 +74,35 @@ const PRESETS: { label: string; text: string }[] = [
   { label: "New property", text: "We have a new property that may suit what you are looking for." },
   { label: "Follow-up", text: "Just checking in about your property requirement. Are you still looking? Please let us know and we will arrange the best options." },
   { label: "Documents", text: "As discussed, please find the documents / details below." },
+  {
+    label: "Save our number",
+    text: `Please save our number ${site.phoneDisplay2} in your phone so you can see our latest property updates on our WhatsApp Status. Tap here to save it: ${site.url}${site.contactCardPath}`,
+  },
+  ...(site.whatsappChannelUrl
+    ? [{ label: "Follow our channel", text: `Follow our WhatsApp Channel for new properties and updates - no need to save any number: ${site.whatsappChannelUrl}` }]
+    : []),
 ];
+
+/** Downloads the customers as a phone-book file (.vcf) that can be imported into a phone or Google Contacts. */
+function downloadVcf(list: ContactRow[]) {
+  const text = buildVcard(
+    list.map((r) => ({
+      name: r.name,
+      phones: [r.phone, r.whatsappRaw],
+      org: "5STAR.M Customer",
+      note: r.propertyDetail || undefined,
+    })),
+  );
+  const blob = new Blob([text], { type: "text/vcard;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `5starm-customers-${new Date().toISOString().slice(0, 10)}.vcf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 const INPUT = "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-primary";
 const LABEL = "text-xs font-bold uppercase tracking-wide text-muted-foreground";
@@ -233,7 +263,7 @@ function MatchesModal({ contact, matches, onClose }: { contact: ContactRow; matc
         </div>
         <ul className="divide-y divide-border overflow-y-auto">
           {matches.map((m) => {
-            const text = [`Assalam-o-Alaikum ${contact.name},`, "", "We have a property that matches what you are looking for:", "", ...propertyLines(m), "", `${site.fullName} - ${site.phoneDisplay}`].join("\n");
+            const text = [`Assalam-o-Alaikum ${contact.name},`, "", "We have a property that matches what you are looking for:", "", ...propertyLines(m), "", `${site.fullName} - ${site.phoneDisplay2}`].join("\n");
             const done = sent.has(m.id);
             return (
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
@@ -352,7 +382,7 @@ export function CustomerContactsView({
       if (docs.length) lines.push("");
     }
     if (extraLink.trim()) lines.push(extraLink.trim(), "");
-    lines.push(`${site.fullName} - ${site.phoneDisplay}`);
+    lines.push(`${site.fullName} - ${site.phoneDisplay2}`);
     return lines.join("\n");
   }
 
@@ -394,6 +424,15 @@ export function CustomerContactsView({
           )}
           <button
             type="button"
+            disabled={rows.length === 0}
+            onClick={() => downloadVcf(selected.size > 0 ? chosen : shown)}
+            title="Download as a phone-book file to import into your phone or Google Contacts"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-xs font-bold text-ink hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Download className="h-3.5 w-3.5" /> {selected.size > 0 ? "Save selected to phone (.vcf)" : "Save all to phone (.vcf)"}
+          </button>
+          <button
+            type="button"
             disabled={selected.size === 0}
             onClick={() => setPanelOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full bg-success px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
@@ -402,6 +441,10 @@ export function CustomerContactsView({
           </button>
         </div>
       </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-muted">
+        WhatsApp shows your Status only to people who have your number saved (and you theirs). Use <b>Save selected to phone</b> to put these customers in your phone, and send
+        them the <b>Save our number</b> message so they save yours.
+      </p>
       {deleteError && <p className="mt-2 text-sm font-semibold text-primary">{deleteError}</p>}
 
       {/* Table */}

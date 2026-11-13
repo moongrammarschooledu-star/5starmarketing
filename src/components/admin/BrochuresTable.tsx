@@ -8,8 +8,21 @@ import type { BrochureSummary } from "@/lib/models/brochure";
 import { generateBrochurePdfAction, setBrochurePublicAction, deleteBrochureAction } from "@/lib/actions/brochure.actions";
 import { ConfirmDialog, useConfirmDelete } from "./ConfirmDialog";
 import { useToast } from "./ToastProvider";
+import { BrochureOwnerSend } from "./BrochureOwnerSend";
+import type { OwnerInfo } from "./OwnerMessageModal";
 
-export function BrochuresTable({ brochures }: { brochures: BrochureSummary[] }) {
+export function BrochuresTable({
+  brochures,
+  propertyOwners = {},
+  projectOwners = {},
+  ownersFailed = false,
+}: {
+  brochures: BrochureSummary[];
+  propertyOwners?: Record<string, OwnerInfo>;
+  projectOwners?: Record<string, OwnerInfo>;
+  ownersFailed?: boolean;
+}) {
+  const ownerOf = (b: BrochureSummary): OwnerInfo | undefined => (b.type === "property" ? propertyOwners[b.propertyId ?? ""] : projectOwners[b.projectId ?? ""]);
   const [isPending, startTransition] = useTransition();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const router = useRouter();
@@ -135,6 +148,7 @@ export function BrochuresTable({ brochures }: { brochures: BrochureSummary[] }) 
                         <Globe className="h-4 w-4" />
                       </Link>
                     )}
+                    <BrochureOwnerSend brochure={b} owner={ownerOf(b)} loadFailed={ownersFailed} variant="icon" />
                     <button
                       type="button"
                       onClick={() => del.open(b)}
@@ -180,6 +194,9 @@ export function BrochuresTable({ brochures }: { brochures: BrochureSummary[] }) 
                   <Download className="h-3.5 w-3.5" /> Download
                 </a>
               )}
+              <div className="col-span-2 flex">
+                <BrochureOwnerSend brochure={b} owner={ownerOf(b)} loadFailed={ownersFailed} variant="button" />
+              </div>
               <button
                 type="button"
                 onClick={() => del.open(b)}

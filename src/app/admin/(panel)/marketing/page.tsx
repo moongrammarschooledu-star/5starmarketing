@@ -55,6 +55,9 @@ export default async function AdminMarketingDashboardPage({
           <p className="mt-1 text-sm text-muted">Real campaign, lead-source and funnel data — nothing here is invented.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/admin/marketing/social" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+            Social Accounts
+          </Link>
           <Link href="/admin/marketing/public-portal" className="rounded-full border-2 border-ink/15 px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
             Public Portal Analytics
           </Link>

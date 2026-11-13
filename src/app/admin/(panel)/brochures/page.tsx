@@ -4,6 +4,7 @@ import { brochureService } from "@/services/brochureService";
 import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
 import { BrochuresTable } from "@/components/admin/BrochuresTable";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,16 @@ export default async function AdminBrochuresPage() {
     brochures = await brochureService.list();
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load brochures.";
+  }
+
+  // Owner numbers (staff only) so each brochure can be sent to its owner.
+  let propertyOwners: Awaited<ReturnType<typeof ownerDetailsService.listForProperties>> = {};
+  let projectOwners: Awaited<ReturnType<typeof ownerDetailsService.listForProjects>> = {};
+  let ownersFailed = false;
+  try {
+    [propertyOwners, projectOwners] = await Promise.all([ownerDetailsService.listForProperties(), ownerDetailsService.listForProjects()]);
+  } catch {
+    ownersFailed = true;
   }
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -52,7 +63,7 @@ export default async function AdminBrochuresPage() {
       </div>
 
       <div className="mt-8">
-        <BrochuresTable brochures={brochures} />
+        <BrochuresTable brochures={brochures} propertyOwners={propertyOwners} projectOwners={projectOwners} ownersFailed={ownersFailed} />
       </div>
     </div>
   );

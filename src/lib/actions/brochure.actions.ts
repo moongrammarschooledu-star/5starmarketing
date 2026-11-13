@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { brochureService } from "@/services/brochureService";
 import { activityService } from "@/services/activityService";
+import { profileService } from "@/services/profileService";
+import { canAccess } from "@/lib/permissions";
 import type { BrochureSectionKey, BrochureType } from "@/lib/models/brochure";
 
 export interface BrochureFormState {
@@ -63,4 +65,17 @@ export async function deleteBrochureAction(id: string) {
   await brochureService.remove(id);
   await activityService.log("Deleted Brochure", id, "brochure", id);
   revalidateAll();
+}
+
+/** Remembers in the activity log that a brochure was sent to its owner. Never blocks opening WhatsApp or SMS. */
+export async function logBrochureSentToOwnerAction(id: string, channel: "whatsapp" | "sms"): Promise<void> {
+  try {
+    const admin = await profileService.getCurrentAdmin();
+    if (!admin || !canAccess(admin.role, "brochures")) return;
+    const brochure = await brochureService.getById(id);
+    if (!brochure) return;
+    await activityService.log("Sent Brochure to Owner", `${brochure.title} by ${channel === "sms" ? "SMS" : "WhatsApp"}`, "brochure", id);
+  } catch (e) {
+    console.error("logBrochureSentToOwnerAction failed:", e);
+  }
 }

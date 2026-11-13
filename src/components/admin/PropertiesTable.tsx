@@ -8,10 +8,10 @@ import { Search, Eye, Pencil, Trash2, Star, MessageCircle } from "lucide-react";
 import type { Property, PropertyStatus } from "@/lib/models/property";
 import { propertyTypes, locationAreas, propertyStatuses, paymentOptions, purposes } from "@/lib/models/property";
 import { PURPOSE_PILL } from "@/lib/propertyPurpose";
-import { deletePropertyAction, toggleFeaturedAction, changeStatusAction } from "@/lib/actions/properties.actions";
+import { deletePropertyAction, toggleFeaturedAction, changeStatusAction, logOwnerMessagedAction } from "@/lib/actions/properties.actions";
 import { ConfirmDialog, useConfirmDelete } from "./ConfirmDialog";
 import { useToast } from "./ToastProvider";
-import { OwnerMessageModal, type OwnerInfo } from "./OwnerMessageModal";
+import { OwnerMessageModal, PROPERTY_OWNER_PRESETS, type OwnerInfo } from "./OwnerMessageModal";
 
 const ALL = "All";
 
@@ -234,7 +234,18 @@ export function PropertiesTable({
         </table>
       </div>
 
-      {ownerFor && <OwnerMessageModal property={ownerFor} owner={owners[ownerFor.id]} loadFailed={ownersFailed} onClose={() => setOwnerFor(null)} />}
+      {ownerFor && (
+        <OwnerMessageModal
+          title={ownerFor.title}
+          detailLines={[`Property: ${ownerFor.title}`, `Location: ${ownerFor.location}`, `Size: ${ownerFor.size}`, `Listed price: ${ownerFor.price}`]}
+          presets={PROPERTY_OWNER_PRESETS}
+          owner={owners[ownerFor.id]}
+          loadFailed={ownersFailed}
+          editHref={`/admin/properties/${ownerFor.id}/edit`}
+          onSent={(channel) => void logOwnerMessagedAction(ownerFor.id, channel)}
+          onClose={() => setOwnerFor(null)}
+        />
+      )}
 
       <ConfirmDialog
         open={!!del.target}

@@ -21,6 +21,11 @@ export const site = {
   phoneHref2: "+923086010310",
   whatsappNumber: "923086010310",
   whatsappHref: "https://wa.me/923086010310",
+  // The company's WhatsApp Channel link (create it in the WhatsApp app, then set
+  // NEXT_PUBLIC_WHATSAPP_CHANNEL_URL). Empty until then - nothing shows it.
+  whatsappChannelUrl: process.env.NEXT_PUBLIC_WHATSAPP_CHANNEL_URL ?? "",
+  // Tapping this saves the company number in the customer's phone.
+  contactCardPath: "/contact.vcf",
   // The company email - the ONLY email address used anywhere in the app
   // (public pages, PDFs, structured data, outgoing request headers). The
   // owner's personal login email must never be put here or in code.

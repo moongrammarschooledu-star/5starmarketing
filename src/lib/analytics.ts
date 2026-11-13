@@ -16,7 +16,8 @@ export type AnalyticsEvent =
   | "callback_request"
   | "investment_consultation_request"
   | "brochure_download"
-  | "landing_page_inquiry";
+  | "landing_page_inquiry"
+  | "save_contact_click";
 
 declare global {
   interface Window {
@@ -39,6 +40,7 @@ const META_EVENTS: Record<AnalyticsEvent, string | null> = {
   whatsapp_click: "Contact",
   phone_click: "Contact",
   brochure_download: null,
+  save_contact_click: null,
 };
 
 export function trackEvent(event: AnalyticsEvent, params?: Record<string, string | number | boolean>) {

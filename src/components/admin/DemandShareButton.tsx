@@ -35,7 +35,7 @@ export function DemandShareButton({
     "",
     `Details and photos: ${site.url}/properties/${property.slug}`,
     "",
-    `${site.fullName} - ${site.phoneDisplay}`,
+    `${site.fullName} - ${site.phoneDisplay2}`,
   ].join("\n");
 
   return (

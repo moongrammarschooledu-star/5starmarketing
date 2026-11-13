@@ -8,9 +8,14 @@ import { FacebookPostPanel } from "@/components/admin/FacebookPostPanel";
 import { ReelVideoPanel } from "@/components/admin/ReelVideoPanel";
 import { buildFacebookCaptions } from "@/lib/facebookPost";
 import { site } from "@/lib/site";
+import { socialStatus } from "@/lib/social/meta";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
+import { BrochureOwnerSend } from "@/components/admin/BrochureOwnerSend";
 
 export const metadata: Metadata = { title: "Preview Brochure" };
 export const dynamic = "force-dynamic";
+// Posting to Facebook / Instagram can take a little while.
+export const maxDuration = 60;
 
 /** A brochure target is either a property's or a project's shape; the
  *  caption builder takes the union of both with every field optional. */
@@ -58,6 +63,22 @@ export default async function BrochurePreviewPage({ params }: { params: Promise<
     loadError = e instanceof Error ? e.message : "Could not load this brochure's data.";
   }
 
+  // The owner's private number, so the brochure can be sent to them straight away.
+  let owner: Awaited<ReturnType<typeof ownerDetailsService.getForProperty>>;
+  let ownerFailed = false;
+  try {
+    owner =
+      brochure.type === "property" && brochure.propertyId
+        ? await ownerDetailsService.getForProperty(brochure.propertyId)
+        : brochure.projectId
+          ? await ownerDetailsService.getForProject(brochure.projectId)
+          : undefined;
+  } catch {
+    ownerFailed = true;
+  }
+  const targetName = (renderData?.target as { name?: string } | undefined)?.name ?? brochure.title;
+  const ownerNumber = owner?.phone?.trim() || owner?.altPhone?.trim();
+
   return (
     <div>
       <h1 className="font-heading text-2xl font-extrabold text-ink">Brochure Preview</h1>
@@ -65,6 +86,35 @@ export default async function BrochurePreviewPage({ params }: { params: Promise<
 
       <div className="mt-6">
         <BrochurePreviewPanel brochure={brochure} />
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-5">
+        <div className="min-w-0">
+          <h2 className="font-heading text-sm font-bold text-ink">Send to the owner</h2>
+          <p className="mt-1 text-xs text-muted">
+            {ownerFailed
+              ? "The owner's number could not be loaded just now."
+              : ownerNumber
+                ? `${owner?.name || "Owner"} - ${ownerNumber}`
+                : `No owner number is saved for this ${brochure.type} yet.`}
+          </p>
+        </div>
+        <BrochureOwnerSend
+          variant="button"
+          loadFailed={ownerFailed}
+          owner={owner}
+          brochure={{
+            id: brochure.id,
+            title: brochure.title,
+            slug: brochure.slug,
+            type: brochure.type,
+            targetName,
+            generatedFile: brochure.generatedFile,
+            public: brochure.public,
+            propertyId: brochure.propertyId,
+            projectId: brochure.projectId,
+          }}
+        />
       </div>
 
       {loadError && (
@@ -75,6 +125,7 @@ export default async function BrochurePreviewPage({ params }: { params: Promise<
         <div className="mt-6">
           <FacebookPostPanel
             brochureId={id}
+            social={socialStatus()}
             captions={buildFacebookCaptions({
               type: brochure.type,
               ...postFields(renderData.target),

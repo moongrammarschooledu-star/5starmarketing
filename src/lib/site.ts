@@ -35,8 +35,8 @@ export const site = {
   mapsQuery: "1037-E-1 Johar Town, Lahore, Pakistan",
   social: {
     facebook: "https://www.facebook.com/5star.marketing.23",
-    instagram: "#",
-    tiktok: "#",
+    instagram: "https://www.instagram.com/5star.m.23/",
+    tiktok: "https://www.tiktok.com/@5star.m.23",
     youtube: "#",
   },
   year: new Date().getFullYear(),

@@ -24,6 +24,7 @@ const ALERT_MIN_SCORE = 70;
 function mapRow(row: any): PropertyDemand {
   return {
     id: row.id,
+    serialNo: row.serial_no ?? undefined,
     clientName: row.client_name,
     clientPhone: row.client_phone,
     clientWhatsapp: row.client_whatsapp ?? undefined,

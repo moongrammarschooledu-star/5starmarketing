@@ -144,7 +144,7 @@ export default async function PropertyDetailsPage({
   const calculatorHref = `/calculator?property=${property.slug}`;
 
   const whatsappDisplayName = settings?.whatsappDisplayName || site.fullName;
-  const whatsappMessage = `Assalam-o-Alaikum ${whatsappDisplayName},\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
+  const whatsappMessage = `Assalam-o-Alaikum ${whatsappDisplayName},\n\nI am interested in:\n\nProperty: ${property.title}${property.serialNo ? `\nRef: ${property.serialNo}` : ""}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`;
   const pageUrl = `${site.url}/properties/${property.slug}`;
   const shareText = `Check out this property from 5STAR.M Estate & Builders:\n\n${property.title}\n${property.location}`;
 
@@ -264,6 +264,11 @@ export default async function PropertyDetailsPage({
               <h1 className="mt-4 font-heading text-2xl font-extrabold text-ink sm:text-3xl">
                 {property.title}
               </h1>
+              {property.serialNo && (
+                <p className="mt-1 text-sm font-semibold text-muted">
+                  Ref: <span className="font-mono font-bold text-ink">{property.serialNo}</span>
+                </p>
+              )}
 
               {project && (
                 <Link

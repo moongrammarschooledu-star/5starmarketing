@@ -9,7 +9,7 @@ import "server-only";
  *  displays these already renders "Integration not configured." until
  *  isConfigured() returns true, so no UI changes are needed to go live. */
 export interface PlatformIntegration {
-  id: "meta_ads" | "facebook_page" | "instagram" | "google_ads" | "tiktok_ads" | "google_analytics";
+  id: "meta_ads" | "facebook_page" | "instagram" | "google_ads" | "tiktok_pixel" | "tiktok_ads" | "google_analytics";
   name: string;
   isConfigured: boolean;
 }
@@ -35,6 +35,11 @@ export function listPlatformIntegrations(): PlatformIntegration[] {
       id: "google_ads",
       name: "Google Ads",
       isConfigured: Boolean(process.env.GOOGLE_ADS_DEVELOPER_TOKEN && process.env.GOOGLE_ADS_CUSTOMER_ID),
+    },
+    {
+      id: "tiktok_pixel",
+      name: "TikTok Pixel (website tracking)",
+      isConfigured: Boolean(process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID),
     },
     {
       id: "tiktok_ads",

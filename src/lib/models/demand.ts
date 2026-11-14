@@ -13,6 +13,8 @@ export const demandPriorities: DemandPriority[] = ["Low", "Normal", "High", "Urg
 
 export interface PropertyDemand {
   id: string;
+  /** Company reference number, e.g. "5Star.M-D-000001". Given by the database. */
+  serialNo?: string;
   clientName: string;
   clientPhone: string;
   clientWhatsapp?: string;
@@ -41,6 +43,6 @@ export interface PropertyDemand {
   updatedAt: string;
 }
 
-export type DemandInput = Omit<PropertyDemand, "id" | "assignedToName" | "createdBy" | "createdByName" | "createdAt" | "updatedAt">;
+export type DemandInput = Omit<PropertyDemand, "id" | "serialNo" | "assignedToName" | "createdBy" | "createdByName" | "createdAt" | "updatedAt">;
 
 export type MatchLevel = "Strong" | "Good" | "Partial";

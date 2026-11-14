@@ -44,7 +44,13 @@ export function PropertiesTable({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return properties.filter((p) => {
-      if (q && !p.title.toLowerCase().includes(q) && !p.location.toLowerCase().includes(q)) return false;
+      if (
+        q &&
+        !p.title.toLowerCase().includes(q) &&
+        !p.location.toLowerCase().includes(q) &&
+        !(p.serialNo ?? "").toLowerCase().includes(q)
+      )
+        return false;
       if (type !== ALL && p.type !== type) return false;
       if (locationArea !== ALL && p.locationArea !== locationArea) return false;
       if (status !== ALL && p.status !== status) return false;
@@ -99,7 +105,7 @@ export function PropertiesTable({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title or location..."
+            placeholder="Search by title, location or serial number (e.g. 5Star.M-S-000001)..."
             className="w-full rounded-lg border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-ink outline-none focus:border-primary"
           />
         </div>
@@ -148,6 +154,7 @@ export function PropertiesTable({
                 </td>
                 <td className="max-w-[220px] px-4 py-3 font-semibold text-ink">
                   <span className="line-clamp-1">{p.title}</span>
+                  {p.serialNo && <span className="block whitespace-nowrap font-mono text-[11px] font-bold text-muted">{p.serialNo}</span>}
                   <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${PURPOSE_PILL[p.purpose]}`}>{p.purpose}</span>
                 </td>
                 <td className="px-4 py-3 text-muted">{p.type}</td>
@@ -237,7 +244,7 @@ export function PropertiesTable({
       {ownerFor && (
         <OwnerMessageModal
           title={ownerFor.title}
-          detailLines={[`Property: ${ownerFor.title}`, `Location: ${ownerFor.location}`, `Size: ${ownerFor.size}`, `Listed price: ${ownerFor.price}`]}
+          detailLines={[...(ownerFor.serialNo ? [`Ref: ${ownerFor.serialNo}`] : []), `Property: ${ownerFor.title}`,`Location: ${ownerFor.location}`, `Size: ${ownerFor.size}`, `Listed price: ${ownerFor.price}`]}
           presets={PROPERTY_OWNER_PRESETS}
           owner={owners[ownerFor.id]}
           loadFailed={ownersFailed}

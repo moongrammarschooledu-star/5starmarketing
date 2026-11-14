@@ -112,6 +112,7 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
                       {d.clientName}
                     </Link>
                     <div className="text-xs text-muted">{d.clientPhone}</div>
+                    {d.serialNo && <div className="whitespace-nowrap font-mono text-[11px] font-bold text-muted">{d.serialNo}</div>}
                   </td>
                   <td className="px-4 py-3 text-ink">
                     <div>

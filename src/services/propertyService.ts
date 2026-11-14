@@ -76,6 +76,7 @@ function mapRowToProperty(row: any): Property {
   return {
     id: row.id,
     slug: row.slug,
+    serialNo: row.serial_no ?? undefined,
     title: row.title,
     type: TYPE_FROM_DB[row.property_type] ?? "House",
     purpose: PURPOSE_FROM_DB[row.purpose] ?? "For Sale",
@@ -158,6 +159,14 @@ function mapPropertyToRow(input: Partial<PropertyInput>) {
   return row;
 }
 
+/** "s-12" / "5Star.M-S-12" / "S000012" -> "-S-000012" style fragment that
+ *  matches the stored serial_no ("5Star.M-S-000012"). */
+function serialSearchText(q: string) {
+  const m = q.trim().match(/([sr])-?(\d{1,6})$/i);
+  if (!m) return q.trim();
+  return `-${m[1].toUpperCase()}-${m[2].padStart(6, "0")}`;
+}
+
 function slugify(title: string) {
   return (
     title
@@ -193,7 +202,12 @@ function buildFilteredQuery(query: any, filters: PropertySearchFilters) {
     // Escape ilike wildcard characters in user input so a search for
     // "50% off" or "a_b" can't be (mis)read as a wildcard pattern.
     const q = filters.q.replace(/[%_]/g, "\\$&");
-    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,location.ilike.%${q}%`);
+    // A reference number ("5Star.M-S-000012" or just "S-12") also finds
+    // the property it belongs to. Only added when the text looks like one,
+    // so ordinary searches never depend on the serial_no column.
+    const looksLikeSerial = /^(5star\.?m-?)?[sr]-?\d{1,6}$/i.test(q.trim());
+    const serialClause = looksLikeSerial ? `,serial_no.ilike.%${serialSearchText(q)}%` : "";
+    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,location.ilike.%${q}%${serialClause}`);
   }
   if (filters.purpose) query = query.eq("purpose", PURPOSE_TO_DB[filters.purpose]);
   if (filters.type) query = query.eq("property_type", TYPE_TO_DB[filters.type]);

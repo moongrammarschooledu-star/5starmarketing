@@ -54,6 +54,11 @@ export default async function EditPropertyPage({
     <div className="mx-auto max-w-4xl">
       <h1 className="font-heading text-2xl font-extrabold text-ink">Edit Property</h1>
       <p className="mt-1 text-sm text-muted">{property.title}</p>
+      {property.serialNo && (
+        <p className="mt-1 text-sm font-semibold text-muted">
+          Serial number: <span className="font-mono font-bold text-ink">{property.serialNo}</span>
+        </p>
+      )}
 
       {deals.length > 0 && (
         <div className="mt-4 rounded-2xl border border-border bg-surface p-4">

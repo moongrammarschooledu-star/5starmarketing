@@ -100,6 +100,7 @@ export function PropertyCard({
 
       <div className="flex flex-1 flex-col p-5">
         <h3 className="font-heading text-lg font-bold text-ink">{property.title}</h3>
+        {property.serialNo && <p className="mt-0.5 font-mono text-[11px] font-bold text-muted">{property.serialNo}</p>}
 
         <div className="mt-2 flex items-center gap-1.5 text-sm text-muted">
           <MapPin className="h-4 w-4 shrink-0 text-primary" />
@@ -151,7 +152,7 @@ export function PropertyCard({
           <WhatsAppInquiryButton
             propertyId={property.id}
             propertyTitle={property.title}
-            message={`Assalam-o-Alaikum 5STAR.M Estate & Builders,\n\nI am interested in:\n\nProperty: ${property.title}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`}
+            message={`Assalam-o-Alaikum 5STAR.M Estate & Builders,\n\nI am interested in:\n\nProperty: ${property.title}${property.serialNo ? `\nRef: ${property.serialNo}` : ""}\nLocation: ${property.location}\nSize: ${property.size}\n\nPlease share the complete details, price and payment plan.\n\nThank you.`}
             context="property_card"
             className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-success px-3 py-2.5 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
           >

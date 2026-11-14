@@ -29,6 +29,10 @@ export interface PropertyPaymentPlan {
 export interface Property {
   id: string;
   slug: string;
+  /** Company reference number, e.g. "5Star.M-S-000001" (sale) or
+   *  "5Star.M-R-000001" (rent). Given by the database when the property is
+   *  created and never changed afterwards. */
+  serialNo?: string;
   title: string;
   type: PropertyType;
   purpose: Purpose;
@@ -81,7 +85,7 @@ export interface Property {
   updatedAt: string;
 }
 
-export type PropertyInput = Omit<Property, "id" | "slug" | "createdAt" | "updatedAt">;
+export type PropertyInput = Omit<Property, "id" | "slug" | "serialNo" | "createdAt" | "updatedAt">;
 
 export const propertyTypes: PropertyType[] = [
   "House",

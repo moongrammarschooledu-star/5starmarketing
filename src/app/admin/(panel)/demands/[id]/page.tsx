@@ -107,6 +107,7 @@ export default async function DemandDetailPage({ params }: { params: Promise<{ i
       <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl font-extrabold text-ink">{demand.clientName}</h1>
+          {demand.serialNo && <p className="mt-0.5 font-mono text-xs font-bold text-muted">{demand.serialNo}</p>}
           <a href={`tel:${demand.clientPhone.replace(/[^\d+]/g, "")}`} className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
             <Phone className="h-3.5 w-3.5" /> {demand.clientPhone}
           </a>

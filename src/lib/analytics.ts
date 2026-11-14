@@ -23,6 +23,7 @@ declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
+    ttq?: { page: () => void; track: (event: string, params?: Record<string, unknown>) => void };
   }
 }
 
@@ -43,11 +44,33 @@ const META_EVENTS: Record<AnalyticsEvent, string | null> = {
   save_contact_click: null,
 };
 
+// TikTok Pixel standard events, so TikTok ads can count real enquiries.
+// SubmitForm = a form was sent; Contact = WhatsApp/phone tapped;
+// ViewContent = a property page was opened.
+const TIKTOK_EVENTS: Record<AnalyticsEvent, string | null> = {
+  property_view: "ViewContent",
+  property_inquiry: "SubmitForm",
+  contact_form_submit: "SubmitForm",
+  project_inquiry: "SubmitForm",
+  callback_request: "SubmitForm",
+  investment_consultation_request: "SubmitForm",
+  landing_page_inquiry: "SubmitForm",
+  whatsapp_click: "Contact",
+  phone_click: "Contact",
+  brochure_download: "ClickButton",
+  save_contact_click: null,
+};
+
 export function trackEvent(event: AnalyticsEvent, params?: Record<string, string | number | boolean>) {
   if (typeof window === "undefined") return;
 
   if (typeof window.gtag === "function") {
     window.gtag("event", event, params);
+  }
+
+  if (window.ttq) {
+    const tiktokEvent = TIKTOK_EVENTS[event];
+    if (tiktokEvent) window.ttq.track(tiktokEvent, { content_name: event });
   }
 
   if (typeof window.fbq === "function") {

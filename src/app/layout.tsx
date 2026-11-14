@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JsonLd } from "@/components/JsonLd";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { MetaPixel } from "@/components/MetaPixel";
+import { TikTokPixel } from "@/components/TikTokPixel";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { PwaRuntime } from "@/components/pwa/PwaRuntime";
 
@@ -132,6 +133,7 @@ export default async function RootLayout({
         <PwaRuntime />
         <GoogleAnalytics />
         <MetaPixel />
+        <TikTokPixel />
       </body>
     </html>
   );

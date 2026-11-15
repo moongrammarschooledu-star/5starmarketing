@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Send, Smartphone, X } from "lucide-react";
 import { site, whatsappUrlFor, smsUrlFor } from "@/lib/site";
+import { PROPERTY_CONFIRM_TEXT } from "@/lib/shareDetails";
 
 export interface OwnerInfo {
   name: string;
@@ -14,9 +15,12 @@ export interface OwnerInfo {
 export interface OwnerPreset {
   label: string;
   text: string;
+  /** Send every saved detail plus the company's details (instead of the short detail lines). */
+  full?: boolean;
 }
 
 export const PROPERTY_OWNER_PRESETS: OwnerPreset[] = [
+  { label: "Confirm saved details", text: PROPERTY_CONFIRM_TEXT, full: true },
   { label: "Still available?", text: "Is your property still available? Please also confirm the current price." },
   { label: "Buyer interested", text: "We have a customer interested in your property. When can we arrange a visit?" },
   { label: "Price update", text: "Could you please confirm the latest price you want for your property?" },
@@ -33,6 +37,8 @@ export const BROCHURE_OWNER_PRESETS: OwnerPreset[] = [
 export function OwnerMessageModal({
   title,
   detailLines,
+  fullDetailLines,
+  initialPresetLabel,
   presets,
   owner,
   loadFailed,
@@ -45,6 +51,10 @@ export function OwnerMessageModal({
   title: string;
   /** Lines added under the message (property details, a brochure link...). */
   detailLines: string[];
+  /** Used instead of `detailLines` for a preset marked `full` (all saved details + company details). */
+  fullDetailLines?: string[];
+  /** Which preset is selected when the window opens (default: the first). */
+  initialPresetLabel?: string;
   presets: OwnerPreset[];
   owner?: OwnerInfo;
   loadFailed: boolean;
@@ -59,19 +69,20 @@ export function OwnerMessageModal({
   // The same number is sometimes typed in both boxes - list it once.
   const numbers = [...new Set([owner?.phone, owner?.altPhone].map((n) => n?.trim()).filter((n): n is string => Boolean(n)))];
   const [number, setNumber] = useState(numbers[0] ?? "");
-  const [body, setBody] = useState(presets[0]?.text ?? "");
+  const firstPreset = presets.find((p) => p.label === initialPresetLabel) ?? presets[0];
+  const [body, setBody] = useState(firstPreset?.text ?? "");
+  const [activeLabel, setActiveLabel] = useState(firstPreset?.label ?? "");
   const [sent, setSent] = useState<Record<string, boolean>>({});
 
   const greeting = owner?.name ? `Assalam-o-Alaikum ${owner.name},` : "Assalam-o-Alaikum,";
-  const message = [
-    greeting,
-    "",
-    body.trim(),
-    "",
-    ...detailLines,
-    "",
-    `${site.fullName} - ${site.phoneDisplay2}`,
-  ].join("\n");
+  // "Confirm saved details" sends every detail plus the company's own details
+  // (which already end with the company name and number).
+  const isFull = Boolean(fullDetailLines && presets.find((p) => p.label === activeLabel)?.full);
+  const message = (
+    isFull
+      ? [greeting, "", body.trim(), "", ...(fullDetailLines ?? [])]
+      : [greeting, "", body.trim(), "", ...detailLines, "", `${site.fullName} - ${site.phoneDisplay2}`]
+  ).join("\n");
 
   function done(channel: "whatsapp" | "sms") {
     setSent((s) => ({ ...s, [channel]: true }));
@@ -124,7 +135,17 @@ export function OwnerMessageModal({
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Message</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {presets.map((p) => (
-                  <button key={p.label} type="button" onClick={() => setBody(p.text)} className="rounded-full border border-border px-3 py-1 text-xs font-bold text-ink hover:border-primary hover:text-primary">
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => {
+                      setBody(p.text);
+                      setActiveLabel(p.label);
+                    }}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold ${
+                      activeLabel === p.label ? "border-primary bg-primary/10 text-primary" : "border-border text-ink hover:border-primary hover:text-primary"
+                    }`}
+                  >
                     {p.label}
                   </button>
                 ))}
@@ -140,7 +161,7 @@ export function OwnerMessageModal({
 
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">What the owner will see</p>
-              <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg bg-[#dcf8c6] p-3 font-sans text-xs text-[#111]">{message}</pre>
+              <pre className="mt-2 max-h-60 overflow-y-auto whitespace-pre-wrap rounded-lg bg-[#dcf8c6] p-3 font-sans text-xs text-[#111]">{message}</pre>
             </div>
 
             {blockedReason && <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">{blockedReason}</p>}

@@ -152,7 +152,8 @@ export async function createPropertyAction(
       error: `The property was created, but its owner details could not be saved (${ownerError}). Open it from the Properties list to add them - do not submit this form again.`,
     };
   }
-  redirect("/admin/properties");
+  // The list opens the "confirm the saved details with the owner" window for this property.
+  redirect(`/admin/properties?saved=${property.id}`);
 }
 
 export async function updatePropertyAction(

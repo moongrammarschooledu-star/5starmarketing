@@ -123,7 +123,8 @@ export async function createDemandAction(_prev: DemandFormState, formData: FormD
     return { error: e instanceof Error ? e.message : "Could not save this demand." };
   }
   revalidate(id);
-  redirect(`/admin/demands/${id}`);
+  // "saved=1" makes the detail page offer to confirm the saved details with the client.
+  redirect(`/admin/demands/${id}?saved=1`);
 }
 
 export async function updateDemandAction(id: string, _prev: DemandFormState, formData: FormData): Promise<DemandFormState> {
@@ -161,6 +162,17 @@ export async function deleteDemandAction(id: string): Promise<{ ok: boolean; err
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not delete this demand." };
+  }
+}
+
+/** Remembers in the activity log that the saved demand details were sent to the client. Never blocks opening WhatsApp or SMS. */
+export async function logDemandConfirmSentAction(demandId: string, channel: "whatsapp" | "sms"): Promise<void> {
+  try {
+    const demand = await demandService.getById(demandId);
+    if (!demand) return;
+    await activityService.log("Sent Demand Details", `${demand.clientName} by ${channel === "sms" ? "SMS" : "WhatsApp"}`, "demand", demandId);
+  } catch (e) {
+    console.error("logDemandConfirmSentAction failed:", e);
   }
 }
 

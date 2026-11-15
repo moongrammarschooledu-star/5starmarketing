@@ -37,6 +37,7 @@ export const site = {
     facebook: "https://www.facebook.com/5star.marketing.23",
     instagram: "https://www.instagram.com/5star.m.23/",
     tiktok: "https://www.tiktok.com/@5star.m.23",
+    x: "https://x.com/5starm_estate",
     youtube: "#",
   },
   year: new Date().getFullYear(),

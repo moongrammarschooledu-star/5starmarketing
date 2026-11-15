@@ -7,6 +7,8 @@ import { requireSection } from "@/lib/guard";
 import { describeBudget, describeSize } from "@/lib/demandText";
 import { DemandStatusControl } from "@/components/admin/DemandStatusControl";
 import { DemandShareButton } from "@/components/admin/DemandShareButton";
+import { DemandConfirmSend } from "@/components/admin/DemandConfirmSend";
+import { demandShareLines } from "@/lib/shareDetails";
 import type { DemandMatch } from "@/lib/demandMatching";
 
 export const metadata: Metadata = { title: "Demand" };
@@ -86,9 +88,16 @@ function MatchCard({
   );
 }
 
-export default async function DemandDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DemandDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ saved?: string }>;
+}) {
   await requireSection("demands");
   const { id } = await params;
+  const { saved } = await searchParams;
   const demand = await demandService.getById(id);
   if (!demand) notFound();
 
@@ -120,6 +129,12 @@ export default async function DemandDetailPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
+      {saved === "1" && (
+        <div className="mt-6">
+          <DemandConfirmSend demandId={id} clientName={demand.clientName} number={clientNumber} detailLines={demandShareLines(demand)} justSaved />
+        </div>
+      )}
+
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-1">
           <div className="space-y-3 rounded-2xl border border-border bg-surface p-5">
@@ -134,6 +149,9 @@ export default async function DemandDetailPage({ params }: { params: Promise<{ i
             <Row label="Assigned to">{demand.assignedToName ?? "Not assigned"}</Row>
             {demand.createdByName && <Row label="Added by">{demand.createdByName}</Row>}
           </div>
+          {saved !== "1" && (
+            <DemandConfirmSend demandId={id} clientName={demand.clientName} number={clientNumber} detailLines={demandShareLines(demand)} justSaved={false} />
+          )}
           {demand.notes && (
             <div className="rounded-2xl border border-border bg-surface p-5">
               <h2 className="font-heading text-base font-bold text-ink">Notes</h2>

@@ -7,8 +7,9 @@ import { ownerDetailsService } from "@/services/ownerDetailsService";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPropertiesPage() {
+export default async function AdminPropertiesPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
   await requireSection("properties");
+  const { saved } = await searchParams;
   const properties = await propertyService.list();
   let owners: Awaited<ReturnType<typeof ownerDetailsService.listForProperties>> = {};
   let ownersFailed = false;
@@ -34,7 +35,7 @@ export default async function AdminPropertiesPage() {
       </div>
 
       <div className="mt-6">
-        <PropertiesTable properties={properties} owners={owners} ownersFailed={ownersFailed} />
+        <PropertiesTable properties={properties} owners={owners} ownersFailed={ownersFailed} justSavedId={saved} />
       </div>
     </div>
   );

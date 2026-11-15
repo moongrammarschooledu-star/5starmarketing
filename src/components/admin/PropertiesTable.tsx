@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,6 +12,7 @@ import { deletePropertyAction, toggleFeaturedAction, changeStatusAction, logOwne
 import { ConfirmDialog, useConfirmDelete } from "./ConfirmDialog";
 import { useToast } from "./ToastProvider";
 import { OwnerMessageModal, PROPERTY_OWNER_PRESETS, type OwnerInfo } from "./OwnerMessageModal";
+import { propertyShareLines } from "@/lib/shareDetails";
 
 const ALL = "All";
 
@@ -19,12 +20,16 @@ export function PropertiesTable({
   properties,
   owners = {},
   ownersFailed = false,
+  justSavedId,
 }: {
   properties: Property[];
   owners?: Record<string, OwnerInfo>;
   ownersFailed?: boolean;
+  /** A property that was just added: its "confirm the saved details with the owner" window opens straight away. */
+  justSavedId?: string;
 }) {
-  const [ownerFor, setOwnerFor] = useState<Property | null>(null);
+  const [ownerFor, setOwnerFor] = useState<Property | null>(() => properties.find((p) => p.id === justSavedId) ?? null);
+  const [openedAfterSave, setOpenedAfterSave] = useState(() => Boolean(justSavedId && properties.some((p) => p.id === justSavedId)));
   const [search, setSearch] = useState("");
   const [type, setType] = useState<string>(ALL);
   const [locationArea, setLocationArea] = useState<string>(ALL);
@@ -34,6 +39,12 @@ export function PropertiesTable({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const toast = useToast();
+
+  // The "?saved=..." in the address only triggers the window once - drop it so a refresh does not reopen it.
+  useEffect(() => {
+    if (justSavedId) router.replace("/admin/properties", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const del = useConfirmDelete<Property>(async (id) => {
     await deletePropertyAction(id);
@@ -214,7 +225,10 @@ export function PropertiesTable({
                     </Link>
                     <button
                       type="button"
-                      onClick={() => setOwnerFor(p)}
+                      onClick={() => {
+                        setOpenedAfterSave(false);
+                        setOwnerFor(p);
+                      }}
                       className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
                         owners[p.id]?.phone || owners[p.id]?.altPhone
                           ? "border-success/40 text-success hover:bg-success/10"
@@ -245,6 +259,8 @@ export function PropertiesTable({
         <OwnerMessageModal
           title={ownerFor.title}
           detailLines={[...(ownerFor.serialNo ? [`Ref: ${ownerFor.serialNo}`] : []), `Property: ${ownerFor.title}`,`Location: ${ownerFor.location}`, `Size: ${ownerFor.size}`, `Listed price: ${ownerFor.price}`]}
+          fullDetailLines={propertyShareLines(ownerFor)}
+          initialPresetLabel={openedAfterSave ? "Confirm saved details" : "Still available?"}
           presets={PROPERTY_OWNER_PRESETS}
           owner={owners[ownerFor.id]}
           loadFailed={ownersFailed}

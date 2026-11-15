@@ -6,6 +6,7 @@ import type { Lead, LeadPropertyInfo } from "@/lib/models/lead";
 import type { WhatsAppTemplate } from "@/lib/models/whatsapp";
 import { fillTemplate } from "@/lib/models/whatsapp";
 import { whatsappUrlFor } from "@/lib/site";
+import { openAdminWhatsApp } from "@/lib/adminWhatsApp";
 import { logWhatsAppActivityAction } from "@/lib/actions/whatsapp.actions";
 import { Modal } from "./Modal";
 
@@ -78,7 +79,7 @@ export function WhatsAppMessageModal({
     }
     setSending(false);
     setOpen(false);
-    window.open(whatsappUrlFor(lead.whatsapp || lead.phone || whatsappNumber, message), "_blank", "noopener,noreferrer");
+    openAdminWhatsApp(whatsappUrlFor(lead.whatsapp || lead.phone || whatsappNumber, message));
   }
 
   return (

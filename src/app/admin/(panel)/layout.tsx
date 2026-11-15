@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminWhatsAppLinks } from "@/components/admin/AdminWhatsAppLinks";
 import { profileService } from "@/services/profileService";
 import { leadService } from "@/services/leadService";
 import type { AdminRole } from "@/lib/models/user";
@@ -42,6 +43,7 @@ export default async function AdminPanelLayout({ children }: { children: ReactNo
 
   return (
     <AdminShell adminId={adminId} adminName={adminName} role={role} newLeadsCount={newLeadsCount}>
+      <AdminWhatsAppLinks />
       {children}
     </AdminShell>
   );

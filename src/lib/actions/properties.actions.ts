@@ -178,7 +178,8 @@ export async function updatePropertyAction(
   if (ownerError) {
     return { error: `The property was saved, but its owner details could not be saved (${ownerError}). Please try again.` };
   }
-  redirect("/admin/properties");
+  // After fixing a detail, the owner can be sent the corrected details straight away.
+  redirect(`/admin/properties?saved=${updated.id}`);
 }
 
 export async function deletePropertyAction(id: string) {

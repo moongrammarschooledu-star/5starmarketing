@@ -3,7 +3,7 @@ import { PropertyForm } from "@/components/admin/PropertyForm";
 import { PaymentPlanManager } from "@/components/admin/PaymentPlanManager";
 import { updatePropertyAction } from "@/lib/actions/properties.actions";
 import Link from "next/link";
-import { Handshake, FileStack } from "lucide-react";
+import { Handshake, FileStack, MessageCircle } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { paymentPlanService } from "@/services/paymentPlanService";
@@ -59,6 +59,12 @@ export default async function EditPropertyPage({
           Serial number: <span className="font-mono font-bold text-ink">{property.serialNo}</span>
         </p>
       )}
+      <Link
+        href={`/admin/properties?saved=${property.id}`}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-success px-4 py-2 text-xs font-bold text-white hover:opacity-90"
+      >
+        <MessageCircle className="h-3.5 w-3.5" /> Send these details to the owner on WhatsApp
+      </Link>
 
       {deals.length > 0 && (
         <div className="mt-4 rounded-2xl border border-border bg-surface p-4">

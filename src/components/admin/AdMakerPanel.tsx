@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowDown, ArrowUp, Clapperboard, Download, ImagePlus, Loader2, X } from "lucide-react";
 import { createReelVideo, type ReelData } from "@/lib/reelVideo";
 import { AD_LIMITS } from "@/lib/adMaker";
+import { MusicStylePicker, useMusicStyle } from "./MusicStylePicker";
 
 type Lang = "auto" | "en" | "ur";
 interface Picture {
@@ -39,6 +40,7 @@ export function AdMakerPanel() {
   const [voice, setVoice] = useState(true);
   const [gender, setGender] = useState<"female" | "male">("female");
   const [music, setMusic] = useState(true);
+  const [musicStyle, setMusicStyle] = useMusicStyle();
   const [pictures, setPictures] = useState<Picture[]>([]);
   const [pictureError, setPictureError] = useState<string | null>(null);
 
@@ -169,6 +171,7 @@ export function AdMakerPanel() {
         description: descriptionAudio,
         closing: closingAudio,
         music,
+        musicStyle,
         signal: controller.signal,
         onProgress: (f, l) => {
           setFraction(f);
@@ -312,6 +315,7 @@ export function AdMakerPanel() {
             <input type="checkbox" checked={music} onChange={(e) => setMusic(e.target.checked)} disabled={busy} className="h-4 w-4 rounded border-border text-primary" />
             Background music
           </label>
+          {music && <MusicStylePicker value={musicStyle} onChange={setMusicStyle} disabled={busy} />}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2.5">

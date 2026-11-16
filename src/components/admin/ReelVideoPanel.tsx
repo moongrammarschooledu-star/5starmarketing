@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Clapperboard, Download, Loader2 } from "lucide-react";
 import { createReelVideo, type ReelData } from "@/lib/reelVideo";
 import { useToast } from "./ToastProvider";
+import { MusicStylePicker, useMusicStyle } from "./MusicStylePicker";
 
 type Lang = "auto" | "en" | "ur";
 
@@ -15,6 +16,7 @@ export function ReelVideoPanel({ brochureId }: { brochureId: string }) {
   const [lang, setLang] = useState<Lang>("auto");
   const [voice, setVoice] = useState(true);
   const [music, setMusic] = useState(true);
+  const [musicStyle, setMusicStyle] = useMusicStyle();
   const [busy, setBusy] = useState(false);
   const [fraction, setFraction] = useState(0);
   const [label, setLabel] = useState("");
@@ -88,6 +90,7 @@ export function ReelVideoPanel({ brochureId }: { brochureId: string }) {
         description,
         closing,
         music,
+        musicStyle,
         signal: controller.signal,
         onProgress: (f, l) => {
           setFraction(f);
@@ -147,6 +150,7 @@ export function ReelVideoPanel({ brochureId }: { brochureId: string }) {
           <input type="checkbox" checked={music} onChange={(e) => setMusic(e.target.checked)} disabled={busy} className="h-4 w-4 rounded border-border text-primary" />
           Background music
         </label>
+        {music && <MusicStylePicker value={musicStyle} onChange={setMusicStyle} disabled={busy} />}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2.5">

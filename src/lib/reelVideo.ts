@@ -5,6 +5,7 @@
 // MediaRecorder, so no server-side video software is needed.
 
 import { LOGO_DATA_URI, LOGO_ASPECT } from "@/lib/pdf/logoData";
+import { scheduleMusic, type MusicStyle } from "@/lib/reelMusic";
 
 // Everything is laid out on a 1080x1920 grid, but the video itself is
 // recorded at 720x1280: still a proper Reel size, yet less than half the
@@ -51,6 +52,8 @@ export interface ReelOptions {
   description: ArrayBuffer | null;
   closing: ArrayBuffer | null;
   music: boolean;
+  /** Which background music to make when `music` is on (default: upbeat). */
+  musicStyle?: MusicStyle;
   onProgress?: (fraction: number, label: string) => void;
   signal?: AbortSignal;
 }
@@ -337,6 +340,7 @@ interface FastEncodeInput {
   closeStart: number;
   voiceWindows: { from: number; to: number }[];
   music: boolean;
+  musicStyle?: MusicStyle;
   progress: (fraction: number, label: string) => void;
   throwIfAborted: () => void;
 }
@@ -392,7 +396,7 @@ async function encodeWithWebCodecs(p: FastEncodeInput): Promise<Blob | null> {
       src.connect(off.destination);
       src.start(at);
     }
-    if (p.music) scheduleMusic(off, off.destination, 0, p.total, p.voiceWindows);
+    if (p.music) scheduleMusic(off, off.destination, 0, p.total, p.voiceWindows, p.musicStyle);
     pcm = await off.startRendering();
     p.throwIfAborted();
   }
@@ -466,113 +470,6 @@ async function encodeWithWebCodecs(p: FastEncodeInput): Promise<Blob | null> {
     }
   }
   return new Blob([target.buffer], { type: "video/mp4" });
-}
-
-// ------------------------------------------------------------------ music
-
-/** Light, original ambient music made from oscillators (nothing sampled, so
- *  there is no copyright to worry about). Chords Am - F - C - G, a soft pad,
- *  a gentle plucked arpeggio and a quiet bass, with an echo for warmth. */
-function scheduleMusic(
-  ctx: BaseAudioContext,
-  out: AudioNode,
-  startAt: number,
-  total: number,
-  voice: { from: number; to: number }[]
-) {
-  const master = ctx.createGain();
-  master.gain.value = 0;
-  const comp = ctx.createDynamicsCompressor();
-  master.connect(comp);
-  comp.connect(out);
-
-  const echo = ctx.createDelay(1);
-  echo.delayTime.value = 0.36;
-  const fb = ctx.createGain();
-  fb.gain.value = 0.28;
-  const echoTone = ctx.createBiquadFilter();
-  echoTone.type = "lowpass";
-  echoTone.frequency.value = 1800;
-  echo.connect(echoTone);
-  echoTone.connect(fb);
-  fb.connect(echo);
-  echoTone.connect(master);
-
-  const padFilter = ctx.createBiquadFilter();
-  padFilter.type = "lowpass";
-  padFilter.frequency.value = 1000;
-  padFilter.connect(master);
-
-  const chords = [
-    { pad: [220, 261.63, 329.63], bass: 110, arp: [440, 523.25, 659.25] }, // Am
-    { pad: [174.61, 220, 261.63], bass: 87.31, arp: [349.23, 440, 523.25] }, // F
-    { pad: [261.63, 329.63, 392], bass: 130.81, arp: [523.25, 659.25, 784] }, // C
-    { pad: [196, 246.94, 293.66], bass: 98, arp: [392, 493.88, 587.33] }, // G
-  ];
-  const beat = 60 / 76;
-  const bar = beat * 4;
-  const bars = Math.ceil(total / bar) + 1;
-
-  for (let b = 0; b < bars; b++) {
-    const c = chords[b % chords.length];
-    const t0 = startAt + b * bar;
-
-    for (const f of c.pad) {
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, t0);
-      g.gain.linearRampToValueAtTime(0.16, t0 + 0.7);
-      g.gain.linearRampToValueAtTime(0.1, t0 + bar - 0.5);
-      g.gain.linearRampToValueAtTime(0, t0 + bar + 0.6);
-      osc.connect(g);
-      g.connect(padFilter);
-      osc.start(t0);
-      osc.stop(t0 + bar + 0.7);
-    }
-
-    const bass = ctx.createOscillator();
-    bass.type = "sine";
-    bass.frequency.value = c.bass;
-    const bg = ctx.createGain();
-    bg.gain.setValueAtTime(0, t0);
-    bg.gain.linearRampToValueAtTime(0.18, t0 + 0.3);
-    bg.gain.linearRampToValueAtTime(0, t0 + bar);
-    bass.connect(bg);
-    bg.connect(master);
-    bass.start(t0);
-    bass.stop(t0 + bar + 0.1);
-
-    const pattern = [0, 1, 2, 1, 0, 2, 1, 2];
-    pattern.forEach((idx, i) => {
-      const nt = t0 + i * (beat / 2);
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = c.arp[idx];
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, nt);
-      g.gain.linearRampToValueAtTime(0.22, nt + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, nt + 0.6);
-      osc.connect(g);
-      g.connect(master);
-      g.connect(echo);
-      osc.start(nt);
-      osc.stop(nt + 0.65);
-    });
-  }
-  // Loudness plan: gently in, quiet while someone is speaking, fuller in the gaps, out at the end.
-  const hi = 0.5;
-  const lo = 0.17;
-  const g = master.gain;
-  g.setValueAtTime(0, startAt);
-  g.linearRampToValueAtTime(hi, startAt + 1.2);
-  for (const v of voice) {
-    g.setTargetAtTime(lo, startAt + v.from - 0.25, 0.25);
-    g.setTargetAtTime(hi, startAt + v.to + 0.1, 0.5);
-  }
-  g.setValueAtTime(hi, startAt + Math.max(0, total - 1.8));
-  g.linearRampToValueAtTime(0, startAt + total);
 }
 
 // ------------------------------------------------------------------- main
@@ -688,6 +585,7 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
       closeStart,
       voiceWindows,
       music: opts.music,
+      musicStyle: opts.musicStyle,
       progress,
       throwIfAborted,
     });
@@ -724,7 +622,7 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
     src.connect(dest);
     src.start(startAt + closeStart);
   }
-  if (opts.music) scheduleMusic(audioCtx, dest, startAt, total, voiceWindows);
+  if (opts.music) scheduleMusic(audioCtx, dest, startAt, total, voiceWindows, opts.musicStyle);
 
   const stream = canvas.captureStream(FPS);
   const wantsAudio = hasVoice || opts.music;

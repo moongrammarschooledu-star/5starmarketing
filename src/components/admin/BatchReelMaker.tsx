@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, Clapperboard, Copy, Download, Loader2, Squ
 import { createReelVideo, type ReelData } from "@/lib/reelVideo";
 import { site } from "@/lib/site";
 import { useToast } from "./ToastProvider";
+import { MusicStylePicker, useMusicStyle } from "./MusicStylePicker";
 
 export interface BatchItem {
   brochureId: string;
@@ -98,6 +99,7 @@ export function BatchReelMaker({ items, withoutBrochure }: { items: BatchItem[];
   const [rows, setRows] = useState<Record<string, Row>>({});
   const [madeBefore, setMadeBefore] = useState<Set<string>>(new Set());
   const [music, setMusic] = useState(true);
+  const [musicStyle, setMusicStyle] = useMusicStyle();
   const [running, setRunning] = useState(false);
   const [fraction, setFraction] = useState(0);
   const [label, setLabel] = useState("");
@@ -193,6 +195,7 @@ export function BatchReelMaker({ items, withoutBrochure }: { items: BatchItem[];
             description: null,
             closing: null,
             music,
+            musicStyle,
             signal: controller.signal,
             onProgress: (f, l) => {
               setFraction(f);
@@ -297,10 +300,13 @@ export function BatchReelMaker({ items, withoutBrochure }: { items: BatchItem[];
         <button type="button" disabled={running} onClick={() => setSelected(new Set())} className="rounded-full border border-border px-3.5 py-1.5 text-xs font-bold text-muted hover:text-primary disabled:opacity-50">
           Clear
         </button>
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink">
-          <input type="checkbox" checked={music} onChange={(e) => setMusic(e.target.checked)} disabled={running} className="h-4 w-4 rounded border-border text-primary" />
-          Background music
-        </label>
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-xs font-semibold text-ink">
+            <input type="checkbox" checked={music} onChange={(e) => setMusic(e.target.checked)} disabled={running} className="h-4 w-4 rounded border-border text-primary" />
+            Background music
+          </label>
+          {music && <MusicStylePicker value={musicStyle} onChange={setMusicStyle} disabled={running} />}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

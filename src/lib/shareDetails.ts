@@ -60,6 +60,25 @@ export function propertyShareLines(p: Property): string[] {
   return [...lines, "", ...companyDetailLines()];
 }
 
+/** A property's details for another real estate agent: what they need to offer it to their own
+ *  clients, with the link to the full details and photos. The owner's private details are never included. */
+export function propertyAgentLines(p: Property): string[] {
+  const rent = p.purpose === "For Rent";
+  const place = p.city && !p.location.toLowerCase().includes(p.city.toLowerCase()) ? `${p.location}, ${p.city}` : p.location;
+  const lines: string[] = [];
+  if (p.serialNo) lines.push(`Ref: ${p.serialNo}`);
+  lines.push(tidyText(p.title));
+  lines.push(`For: ${p.purpose.replace("For ", "")} | ${p.type}`);
+  lines.push(`Location: ${place}`);
+  lines.push(`Size: ${p.size}`);
+  if (p.bedrooms != null) lines.push(`Bedrooms: ${p.bedrooms}${p.bathrooms != null ? ` | Bathrooms: ${p.bathrooms}` : ""}`);
+  lines.push(`${rent ? "Rent" : "Price"}: ${p.price}`);
+  const extras = [...p.features, ...p.amenities].slice(0, 6);
+  if (extras.length) lines.push(`Features: ${extras.join(", ")}`);
+  lines.push(`Photos and full details: ${site.websiteUrl}/properties/${p.slug}`);
+  return lines;
+}
+
 export const PROPERTY_CONFIRM_TEXT =
   "We have saved your property in our system. Please read every line below carefully and tell us right away if anything is wrong or missing, so we can correct it before showing it to buyers.";
 

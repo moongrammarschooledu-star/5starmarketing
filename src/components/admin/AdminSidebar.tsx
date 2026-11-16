@@ -44,6 +44,7 @@ import {
   PencilRuler,
   DatabaseBackup,
   BookUser,
+  Briefcase,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { logoutAction } from "@/lib/actions/auth.actions";
@@ -56,6 +57,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; sec
   { href: "/admin/properties/new", label: "Add Property", icon: PlusCircle, section: "properties" },
   { href: "/admin/demands", label: "Demands", icon: ClipboardCheck, section: "demands" },
   { href: "/admin/contacts", label: "Customer Contacts", icon: BookUser, section: "contacts" },
+  { href: "/admin/agent-contacts", label: "Real Estate Agents", icon: Briefcase, section: "contacts" },
   { href: "/admin/leads", label: "Leads", icon: Users, section: "leads" },
   { href: "/admin/crm", label: "CRM", icon: Kanban, section: "leads" },
   { href: "/admin/deals", label: "Deals", icon: Handshake, section: "deals" },

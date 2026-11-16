@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, FileText, Sparkles, Building2, FolderKanban, PlusCircle } from "lucide-react";
+import { AlertTriangle, Clapperboard, FileText, Sparkles, Building2, FolderKanban, PlusCircle } from "lucide-react";
 import { brochureService } from "@/services/brochureService";
 import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
@@ -41,12 +41,20 @@ export default async function AdminBrochuresPage() {
           <h1 className="font-heading text-2xl font-extrabold text-ink">Property Brochure Center</h1>
           <p className="mt-1 text-sm text-muted">Create, preview and generate professional PDF brochures.</p>
         </div>
-        <Link
-          href="/admin/brochures/create"
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover"
-        >
-          <PlusCircle className="h-4 w-4" /> Create Brochure
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/brochures/batch-reels"
+            className="flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+          >
+            <Clapperboard className="h-4 w-4" /> Batch Reel Maker
+          </Link>
+          <Link
+            href="/admin/brochures/create"
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover"
+          >
+            <PlusCircle className="h-4 w-4" /> Create Brochure
+          </Link>
+        </div>
       </div>
 
       {loadError && (

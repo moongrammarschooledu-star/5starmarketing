@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Eye, Pencil, Trash2, Star, MessageCircle } from "lucide-react";
+import { Search, Eye, FileDown, Pencil, Trash2, Star, MessageCircle } from "lucide-react";
 import type { Property, PropertyStatus } from "@/lib/models/property";
 import { propertyTypes, locationAreas, propertyStatuses, paymentOptions, purposes } from "@/lib/models/property";
 import { PURPOSE_PILL } from "@/lib/propertyPurpose";
@@ -216,6 +216,15 @@ export function PropertiesTable({
                     >
                       <Eye className="h-4 w-4" />
                     </Link>
+                    <a
+                      href={`/admin/properties/${p.id}/pdf`}
+                      download
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted hover:border-primary hover:text-primary"
+                      aria-label="Download PDF"
+                      title="Download details as PDF to print"
+                    >
+                      <FileDown className="h-4 w-4" />
+                    </a>
                     <Link
                       href={`/admin/properties/${p.id}/edit`}
                       className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted hover:border-primary hover:text-primary"

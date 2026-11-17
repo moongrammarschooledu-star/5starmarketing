@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import { propertyService } from "@/services/propertyService";
 import { PropertiesTable } from "@/components/admin/PropertiesTable";
+import { PrintListMenu } from "@/components/admin/PrintListMenu";
 import { requireSection } from "@/lib/guard";
 import { ownerDetailsService } from "@/services/ownerDetailsService";
 
@@ -26,12 +27,15 @@ export default async function AdminPropertiesPage({ searchParams }: { searchPara
           <h1 className="font-heading text-2xl font-extrabold text-ink">Properties</h1>
           <p className="mt-1 text-sm text-muted">Manage all property listings.</p>
         </div>
-        <Link
-          href="/admin/properties/new"
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover"
-        >
-          <PlusCircle className="h-4 w-4" /> Add Property
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <PrintListMenu />
+          <Link
+            href="/admin/properties/new"
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover"
+          >
+            <PlusCircle className="h-4 w-4" /> Add Property
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6">

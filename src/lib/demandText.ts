@@ -26,5 +26,6 @@ export function describeDemand(d: PropertyDemand): string {
     describeSize(d),
   ];
   if (d.minBedrooms != null) parts.push(`${d.minBedrooms}+ bedrooms`);
+  if (d.purpose === "For Rent" && d.familyMembers != null) parts.push(`${d.familyMembers} family members`);
   return parts.join(" - ");
 }

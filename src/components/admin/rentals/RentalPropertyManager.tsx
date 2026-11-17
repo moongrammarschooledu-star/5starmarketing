@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { FileDown } from "lucide-react";
 import type { RentalProperty, RentalStatus } from "@/lib/models/rental";
 import { rentalStatuses } from "@/lib/models/rental";
 import { setRentalStatusAction, updateRentalPropertyAction } from "@/lib/actions/rental.actions";
@@ -70,6 +71,14 @@ function RentalPropertyRow({ rentalProperty, landlords, canManage }: { rentalPro
           <p className="text-xs text-muted">{rentalProperty.propertyLocation ?? "—"}</p>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href={`/admin/rentals/properties/${rentalProperty.id}/pdf`}
+            download
+            title="Download details as PDF to print"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+          >
+            <FileDown className="h-3.5 w-3.5" /> PDF
+          </a>
           <StatusBadge status={rentalProperty.rentalStatus} />
           {canManage && (
             <select value={rentalProperty.rentalStatus} onChange={(e) => setStatus(e.target.value as RentalStatus)} disabled={isPending} className={inputClass}>

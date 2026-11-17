@@ -77,6 +77,19 @@ function readInput(formData: FormData): { input?: DemandInput; error?: string } 
     return { error: "Bedrooms must be a whole number." };
   }
 
+  // Family members: asked only for rent demands. An empty box clears a number that was saved before.
+  const familyRaw = purpose === "For Rent" ? text(formData, "familyMembers") : "";
+  const hadFamily = formData.get("hadFamily") === "1";
+  let familyMembers: number | null | undefined;
+  if (familyRaw) {
+    familyMembers = Number(familyRaw);
+    if (!Number.isInteger(familyMembers) || familyMembers < 1 || familyMembers > 40) {
+      return { error: "The number of family members must be a whole number from 1 to 40." };
+    }
+  } else if (hadFamily) {
+    familyMembers = null;
+  }
+
   const priority = text(formData, "priority");
   const status = text(formData, "status");
 
@@ -93,6 +106,7 @@ function readInput(formData: FormData): { input?: DemandInput; error?: string } 
       sizeMinMarla: sizeMin.value,
       sizeMaxMarla: sizeMax.value,
       minBedrooms,
+      familyMembers,
       priority: demandPriorities.includes(priority as (typeof demandPriorities)[number]) ? (priority as DemandInput["priority"]) : "Normal",
       status: demandStatuses.includes(status as DemandStatus) ? (status as DemandStatus) : "Open",
       notes: text(formData, "notes") || undefined,

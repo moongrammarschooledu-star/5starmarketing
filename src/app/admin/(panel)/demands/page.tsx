@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, ClipboardCheck, PlusCircle, Sparkles, Handshake, XCircle } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, FileDown, PlusCircle, Sparkles, Handshake, XCircle } from "lucide-react";
+import { TableSearch } from "@/components/admin/TableSearch";
 import { demandService } from "@/services/demandService";
 import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
@@ -69,7 +70,11 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
         <StatCard label="Lost" value={tally("Lost")} icon={XCircle} />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6">
+        <TableSearch tableId="demands-table" placeholder="Search by client name, phone, serial number, area or notes" noun="demands" />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
         {[undefined, ...demandStatuses].map((s) => (
           <Link
             key={s ?? "all"}
@@ -82,7 +87,7 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-2xl border border-border bg-surface">
-        <table className="w-full min-w-[900px] border-collapse text-sm">
+        <table id="demands-table" className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-muted text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-3">Client</th>
@@ -93,12 +98,13 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Assigned</th>
               <th className="px-4 py-3">Added</th>
+              <th className="px-4 py-3 text-right">PDF</th>
             </tr>
           </thead>
           <tbody>
             {shown.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-muted">
+                <td colSpan={9} className="px-4 py-10 text-center text-muted">
                   {all.length === 0 ? "No demands yet. Add the first one when a client asks for a property." : "No demands with this status."}
                 </td>
               </tr>
@@ -106,7 +112,14 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
             {shown.map((d) => {
               const c = counts.get(d.id);
               return (
-                <tr key={d.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
+                <tr
+                  key={d.id}
+                  data-search={[d.clientName, d.clientPhone, d.clientWhatsapp, d.serialNo, d.purpose === "For Sale" ? "buy" : "rent", d.propertyTypes.join(" "), d.locations.join(" "), d.notes, d.status, d.assignedToName]
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase()}
+                  className="border-b border-border last:border-0 hover:bg-surface-muted/50"
+                >
                   <td className="px-4 py-3">
                     <Link href={`/admin/demands/${d.id}`} className="font-semibold text-ink hover:text-primary">
                       {d.clientName}
@@ -119,6 +132,7 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
                       {d.purpose === "For Sale" ? "Buy" : "Rent"} - {d.propertyTypes.length ? d.propertyTypes.join(", ") : "any type"}
                     </div>
                     <div className="text-xs text-muted">{d.locations.length ? d.locations.join(", ") : "Anywhere"}</div>
+                    {d.purpose === "For Rent" && d.familyMembers != null && <div className="text-xs text-muted">{d.familyMembers} family member{d.familyMembers === 1 ? "" : "s"}</div>}
                   </td>
                   <td className="px-4 py-3 text-ink">{describeBudget(d)}</td>
                   <td className="px-4 py-3 text-ink">{describeSize(d)}</td>
@@ -137,6 +151,17 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
                   </td>
                   <td className="px-4 py-3 text-muted">{d.assignedToName ?? "-"}</td>
                   <td className="px-4 py-3 text-muted">{formatDateOnlyShort(d.createdAt.slice(0, 10))}</td>
+                  <td className="px-4 py-3 text-right">
+                    <a
+                      href={`/admin/demands/${d.id}/pdf`}
+                      download
+                      title="Download as PDF to print"
+                      aria-label={`Download PDF of ${d.clientName}`}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted hover:border-primary hover:text-primary"
+                    >
+                      <FileDown className="h-4 w-4" />
+                    </a>
+                  </td>
                 </tr>
               );
             })}

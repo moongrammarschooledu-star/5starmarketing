@@ -36,6 +36,7 @@ function mapRow(row: any): PropertyDemand {
     sizeMinMarla: row.size_min_marla != null ? Number(row.size_min_marla) : undefined,
     sizeMaxMarla: row.size_max_marla != null ? Number(row.size_max_marla) : undefined,
     minBedrooms: row.min_bedrooms ?? undefined,
+    familyMembers: row.family_members ?? undefined,
     priority: PRIORITY_FROM_DB[row.priority] ?? "Normal",
     status: STATUS_FROM_DB[row.status] ?? "Open",
     notes: row.notes ?? undefined,
@@ -60,6 +61,9 @@ function toRow(input: DemandInput) {
     size_min_marla: input.sizeMinMarla ?? null,
     size_max_marla: input.sizeMaxMarla ?? null,
     min_bedrooms: input.minBedrooms ?? null,
+    // Only sent when there is something to say (a number, or an explicit clear), so saving
+    // keeps working on a database that does not have the family_members column yet.
+    ...(input.familyMembers !== undefined ? { family_members: input.familyMembers } : {}),
     priority: input.priority.toLowerCase(),
     status: input.status.toLowerCase(),
     notes: input.notes || null,

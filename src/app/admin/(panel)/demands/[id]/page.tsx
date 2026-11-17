@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check, AlertTriangle, ExternalLink, Pencil, Phone, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, AlertTriangle, ExternalLink, FileDown, Pencil, Phone, Sparkles } from "lucide-react";
 import { demandService } from "@/services/demandService";
 import { requireSection } from "@/lib/guard";
 import { describeBudget, describeSize } from "@/lib/demandText";
@@ -122,6 +122,9 @@ export default async function DemandDetailPage({
           </a>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <a href={`/admin/demands/${id}/pdf`} download className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-xs font-bold text-ink hover:bg-surface-muted">
+            <FileDown className="h-3.5 w-3.5" /> Download PDF
+          </a>
           <Link href={`/admin/demands/${id}/edit`} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-xs font-bold text-ink hover:bg-surface-muted">
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Link>
@@ -145,6 +148,7 @@ export default async function DemandDetailPage({
             <Row label="Budget">{describeBudget(demand)}</Row>
             <Row label="Size">{describeSize(demand)}</Row>
             {demand.minBedrooms != null && <Row label="Bedrooms">{demand.minBedrooms}+</Row>}
+            {demand.purpose === "For Rent" && demand.familyMembers != null && <Row label="Family members">{demand.familyMembers}</Row>}
             <Row label="Priority">{demand.priority}</Row>
             <Row label="Assigned to">{demand.assignedToName ?? "Not assigned"}</Row>
             {demand.createdByName && <Row label="Added by">{demand.createdByName}</Row>}

@@ -92,6 +92,7 @@ export function demandShareLines(d: PropertyDemand): string[] {
   lines.push(`Budget: ${describeBudget(d)}`);
   lines.push(`Size: ${describeSize(d)}`);
   if (d.minBedrooms != null) lines.push(`Bedrooms: ${d.minBedrooms}+`);
+  if (d.purpose === "For Rent" && d.familyMembers != null) lines.push(`Family members: ${d.familyMembers}`);
   return [...lines, "", ...companyDetailLines()];
 }
 

@@ -68,6 +68,7 @@ export function DemandForm({
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const v = initialValues;
+  const [purpose, setPurpose] = useState<string>(v?.purpose ?? "For Sale");
 
   return (
     <form action={formAction} className="space-y-6">
@@ -103,7 +104,7 @@ export function DemandForm({
         <h2 className="font-heading text-base font-bold text-ink">What the client is looking for</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Label text="Wants to" required>
-            <select name="purpose" defaultValue={v?.purpose ?? "For Sale"} className={inputClass}>
+            <select name="purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} className={inputClass}>
               {demandPurposes.map((p) => (
                 <option key={p} value={p}>
                   {p === "For Sale" ? "Buy (For Sale)" : "Rent (For Rent)"}
@@ -139,6 +140,13 @@ export function DemandForm({
           <Label text="Minimum bedrooms">
             <input name="minBedrooms" defaultValue={v?.minBedrooms} type="number" min={0} max={20} className={inputClass} />
           </Label>
+
+          {purpose === "For Rent" && (
+            <Label text="Number of family members" hint="How many people will live in the rented place.">
+              <input name="familyMembers" defaultValue={v?.familyMembers ?? ""} type="number" min={1} max={40} placeholder="e.g. 5" className={inputClass} />
+            </Label>
+          )}
+          <input type="hidden" name="hadFamily" value={v?.familyMembers != null ? "1" : "0"} />
         </div>
       </section>
 

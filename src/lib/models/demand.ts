@@ -30,6 +30,8 @@ export interface PropertyDemand {
   sizeMinMarla?: number;
   sizeMaxMarla?: number;
   minBedrooms?: number;
+  /** For rent demands: how many people will live there. `null` in an update clears a saved value. */
+  familyMembers?: number | null;
   priority: DemandPriority;
   status: DemandStatus;
   notes?: string;

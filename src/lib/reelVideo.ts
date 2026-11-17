@@ -834,7 +834,22 @@ async function createReelVideoOnce(opts: ReelOptions, lenient: boolean): Promise
       ctx.fillText(p, W / 2, y, W - 80);
       y += 112;
     }
-    y += 10;
+    // WhatsApp call-to-action: the number above is also the WhatsApp number.
+    ctx.font = `bold 46px ${FONT}`;
+    const waLabel = "WhatsApp us now";
+    const waW = ctx.measureText(waLabel).width + 110;
+    ctx.fillStyle = "#25D366";
+    roundRect(ctx, (W - waW) / 2, y, waW, 96, 48);
+    ctx.fill();
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textBaseline = "middle";
+    ctx.fillText(waLabel, W / 2, y + 50);
+    ctx.textBaseline = "top";
+    y += 96 + 26;
+    ctx.font = `38px ${FONT}`;
+    ctx.fillStyle = PINK;
+    ctx.fillText("Message us for price, photos and viewing", W / 2, y, W - 80);
+    y += 70;
     ctx.font = `42px ${FONT}`;
     ctx.fillStyle = PINK;
     ctx.fillText(data.email, W / 2, y, W - 80);

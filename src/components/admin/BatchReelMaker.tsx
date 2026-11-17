@@ -57,6 +57,8 @@ export function reelCaption(i: BatchItem): string {
     `${rent ? "Rent" : "Price"}: ${i.price}`,
     i.serialNo ? `Ref: ${i.serialNo}` : null,
     `Call/WhatsApp: ${site.phoneDisplay2}`,
+    // Short WhatsApp link that names this property and counts the tap (see src/app/wa).
+    i.serialNo ? `WhatsApp: ${site.websiteUrl.replace(/^https?:\/\//, "")}/wa/${i.serialNo}?src=tiktok` : null,
     `${site.websiteUrl}/properties/${i.slug}`,
     `#Lahore #${rent ? "PropertyForRent" : "PropertyForSale"} #RealEstate #5STARM`,
   ]

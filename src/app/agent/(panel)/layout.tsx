@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AgentShell } from "@/components/agent/AgentShell";
+import { AdminWhatsAppLinks } from "@/components/admin/AdminWhatsAppLinks";
 import { profileService } from "@/services/profileService";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default async function AgentPanelLayout({ children }: { children: ReactNo
 
   return (
     <AgentShell agentId={agentId} agentName={agentName}>
+      <AdminWhatsAppLinks />
       {children}
     </AgentShell>
   );

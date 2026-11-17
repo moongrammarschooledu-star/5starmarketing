@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ClipboardCheck, FileDown, PlusCircle, Sparkles, Handshake, XCircle } from "lucide-react";
 import { TableSearch } from "@/components/admin/TableSearch";
+import { PrintListMenu } from "@/components/admin/PrintListMenu";
+import { DEMAND_PRINT_CONFIG } from "@/lib/printLists";
 import { demandService } from "@/services/demandService";
 import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
@@ -52,9 +54,12 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
           <h1 className="font-heading text-2xl font-extrabold text-ink">Demands</h1>
           <p className="mt-1 text-sm text-muted">What each client is looking for, matched with the properties we have. Private - never shown on the website.</p>
         </div>
-        <Link href="/admin/demands/new" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
-          <PlusCircle className="h-4 w-4" /> Add Demand
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <PrintListMenu config={DEMAND_PRINT_CONFIG} />
+          <Link href="/admin/demands/new" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
+            <PlusCircle className="h-4 w-4" /> Add Demand
+          </Link>
+        </div>
       </div>
 
       {loadError && (

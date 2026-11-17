@@ -19,6 +19,12 @@ function readSaved(): { name: string; phone: string } {
   return { name: "", phone: "" };
 }
 
+/** The visitor's name and number if they already gave them on this device, otherwise null. */
+export function readSavedContact(): { name: string; phone: string } | null {
+  const saved = readSaved();
+  return saved.name.trim() && PHONE_PATTERN.test(saved.phone.trim()) ? { name: saved.name.trim(), phone: saved.phone.trim() } : null;
+}
+
 /** Asks a visitor for their name and phone number before something they
  *  asked for (a WhatsApp chat, a brochure) is handed over, so the lead the
  *  click creates always has real contact details. `onSubmit` runs straight

@@ -3,6 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { NewsTicker } from "@/components/NewsTicker";
 import { Footer } from "@/components/Footer";
 import { WhatsAppFloatButton } from "@/components/WhatsAppButton";
+import { ContactClickTracker } from "@/components/ContactClickTracker";
 import { FavoritesProvider } from "@/components/customer/FavoritesProvider";
 import { CompareProvider } from "@/components/customer/CompareProvider";
 import { CompareBar } from "@/components/customer/CompareBar";
@@ -19,6 +20,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         {children}
         <Footer />
         <WhatsAppFloatButton />
+        <ContactClickTracker />
         {/* PublicAiChatWidget hidden until ANTHROPIC_API_KEY in Vercel
             Production is fixed (currently contains an invalid character,
             breaking the x-api-key header). Component/API untouched — just

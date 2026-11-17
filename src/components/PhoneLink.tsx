@@ -28,6 +28,9 @@ export function PhoneLink({
   return (
     <a
       href={`tel:${phoneHref}`}
+      // This link reports itself to analytics; the site-wide tracker skips what is marked here.
+      data-ga-tracked="1"
+      {...(propertyId || projectId ? { "data-event-tracked": "1" } : {})}
       onClick={() => {
         trackEvent("phone_click", { context });
         const sessionId = getOrCreateSessionId();

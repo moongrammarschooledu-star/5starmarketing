@@ -12,6 +12,7 @@ const CAMPAIGN_LABELS: Record<string, string> = {
   md_rent_owners: "Rent ad — Ghar ka malik (owner)",
   md_rent_tenants: "Rent ad — Kirayedar (tenant)",
   md_airline_10marla: "Air Line 10 Marla ad — Khareedar",
+  facebook_instant_form: "Facebook Instant Form (property requirement)",
 };
 
 function esc(value: string): string {

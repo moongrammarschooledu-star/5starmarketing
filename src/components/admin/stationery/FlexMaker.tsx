@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Printer } from "lucide-react";
 import { site } from "@/lib/site";
-import { PRINT_KIT_CSS, inputClass } from "./printKit";
+import { PRINT_KIT_CSS, printIsolated, inputClass } from "./printKit";
 
 // Flex banner designs, made to be sent to a flex printer:
 //  - drawn at the real flex size, saved as a vector PDF of exactly that size plus the bleed;
@@ -139,7 +139,7 @@ export function FlexMaker({ properties, qrWebsite, qrWhatsapp, initialPropertyId
     const kind = mode === "company" ? "company" : (title || "property").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 40);
     document.title = `5STAR-flex-${sz.label.replace(/ /g, "")}${portrait ? "-upright" : ""}-${kind}`;
     window.addEventListener("afterprint", () => (document.title = old), { once: true });
-    window.print();
+    printIsolated(".pk-root");
   }
 
   const qrSrc = qr === "whatsapp" ? qrWhatsapp : qr === "website" ? qrWebsite : null;

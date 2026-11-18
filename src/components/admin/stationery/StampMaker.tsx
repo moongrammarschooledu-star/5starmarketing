@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Download, Printer } from "lucide-react";
 import { site } from "@/lib/site";
-import { PRINT_KIT_CSS, PrintTips, inputClass } from "./printKit";
+import { PRINT_KIT_CSS, printIsolated, PrintTips, inputClass } from "./printKit";
 
 // Artwork for the company rubber stamp / seal: a round seal and a rectangular stamp, drawn as
 // black vector shapes. Download the SVG (or print it) and hand it to the stamp maker.
@@ -138,7 +138,7 @@ export function StampMaker() {
           <button type="button" onClick={download} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
             <Download className="h-4 w-4" /> Download design (SVG)
           </button>
-          <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
+          <button type="button" onClick={() => printIsolated(".pk-root")} className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">
             <Printer className="h-4 w-4" /> Print at real size
           </button>
         </div>

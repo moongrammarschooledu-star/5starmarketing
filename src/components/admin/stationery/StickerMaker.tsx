@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Printer } from "lucide-react";
 import { site } from "@/lib/site";
-import { PRINT_KIT_CSS, PrintTips, inputClass } from "./printKit";
+import { PRINT_KIT_CSS, printIsolated, PrintTips, inputClass } from "./printKit";
 
 // Sheets of company stickers: round logo stickers, address/phone labels, and FOR SALE / FOR RENT /
 // SOLD stickers for property signs and files. A whole A4 sheet is filled; cut along the lines.
@@ -96,7 +96,7 @@ export function StickerMaker() {
           <input type="checkbox" checked={cutLines} onChange={(e) => setCutLines(e.target.checked)} className="h-4 w-4 accent-primary" />
           Print thin cutting lines
         </label>
-        <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
+        <button type="button" onClick={() => printIsolated(".pk-root")} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
           <Printer className="h-4 w-4" /> Print the sheet ({count} stickers)
         </button>
         <PrintTips extra="Print on sticker paper (A4 glossy or matt); for a printing press, save as PDF." />

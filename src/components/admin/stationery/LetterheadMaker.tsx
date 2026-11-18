@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Printer, RotateCcw } from "lucide-react";
 import { site } from "@/lib/site";
+import { printIsolated } from "./printKit";
 
 // Writes a letter on the company letterhead and prints it (or saves it as PDF). Nothing is
 // stored on the server: the draft is only remembered in this browser. "Blank letterhead"
@@ -70,9 +71,9 @@ const CSS = `
 .lh-foot { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; border-top: 1.5px solid #c81e2c; padding-top: 3mm; text-align: center; font: 8.5pt/1.5 Arial, Helvetica, sans-serif; color: #444; direction: ltr; }
 @media print {
   @page { size: A4; margin: 0; }
-  body * { visibility: hidden !important; }
-  #lh-print, #lh-print * { visibility: visible !important; }
-  #lh-print { position: absolute; left: 0; top: 0; }
+  /* everything around the design (sidebar, form) is taken out of the page, and its wrappers are unlocked, so nothing blank or cut is printed */
+  [data-print-hide] { display: none !important; }
+  [data-print-flow] { display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; width: auto !important; max-width: none !important; transform: none !important; zoom: 1 !important; }
   .lh-sheet { zoom: 1 !important; box-shadow: none !important; }
 }
 `;
@@ -161,7 +162,7 @@ export function LetterheadMaker() {
         )}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
+          <button type="button" onClick={() => printIsolated("#lh-print")} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
             <Printer className="h-4 w-4" /> Print / Save as PDF
           </button>
           <button type="button" onClick={() => window.confirm("Clear this letter?") && setD(emptyDraft())} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary">

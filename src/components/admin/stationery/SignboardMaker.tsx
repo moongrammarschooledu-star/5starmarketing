@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Printer } from "lucide-react";
 import { site } from "@/lib/site";
-import { PRINT_KIT_CSS, PrintTips, inputClass } from "./printKit";
+import { PRINT_KIT_CSS, printIsolated, PrintTips, inputClass } from "./printKit";
 
 // A big A4 poster for a property: FOR SALE / FOR RENT, the details, a huge phone number and a QR
 // code. Print it on A4, or enlarge to A3 in the print window, and stick it on the property.
@@ -59,7 +59,7 @@ export function SignboardMaker({ qrWebsite, qrWhatsapp }: { qrWebsite: string; q
             <option value="none">No QR code</option>
           </select>
         </label>
-        <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
+        <button type="button" onClick={() => printIsolated(".pk-root")} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
           <Printer className="h-4 w-4" /> Print the poster
         </button>
         <PrintTips extra="For a bigger sign choose A3 paper and the same scale, or save as PDF for a printing press." />

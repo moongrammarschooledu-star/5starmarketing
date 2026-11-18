@@ -15,15 +15,45 @@ export const PRINT_KIT_CSS = `
 .pk-hide-back .pk-back, .pk-hide-front .pk-front { display: none; }
 @media print {
   @page { size: A4; margin: 0; }
-  body * { visibility: hidden !important; }
-  .pk-root, .pk-root * { visibility: visible !important; }
-  .pk-root { position: absolute; left: 0; top: 0; }
+  /* everything around the design (sidebar, form) is taken out of the page, and its wrappers are unlocked, so nothing blank or cut is printed */
+  [data-print-hide] { display: none !important; }
+  [data-print-flow] { display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; width: auto !important; max-width: none !important; transform: none !important; zoom: 1 !important; }
   .pk-sheet { zoom: 1 !important; box-shadow: none !important; margin: 0 !important; }
   .pk-printing-front .pk-back { display: none !important; }
   .pk-printing-back .pk-front { display: none !important; }
   .pk-noprint { display: none !important; }
 }
 `;
+
+/** Prints one part of the page: everything around it is hidden for the printout (and shown again afterwards). */
+export function printIsolated(selector: string) {
+  const root = document.querySelector<HTMLElement>(selector);
+  if (!root) {
+    window.print();
+    return;
+  }
+  const marked: HTMLElement[] = [];
+  let node: HTMLElement | null = root;
+  while (node && node !== document.documentElement) {
+    const parent: HTMLElement | null = node.parentElement;
+    if (!parent) break;
+    for (const sib of Array.from(parent.children) as HTMLElement[]) {
+      if (sib !== node && !/^(STYLE|SCRIPT|LINK)$/.test(sib.tagName)) {
+        sib.setAttribute("data-print-hide", "");
+        marked.push(sib);
+      }
+    }
+    parent.setAttribute("data-print-flow", "");
+    marked.push(parent);
+    node = parent;
+  }
+  const restore = () => marked.forEach((m) => {
+    m.removeAttribute("data-print-hide");
+    m.removeAttribute("data-print-flow");
+  });
+  window.addEventListener("afterprint", restore, { once: true });
+  window.print();
+}
 
 export function PrintTips({ extra }: { extra?: string }) {
   return (

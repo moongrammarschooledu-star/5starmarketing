@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Printer } from "lucide-react";
 import { site } from "@/lib/site";
-import { PRINT_KIT_CSS, PrintTips, inputClass } from "./printKit";
+import { PRINT_KIT_CSS, printIsolated, PrintTips, inputClass } from "./printKit";
 
 // The company profile brochure: one A4 sheet, front (who we are) and back (services and how to
 // reach us). Print both pages on one sheet (two-sided) or save as PDF to send on WhatsApp.
@@ -48,7 +48,7 @@ export function CompanyProfileMaker({ qrWebsite }: { qrWebsite: string }) {
           <span className="font-semibold text-ink">Our services (one per line)</span>
           <textarea value={services} onChange={(e) => setServices(e.target.value)} rows={7} className={inputClass} />
         </label>
-        <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
+        <button type="button" onClick={() => printIsolated(".pk-root")} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
           <Printer className="h-4 w-4" /> Print both pages
         </button>
         <PrintTips extra="Two pages: print two-sided, or save as PDF. For many copies, give the PDF to a printing press." />

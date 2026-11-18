@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Printer, Trash2 } from "lucide-react";
 import { site } from "@/lib/site";
+import { printIsolated } from "./printKit";
 
 // Business cards (90 x 50 mm): fill in the people, see the front and back, print 10 cards on an
 // A4 sheet. The front has the name, contact lines, the company logo and a QR code; the back is
@@ -71,9 +72,9 @@ const CSS = `
 .bc-hide-back .bc-sheets-back, .bc-hide-front .bc-sheets-front { display: none; }
 @media print {
   @page { size: A4; margin: 0; }
-  body * { visibility: hidden !important; }
-  .bc-root, .bc-root * { visibility: visible !important; }
-  .bc-root { position: absolute; left: 0; top: 0; }
+  /* everything around the design (sidebar, form) is taken out of the page, and its wrappers are unlocked, so nothing blank or cut is printed */
+  [data-print-hide] { display: none !important; }
+  [data-print-flow] { display: block !important; position: static !important; height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; width: auto !important; max-width: none !important; transform: none !important; zoom: 1 !important; }
   .bc-sheet { zoom: 1 !important; box-shadow: none !important; margin: 0 !important; }
   .bc-printing-front .bc-sheets-back { display: none !important; }
   .bc-printing-back .bc-sheets-front { display: none !important; }
@@ -199,7 +200,7 @@ export function BusinessCardMaker({ qrWebsite, qrWhatsapp }: { qrWebsite: string
     setPrinting(side);
     const done = () => setPrinting(null);
     window.addEventListener("afterprint", done, { once: true });
-    window.setTimeout(() => window.print(), 120);
+    window.setTimeout(() => printIsolated(".bc-root"), 120);
   }
 
   return (

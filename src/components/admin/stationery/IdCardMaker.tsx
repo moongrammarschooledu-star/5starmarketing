@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Printer, Trash2 } from "lucide-react";
 import { site } from "@/lib/site";
-import { PRINT_KIT_CSS, PrintTips, inputClass } from "./printKit";
+import { PRINT_KIT_CSS, printIsolated, PrintTips, inputClass } from "./printKit";
 
 // Staff ID cards (85.6 x 54 mm, the standard card size): name, designation, ID number, phone,
 // blood group and a photo (the photo stays in this browser only). Eight cards per A4 sheet,
@@ -111,7 +111,7 @@ export function IdCardMaker() {
   function printSide(side: "front" | "back") {
     setPrinting(side);
     window.addEventListener("afterprint", () => setPrinting(null), { once: true });
-    window.setTimeout(() => window.print(), 120);
+    window.setTimeout(() => printIsolated(".pk-root"), 120);
   }
 
   function pickPhoto(id: string, file: File | undefined) {

@@ -9,7 +9,7 @@ import type { TokenReceiptData } from "./types";
 // One copy fills the page; with two copies a client copy and an office copy share one A4 page.
 
 const EXTRA_STYLE = `
-@page { size: A4; margin: 10mm 14mm; @bottom-right { content: ""; } }
+@page { size: A4; margin: 0; }
 .tok .page { padding: 8mm 12mm; }
 .tok.lang-ur .page { font-size: 12pt; line-height: 2.2; }
 .tok.lang-en .page { font-size: 11pt; line-height: 1.45; }
@@ -25,7 +25,7 @@ const EXTRA_STYLE = `
 .tok .cut { border-top: 1.5px dashed #999; margin: 8mm 0; text-align: center; font: 9pt Arial, Helvetica, sans-serif; color: #888; height: 0; line-height: 0; }
 .tok .cut span { background: #fff; padding: 0 8px; }
 @media print {
-  .tok .page { padding: 0; }
+  .tok .page { padding: 10mm 14mm; }
   .tok .hdr { position: static; }
   .tok .cut { margin: 7mm 0; }
 }
@@ -74,7 +74,7 @@ export function renderTokenHtml(data: TokenReceiptData, receiptNo?: string): str
 <div class="bar" dir="ltr">
   <button type="button" id="print-btn">Print / Save as PDF</button>
   <a href="javascript:history.back()">Back</a>
-  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), turn OFF &ldquo;Headers and footers&rdquo;, turn ON &ldquo;Background graphics&rdquo;, paper A4.</small>
+  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), paper A4, turn ON &ldquo;Background graphics&rdquo;.</small>
 </div>
 <div class="page" dir="${dir}">
 ${body}

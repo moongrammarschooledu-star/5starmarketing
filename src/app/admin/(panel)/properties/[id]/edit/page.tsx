@@ -82,6 +82,14 @@ export default async function EditPropertyPage({
             <FileDown className="h-3.5 w-3.5" /> Make rent agreement
           </Link>
         )}
+        {admin && canAccess(admin.role, "brochures") && (
+          <Link
+            href={`/admin/stationery/flex?property=${property.id}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+          >
+            <FileDown className="h-3.5 w-3.5" /> Make flex banner
+          </Link>
+        )}
         {property.purpose === "For Sale" && admin && canAccess(admin.role, "deals") && (
           <>
             <Link

@@ -149,6 +149,12 @@ export function RentAgreementForm({
               <option value="stamp">Stamp paper (leave space for the stamp)</option>
             </select>
           </Field>
+          <Field label="Page size" hint="Legal (8.5 x 14 in) is the usual size for agreements; the text is fitted into 2 pages.">
+            <select value={d.pageSize} onChange={(e) => set({ pageSize: e.target.value as RentAgreementData["pageSize"] })} className={input}>
+              <option value="legal">Legal (8.5 x 14 in)</option>
+              <option value="a4">A4</option>
+            </select>
+          </Field>
           <Field label="Agreement date">
             <input type="date" value={d.agreementDate} onChange={(e) => set({ agreementDate: e.target.value })} className={input} />
           </Field>

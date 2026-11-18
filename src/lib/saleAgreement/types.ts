@@ -1,4 +1,4 @@
-import { emptyParty, type AgreementLanguage, type AgreementPaper, type AgreementParty, type AgreementWitness } from "@/lib/rentAgreement/types";
+import { emptyParty, type AgreementLanguage, type AgreementPageSize, type AgreementPaper, type AgreementParty, type AgreementWitness } from "@/lib/rentAgreement/types";
 
 // An agreement to sell a property (bayana / iqrar nama bai) between a seller and a buyer.
 
@@ -9,6 +9,7 @@ export type CommissionBy = "buyer" | "seller" | "both";
 export interface SaleAgreementData {
   language: AgreementLanguage;
   paper: AgreementPaper;
+  pageSize: AgreementPageSize;
   /** ISO date the agreement is made on. */
   agreementDate: string;
   place: string;
@@ -63,6 +64,7 @@ export function defaultSaleData(): SaleAgreementData {
   return {
     language: "ur",
     paper: "plain",
+    pageSize: "legal",
     agreementDate: today.toISOString().slice(0, 10),
     place: "Lahore",
     placeUr: "",
@@ -95,6 +97,7 @@ export function normalizeSaleData(input: Partial<SaleAgreementData> | null | und
     ...x,
     language: x.language === "en" ? "en" : "ur",
     paper: x.paper === "stamp" ? "stamp" : "plain",
+    pageSize: x.pageSize === "a4" ? "a4" : "legal",
     seller: { ...d.seller, ...(x.seller ?? {}) },
     buyer: { ...d.buyer, ...(x.buyer ?? {}) },
     property: { ...d.property, ...(x.property ?? {}) },

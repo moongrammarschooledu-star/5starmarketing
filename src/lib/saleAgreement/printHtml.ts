@@ -1,5 +1,5 @@
 import { site } from "@/lib/site";
-import { PRINT_STYLE, docTableHtml, escHtml, footerHtml, letterheadHtml } from "@/lib/rentAgreement/printHtml";
+import { PAGES, buildPrintStyle, docTableHtml, escHtml, fitScript, footerHtml, letterheadHtml } from "@/lib/rentAgreement/printHtml";
 import { ltrHtml } from "@/lib/rentAgreement/bidi";
 import { buildSaleContent } from "./content";
 import type { SaleAgreementData } from "./types";
@@ -22,6 +22,7 @@ export function renderSaleHtml(data: SaleAgreementData, agreementNo?: string): s
     `<div><div class="lbl">${lang === "ur" ? ur : en}</div><div class="sigline"></div>${pick(name, nameUr) ? `<div class="nm">${t(pick(name, nameUr))}</div>` : ""}${cnic.trim() ? `<div class="cn">CNIC: ${escHtml(cnic.trim())}</div>` : ""}</div>`;
   const thumb = `<div><div class="thumb"></div><div class="cap">${lang === "ur" ? "انگوٹھا" : "Thumb impression"}</div></div>`;
   const w = data.witnesses;
+  const page = PAGES[data.pageSize === "a4" ? "a4" : "legal"];
   const rows: (string | { html: string; keep: boolean })[] = [];
   if (stamp) rows.push('<div class="stampspace"></div>');
   rows.push({ keep: true, html: `<div class="title">${escHtml(c.title[lang])}</div>${agreementNo ? `<div class="ref">Agreement No. ${escHtml(agreementNo)}</div>` : ""}` });
@@ -48,18 +49,19 @@ export function renderSaleHtml(data: SaleAgreementData, agreementNo?: string): s
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sale Agreement${agreementNo ? ` ${escHtml(agreementNo)}` : ""}</title>
-<style>${PRINT_STYLE}</style>
+<style>${buildPrintStyle(page)}</style>
 </head>
 <body class="lang-${lang} paper-${data.paper}">
 <div class="bar" dir="ltr">
   <button type="button" id="print-btn">Print / Save as PDF</button>
   <a href="javascript:history.back()">Back</a>
-  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), paper A4, turn ON &ldquo;Background graphics&rdquo;. ${stamp ? "The top of the first page is left empty for the stamp." : "The company letterhead is printed at the top of every page."}</small>
+  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), paper ${data.pageSize === "a4" ? "A4" : "Legal"}, turn ON &ldquo;Background graphics&rdquo;. ${stamp ? "The top of the first page is left empty for the stamp." : "The company letterhead is printed at the top of every page."}</small>
 </div>
 <div class="page" dir="${dir}">
 ${docTableHtml({ head: stamp ? '<div class="stamptop"></div>' : letterheadHtml(), rows, footer: footerHtml(agreementNo) })}
 </div>
 <script>document.getElementById("print-btn").addEventListener("click", function () { window.print(); });</script>
+${fitScript(page.h, 2, 0.8)}
 </body>
 </html>`;
 }

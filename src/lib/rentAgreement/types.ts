@@ -6,6 +6,8 @@ export type AgreementLanguage = "ur" | "en";
 /** "plain": printed on ordinary paper with the company letterhead.
  *  "stamp": printed on stamp paper - the top of the first page is left empty for the stamp. */
 export type AgreementPaper = "plain" | "stamp";
+/** Legal (8.5 x 14 in) is the usual size for agreements in Pakistan. */
+export type AgreementPageSize = "legal" | "a4";
 export type PartyRelation = "S/O" | "D/O" | "W/O" | "";
 export type PropertyPurpose = "Residential" | "Commercial" | "Office" | "School" | "Shop" | "Other";
 
@@ -31,6 +33,7 @@ export interface AgreementWitness {
 export interface RentAgreementData {
   language: AgreementLanguage;
   paper: AgreementPaper;
+  pageSize: AgreementPageSize;
   /** ISO date (yyyy-mm-dd) the agreement is made on. */
   agreementDate: string;
   place: string;
@@ -89,6 +92,7 @@ export function defaultAgreementData(): RentAgreementData {
   return {
     language: "ur",
     paper: "plain",
+    pageSize: "legal",
     agreementDate: today,
     place: "Lahore",
     placeUr: "",
@@ -122,6 +126,7 @@ export function normalizeAgreementData(input: Partial<RentAgreementData> | null 
     ...x,
     // (an older draft could say "both"; that option no longer exists)
     language: x.language === "en" ? "en" : "ur",
+    pageSize: x.pageSize === "a4" ? "a4" : "legal",
     owner: { ...d.owner, ...(x.owner ?? {}) },
     tenant: { ...d.tenant, ...(x.tenant ?? {}) },
     property: { ...d.property, ...(x.property ?? {}) },

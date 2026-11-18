@@ -17,7 +17,12 @@ export function escHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-export const PRINT_STYLE = `
+/** Page sizes in mm. Legal (8.5 x 14 in) is the usual size for agreements. */
+export const PAGES = { a4: { w: 210, h: 297 }, legal: { w: 215.9, h: 355.6 } } as const;
+export type PageMm = { w: number; h: number };
+
+export function buildPrintStyle(page: PageMm): string {
+  return `
 @font-face { font-family: "Noto Nastaliq Urdu"; src: url("/fonts/NotoNastaliqUrdu-Regular.ttf") format("truetype"); font-weight: 400; }
 @font-face { font-family: "Noto Nastaliq Urdu"; src: url("/fonts/NotoNastaliqUrdu-Bold.ttf") format("truetype"); font-weight: 700; }
 * { box-sizing: border-box; }
@@ -27,13 +32,13 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .bar button, .bar a { background: #c81e2c; color: #fff; border: 0; border-radius: 999px; padding: 9px 20px; font: 700 14px system-ui, sans-serif; cursor: pointer; text-decoration: none; }
 .bar a { background: #444; }
 .bar small { font-weight: 400; color: #ddd; flex: 1 1 320px; }
-.page { width: 210mm; margin: 14px auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+.page { width: ${page.w}mm; margin: 14px auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
 
 /* the document: one table, header and footer repeated on every printed page */
-table.doc { width: 100%; height: 296mm; border-collapse: collapse; border-spacing: 0; table-layout: fixed; }
+table.doc { width: 100%; height: ${page.h - 1}mm; border-collapse: collapse; border-spacing: 0; table-layout: fixed; }
 table.doc > thead { display: table-header-group; }
 table.doc > tfoot { display: table-footer-group; }
-table.doc > thead > tr > td { padding: 9mm 16mm 0; }
+table.doc > thead > tr > td { padding: 8mm 16mm 0; }
 table.doc > tbody > tr > td { padding: 0 16mm; vertical-align: top; }
 table.doc > tfoot > tr > td { padding: 0; }
 .ftrspace { height: 20mm; }
@@ -41,10 +46,10 @@ table.doc tr.keep { break-inside: avoid; page-break-inside: avoid; }
 table.doc tr { orphans: 3; widows: 3; }
 table.doc tr.fill { height: 100%; }
 table.doc tr.fill > td { padding: 0; }
-.lang-en .doc { font: 11pt/1.45 "Times New Roman", Times, serif; text-align: justify; }
-.lang-ur .doc { font: 12.5pt/2.3 "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif; text-align: justify; }
+.lang-en .doc { font: calc(11.5pt * var(--s, 1))/1.5 "Times New Roman", Times, serif; text-align: justify; }
+.lang-ur .doc { font: calc(13pt * var(--s, 1))/2.35 "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif; text-align: justify; }
 
-.hdr { display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #c81e2c; padding-bottom: 8px; margin-bottom: 10px; direction: ltr; text-align: left; font-family: Arial, Helvetica, sans-serif; line-height: 1.35; }
+.hdr { display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #c81e2c; padding-bottom: 8px; margin-bottom: 6px; direction: ltr; text-align: left; font-family: Arial, Helvetica, sans-serif; line-height: 1.35; }
 .hdr img { height: 64px; width: auto; }
 .hdr .co { text-align: right; }
 .hdr .co b { font-size: 14pt; display: block; }
@@ -57,8 +62,8 @@ table.doc tr.fill > td { padding: 0; }
 .ltr { unicode-bidi: isolate; direction: ltr; }
 .nw { white-space: nowrap; }
 .ref { font: 9pt Arial, Helvetica, sans-serif; color: #555; margin: 0 0 4px; direction: ltr; text-align: right; }
-p.para { margin: 0 0 4px; }
-.clause { display: flex; gap: 8px; margin: 0 0 4px; }
+p.para { margin: 0 0 3px; }
+.clause { display: flex; gap: 8px; margin: 0 0 3px; }
 .clause .no { flex: 0 0 24px; font-weight: 700; }
 .clause .txt { flex: 1; min-width: 0; }
 .closing { margin: 8px 0 0; }
@@ -67,9 +72,10 @@ p.para { margin: 0 0 4px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 8px; }
 .thumb { width: 56px; height: 56px; border: 1px solid #777; margin-bottom: 4px; }
 .cap { font-size: 8.5pt; color: #555; }
-.sigline { border-bottom: 1px solid #1a1a1a; height: 24px; margin-bottom: 2px; }
+.sigline { border-bottom: 1px solid #1a1a1a; height: 24px; margin-bottom: 4px; }
 .lbl { font-weight: 700; font-size: 10.5pt; }
-.nm { font-size: 10pt; line-height: 1.7; }
+.nm { font-size: 10pt; line-height: 1.7; padding-top: 2px; }
+.lang-ur .nm { line-height: 2.5; padding-top: 4px; }
 .cn { font: 9pt Arial, Helvetica, sans-serif; color: #444; direction: ltr; }
 .lang-ur .cn { text-align: right; }
 .note { font: 8pt Arial, Helvetica, sans-serif; color: #666; margin-top: 6px; text-align: left; direction: ltr; }
@@ -78,7 +84,7 @@ p.para { margin: 0 0 4px; }
 .ftr { border-top: 1.5px solid #c81e2c; padding-top: 4px; font: 7.5pt Arial, Helvetica, sans-serif; color: #555; direction: ltr; text-align: center; }
 
 /* margin 0: the browser then prints no header / footer line of its own */
-@page { size: A4; margin: 0; }
+@page { size: ${page.w}mm ${page.h}mm; margin: 0; }
 @media print {
   html, body { background: #fff; }
   .bar { display: none; }
@@ -87,6 +93,14 @@ p.para { margin: 0 0 4px; }
   .ftr-box { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
 }
 `;
+}
+
+export const PRINT_STYLE = buildPrintStyle(PAGES.a4);
+
+/** Makes the text a little smaller, only if needed, so the agreement fits in `maxPages` pages (never below `minScale`). */
+export function fitScript(pageHeightMm: number, maxPages: number, minScale: number): string {
+  return `<script>(function(){function mm(px){return px/3.7795}function run(){var doc=document.querySelector("table.doc");if(!doc||!doc.tHead)return;var head=doc.tHead,sp=doc.querySelector(".ftrspace"),body=doc.tBodies[0];function bodyH(){var h=0;for(var i=0;i<body.rows.length;i++){if(body.rows[i].className.indexOf("fill")<0)h+=body.rows[i].getBoundingClientRect().height}return mm(h)}var cap=${pageHeightMm}-mm(head.getBoundingClientRect().height)-mm(sp.getBoundingClientRect().height)-6;var s=1;doc.style.setProperty("--s",s);while(bodyH()>${maxPages}*cap*0.94&&s>${minScale}){s=Math.round((s-0.02)*100)/100;doc.style.setProperty("--s",s)}}if(document.fonts&&document.fonts.ready){document.fonts.ready.then(run)}else{window.addEventListener("load",run)}})();</script>`;
+}
 
 /** The company letterhead (logo, name, address, phone, website) at the top of a printed page. */
 export function letterheadHtml(): string {
@@ -122,6 +136,7 @@ export function renderAgreementHtml(data: RentAgreementData, agreementNo?: strin
       ? `یہ اقرار نامہ فریقین کی فراہم کردہ معلومات پر ${site.fullName} نے تیار کیا ہے۔ دستخط سے پہلے پورا اقرار نامہ پڑھ لیں۔`
       : `Prepared by ${site.fullName} on the information given by the parties. Please read the whole agreement before signing.`;
 
+  const page = PAGES[data.pageSize === "a4" ? "a4" : "legal"];
   const rows: (string | { html: string; keep: boolean })[] = [];
   if (stamp) rows.push('<div class="stampspace"></div>');
   rows.push({ keep: true, html: `<div class="title">${escHtml(c.title[lang])}</div>${agreementNo ? `<div class="ref">Agreement No. ${escHtml(agreementNo)}</div>` : ""}` });
@@ -145,18 +160,19 @@ export function renderAgreementHtml(data: RentAgreementData, agreementNo?: strin
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rent Agreement${agreementNo ? ` ${escHtml(agreementNo)}` : ""}</title>
-<style>${PRINT_STYLE}</style>
+<style>${buildPrintStyle(page)}</style>
 </head>
 <body class="lang-${lang} paper-${data.paper}">
 <div class="bar" dir="ltr">
   <button type="button" id="print-btn">Print / Save as PDF</button>
   <a href="javascript:history.back()">Back</a>
-  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), paper A4, turn ON &ldquo;Background graphics&rdquo;. ${stamp ? "The top of the first page is left empty for the stamp." : "The company letterhead is printed at the top of every page."}</small>
+  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), paper ${data.pageSize === "a4" ? "A4" : "Legal"}, turn ON &ldquo;Background graphics&rdquo;. ${stamp ? "The top of the first page is left empty for the stamp." : "The company letterhead is printed at the top of every page."}</small>
 </div>
 <div class="page" dir="${dir}">
 ${docTableHtml({ head: stamp ? '<div class="stamptop"></div>' : letterheadHtml(), rows, footer: footerHtml(agreementNo) })}
 </div>
 <script>document.getElementById("print-btn").addEventListener("click", function () { window.print(); });</script>
+${fitScript(page.h, 2, 0.8)}
 </body>
 </html>`;
 }

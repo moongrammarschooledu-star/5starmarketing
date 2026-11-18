@@ -59,7 +59,12 @@ export default async function LeaseDetailPage({ params }: { params: Promise<{ id
             {lease.propertyTitle} {lease.unitNumber ? `— ${lease.unitNumber}` : ""} · {lease.tenantName} · {lease.landlordName}
           </p>
         </div>
-        <StatusBadge status={lease.status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/admin/rentals/agreements/new?lease=${lease.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary">
+            Make rent agreement (Urdu / English)
+          </Link>
+          <StatusBadge status={lease.status} />
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -1,10 +1,25 @@
 import "server-only";
+import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { activityService } from "./activityService";
-import { parseUploadDataUri, hashBytes, buildStoragePath, uploadDocumentFile, deleteDocumentFiles, createSignedDocumentUrl } from "@/lib/documentStorage";
+import {
+  parseUploadDataUri,
+  hashBytes,
+  buildStoragePath,
+  uploadDocumentFile,
+  deleteDocumentFiles,
+  createSignedDocumentUrl,
+  extensionForMime,
+  MAX_DOCUMENT_BYTES,
+  getStoredObjectInfo,
+  removeStoredObjects,
+} from "@/lib/documentStorage";
 import type {
   DocumentRecord,
   DocumentInput,
+  DocumentPrepareInput,
+  DocumentTarget,
+  DocumentTargetKind,
   DocumentStatus,
   DocumentType,
   DocumentVersionEntry,
@@ -30,6 +45,7 @@ function mapRow(row: any): DocumentRecord {
     category: row.category ?? undefined,
     description: row.description ?? undefined,
     customerId: row.customer_id ?? undefined,
+    customerContactId: row.customer_contact_id ?? undefined,
     leadId: row.lead_id ?? undefined,
     propertyId: row.property_id ?? undefined,
     projectId: row.project_id ?? undefined,
@@ -70,10 +86,17 @@ function mapRow(row: any): DocumentRecord {
 }
 
 async function attachCustomerName(doc: DocumentRecord): Promise<DocumentRecord> {
-  if (!doc.customerId) return doc;
+  if (!doc.customerId && !doc.customerContactId) return doc;
   const supabase = await createClient();
-  const { data } = await supabase.from("customer_profiles").select("full_name").eq("id", doc.customerId).maybeSingle();
-  return data ? { ...doc, customerName: data.full_name ?? undefined } : doc;
+  if (doc.customerId) {
+    const { data } = await supabase.from("customer_profiles").select("full_name, phone").eq("id", doc.customerId).maybeSingle();
+    if (data) return { ...doc, customerName: data.full_name ?? undefined, linkedPhone: data.phone ?? undefined };
+  }
+  if (doc.customerContactId) {
+    const { data } = await supabase.from("customer_contacts").select("name, phone, whatsapp").eq("id", doc.customerContactId).maybeSingle();
+    if (data) return { ...doc, customerName: doc.customerName ?? data.name, customerContactName: data.name, linkedPhone: data.whatsapp || data.phone || undefined };
+  }
+  return doc;
 }
 
 /** Best-effort — records to document_audit_logs, AND mirrors into the
@@ -154,6 +177,8 @@ export const documentService = {
     if (filters.status) query = query.eq("status", filters.status);
     if (filters.documentType) query = query.eq("document_type", filters.documentType);
     if (filters.customerId) query = query.eq("customer_id", filters.customerId);
+    if (filters.customerContactId) query = query.eq("customer_contact_id", filters.customerContactId);
+    if (filters.leadId) query = query.eq("lead_id", filters.leadId);
     if (filters.propertyId) query = query.eq("property_id", filters.propertyId);
     if (filters.projectId) query = query.eq("project_id", filters.projectId);
     if (filters.constructionProjectId) query = query.eq("construction_project_id", filters.constructionProjectId);
@@ -243,6 +268,7 @@ export const documentService = {
         category: input.category || null,
         description: input.description || null,
         customer_id: input.customerId || null,
+        ...(input.customerContactId ? { customer_contact_id: input.customerContactId } : {}),
         lead_id: input.leadId || null,
         property_id: input.propertyId || null,
         project_id: input.projectId || null,
@@ -273,7 +299,7 @@ export const documentService = {
 
     const documentId = inserted.id;
     const path = buildStoragePath(
-      { customerId: input.customerId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId, leaseId: input.leaseId },
+      { customerId: input.customerId, contactId: input.customerContactId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId, leaseId: input.leaseId },
       documentId,
       parsed.extension
     );
@@ -373,6 +399,172 @@ export const documentService = {
     const doc = await this.getById(documentId);
     if (!doc) throw new Error("Document was generated but could not be loaded.");
     return doc;
+  },
+
+  // ---- Browser-direct upload -------------------------------------------
+  // Files go from the browser straight to storage (the staff storage policy already
+  // allows that), so a big scan is not squeezed through a server request that the
+  // hosting limits to a few megabytes. prepare -> browser uploads -> finalize.
+  async prepareUpload(input: DocumentPrepareInput, actor: { adminId?: string; name: string }): Promise<{ documentId: string; path: string }> {
+    const ext = extensionForMime(input.mimeType);
+    if (!ext) throw new Error("Unsupported file type. Use PDF, JPG, PNG or WEBP.");
+    if (!(input.fileSize > 0)) throw new Error("The file is empty.");
+    if (input.fileSize > MAX_DOCUMENT_BYTES) throw new Error("File is larger than 15MB.");
+
+    const documentId = randomUUID();
+    const path = buildStoragePath(
+      { customerId: input.customerId, contactId: input.customerContactId, dealId: input.dealId, propertyId: input.propertyId, projectId: input.projectId, paymentId: input.paymentId, constructionDocumentProjectId: input.constructionProjectId, leaseId: input.leaseId },
+      documentId,
+      ext
+    );
+    const supabase = await createClient();
+    const { error } = await supabase.from("documents").insert({
+      id: documentId,
+      title: input.title,
+      document_type: input.documentType,
+      category: input.category || null,
+      description: input.description || null,
+      customer_id: input.customerId || null,
+      ...(input.customerContactId ? { customer_contact_id: input.customerContactId } : {}),
+      lead_id: input.leadId || null,
+      property_id: input.propertyId || null,
+      project_id: input.projectId || null,
+      construction_project_id: input.constructionProjectId || null,
+      lease_id: input.leaseId || null,
+      deal_id: input.dealId || null,
+      uploaded_by: actor.adminId || null,
+      status: "DRAFT",
+      visibility: input.visibility ?? "ADMIN_ONLY",
+      file_name: input.fileName,
+      storage_path: path,
+      mime_type: input.mimeType,
+      file_size: input.fileSize,
+      expires_at: input.expiresAt || null,
+    });
+    if (error) {
+      console.error("documentService.prepareUpload failed:", error);
+      throw new Error("Could not create this document record.");
+    }
+    return { documentId, path };
+  },
+
+  async finalizeUpload(documentId: string, fileHash: string | undefined, actor: { adminId?: string; name: string }): Promise<DocumentRecord> {
+    const supabase = await createClient();
+    const { data: row } = await supabase.from("documents").select("*").eq("id", documentId).maybeSingle();
+    if (!row || row.status !== "DRAFT" || (row.uploaded_by ?? null) !== (actor.adminId ?? null)) {
+      throw new Error("This upload is not waiting to be completed.");
+    }
+    const info = await getStoredObjectInfo(row.storage_path);
+    if (!info) throw new Error("The file did not reach storage. Please try again.");
+    if (info.size <= 0 || info.size > MAX_DOCUMENT_BYTES || !extensionForMime(info.mimeType)) {
+      await removeStoredObjects([row.storage_path]);
+      await supabase.from("documents").delete().eq("id", documentId);
+      throw new Error("The file is not an allowed type or is larger than 15MB.");
+    }
+
+    const { error } = await supabase
+      .from("documents")
+      .update({ status: "UPLOADED", mime_type: info.mimeType, file_size: info.size, file_hash: fileHash && /^[0-9a-f]{64}$/.test(fileHash) ? fileHash : null })
+      .eq("id", documentId)
+      .eq("status", "DRAFT");
+    if (error) {
+      console.error("documentService.finalizeUpload failed:", error);
+      throw new Error("Could not finish saving this document.");
+    }
+    await supabase.from("document_versions").insert({
+      document_id: documentId,
+      version_number: 1,
+      storage_path: row.storage_path,
+      file_name: row.file_name,
+      mime_type: info.mimeType,
+      file_size: info.size,
+      file_hash: fileHash && /^[0-9a-f]{64}$/.test(fileHash) ? fileHash : null,
+      uploaded_by: actor.adminId || null,
+    });
+    await logDocumentAudit(documentId, "Uploaded", { fileName: row.file_name, documentType: row.document_type }, actor, row.deal_id ?? undefined);
+    const doc = await this.getById(documentId);
+    if (!doc) throw new Error("Document was saved but could not be loaded.");
+    return doc;
+  },
+
+  /** An upload that failed in the browser: drop the half-made record (and any file). */
+  async abortUpload(documentId: string, actor: { adminId?: string }): Promise<void> {
+    const supabase = await createClient();
+    const { data: row } = await supabase.from("documents").select("id, status, uploaded_by, storage_path").eq("id", documentId).maybeSingle();
+    if (!row || row.status !== "DRAFT" || (row.uploaded_by ?? null) !== (actor.adminId ?? null)) return;
+    await supabase.from("documents").delete().eq("id", documentId).eq("status", "DRAFT");
+    await removeStoredObjects([row.storage_path]);
+  },
+
+  /** Uploads that were started but never finished (browser closed, lost signal). Run daily. */
+  async cleanupAbandonedUploads(): Promise<number> {
+    const supabase = await createClient();
+    const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { data } = await supabase.from("documents").select("id, storage_path").eq("status", "DRAFT").is("file_hash", null).lt("created_at", cutoff).limit(200);
+    const rows = data ?? [];
+    if (rows.length === 0) return 0;
+    await removeStoredObjects(rows.map((r) => r.storage_path).filter((p) => p && p !== "pending"));
+    await supabase.from("documents").delete().in("id", rows.map((r) => r.id));
+    return rows.length;
+  },
+
+  /** A link the office can send to a customer or owner: it opens the file for a few days,
+   *  without a login. Anyone holding the link can open it until it expires. */
+  async createShareLink(documentId: string, days: number, actor: { adminId?: string; name: string }): Promise<{ url: string; title: string; documentNumber: string }> {
+    const doc = await this.getById(documentId);
+    if (!doc) throw new Error("You are not authorized to share this document.");
+    const safeDays = Math.min(30, Math.max(1, Math.round(days) || 7));
+    const url = await createSignedDocumentUrl(doc.storagePath, safeDays * 24 * 3600);
+    await logDocumentAudit(documentId, "Shared by link", { days: safeDays }, actor, doc.dealId);
+    return { url, title: doc.title, documentNumber: doc.documentNumber };
+  },
+
+  // ---- "Attach to" pickers ----------------------------------------------
+  async searchTargets(kind: DocumentTargetKind, q: string): Promise<DocumentTarget[]> {
+    const term = q.replace(/[%_,()\\]/g, " ").trim().slice(0, 60);
+    const supabase = await createClient();
+    if (kind === "contact") {
+      let query = supabase.from("customer_contacts").select("id, name, phone").order("created_at", { ascending: false }).limit(8);
+      if (term) query = query.or(`name.ilike.%${term}%,phone.ilike.%${term}%`);
+      const { data } = await query;
+      return (data ?? []).map((r) => ({ id: r.id, label: r.name, sub: r.phone }));
+    }
+    if (kind === "customer") {
+      let query = supabase.from("customer_profiles").select("id, full_name, phone").order("created_at", { ascending: false }).limit(8);
+      if (term) query = query.or(`full_name.ilike.%${term}%,phone.ilike.%${term}%`);
+      const { data } = await query;
+      return (data ?? []).map((r) => ({ id: r.id, label: r.full_name ?? "Customer", sub: r.phone ?? undefined }));
+    }
+    if (kind === "lead") {
+      let query = supabase.from("leads").select("id, name, phone").order("created_at", { ascending: false }).limit(8);
+      if (term) query = query.or(`name.ilike.%${term}%,phone.ilike.%${term}%`);
+      const { data } = await query;
+      return (data ?? []).map((r) => ({ id: r.id, label: r.name, sub: r.phone ?? undefined }));
+    }
+    let query = supabase.from("leases").select("id, lease_number").order("created_at", { ascending: false }).limit(8);
+    if (term) query = query.ilike("lease_number", `%${term}%`);
+    const { data } = await query;
+    return (data ?? []).map((r) => ({ id: r.id, label: r.lease_number }));
+  },
+
+  /** The picker label for a record that was already chosen (e.g. from a link). */
+  async getTarget(kind: DocumentTargetKind, id: string): Promise<DocumentTarget | undefined> {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return undefined;
+    const supabase = await createClient();
+    if (kind === "contact") {
+      const { data } = await supabase.from("customer_contacts").select("id, name, phone").eq("id", id).maybeSingle();
+      return data ? { id: data.id, label: data.name, sub: data.phone } : undefined;
+    }
+    if (kind === "customer") {
+      const { data } = await supabase.from("customer_profiles").select("id, full_name, phone").eq("id", id).maybeSingle();
+      return data ? { id: data.id, label: data.full_name ?? "Customer", sub: data.phone ?? undefined } : undefined;
+    }
+    if (kind === "lead") {
+      const { data } = await supabase.from("leads").select("id, name, phone").eq("id", id).maybeSingle();
+      return data ? { id: data.id, label: data.name, sub: data.phone ?? undefined } : undefined;
+    }
+    const { data } = await supabase.from("leases").select("id, lease_number").eq("id", id).maybeSingle();
+    return data ? { id: data.id, label: data.lease_number } : undefined;
   },
 
   /** New version (section 11) — the old file/version is preserved in

@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
   // missing from the deployed functions and every PDF failed with
   // "Cannot find module .../pdfkit/js/standard-fonts/Helvetica.cjs".
   outputFileTracingIncludes: {
-    "/*": ["./node_modules/pdfkit/js/standard-fonts/**/*"],
+    "/*": ["./node_modules/pdfkit/js/standard-fonts/**/*", "./src/lib/pdf/fonts/**/*"],
   },
   images: {
     remotePatterns: [

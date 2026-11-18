@@ -8,6 +8,7 @@ import {
   Phone,
   PlusCircle,
   Download,
+  FileStack,
   Search,
   Send,
   Smartphone,
@@ -519,6 +520,9 @@ export function CustomerContactsView({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
+                      <a href={`/admin/documents?contact=${r.id}`} className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-surface-muted hover:text-ink" aria-label={`Documents of ${r.name}`} title="Documents (CNIC, fard, agreement...)">
+                        <FileStack className="h-3.5 w-3.5" />
+                      </a>
                       <button type="button" onClick={() => setForm({ contact: r })} className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-surface-muted hover:text-ink" aria-label={`Edit ${r.name}`}>
                         <Pencil className="h-3.5 w-3.5" />
                       </button>

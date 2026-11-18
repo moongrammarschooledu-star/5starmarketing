@@ -65,6 +65,8 @@ export interface DocumentRecord {
   category?: string;
   description?: string;
   customerId?: string;
+  /** A person from the office Customer Contacts book (not a portal account). */
+  customerContactId?: string;
   leadId?: string;
   propertyId?: string;
   projectId?: string;
@@ -98,6 +100,9 @@ export interface DocumentRecord {
   // Joined, display-only fields.
   documentTypeLabel?: string;
   customerName?: string;
+  customerContactName?: string;
+  /** Phone of the linked customer / contact - used to pre-fill "send on WhatsApp". */
+  linkedPhone?: string;
   propertyTitle?: string;
   projectName?: string;
   dealNumber?: string;
@@ -106,12 +111,27 @@ export interface DocumentRecord {
   approvedByName?: string;
 }
 
+/** What the browser sends before it uploads a file straight to storage. */
+export interface DocumentPrepareInput extends Omit<DocumentInput, "dataUri"> {
+  mimeType: string;
+  fileSize: number;
+}
+
+/** A record a document can be attached to, as shown in the pickers. */
+export type DocumentTargetKind = "contact" | "customer" | "lead" | "lease";
+export interface DocumentTarget {
+  id: string;
+  label: string;
+  sub?: string;
+}
+
 export interface DocumentInput {
   title: string;
   documentType: string;
   category?: string;
   description?: string;
   customerId?: string;
+  customerContactId?: string;
   leadId?: string;
   propertyId?: string;
   projectId?: string;
@@ -288,6 +308,8 @@ export interface DocumentSearchFilters {
   status?: DocumentStatus;
   documentType?: string;
   customerId?: string;
+  customerContactId?: string;
+  leadId?: string;
   propertyId?: string;
   projectId?: string;
   constructionProjectId?: string;

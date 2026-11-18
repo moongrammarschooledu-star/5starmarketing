@@ -12,6 +12,12 @@ const ALLOWED_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 
+/** File extension for an allowed MIME type, or undefined if the type is not allowed. */
+export function extensionForMime(mimeType: string): string | undefined {
+  return ALLOWED_TYPES[mimeType];
+}
+export const MAX_DOCUMENT_BYTES = MAX_BYTES;
+
 export interface ParsedUpload {
   mimeType: string;
   bytes: Buffer;
@@ -45,6 +51,7 @@ export function hashBytes(bytes: Buffer): string {
 export function buildStoragePath(
   scope: {
     customerId?: string;
+    contactId?: string;
     dealId?: string;
     propertyId?: string;
     projectId?: string;
@@ -79,6 +86,7 @@ export function buildStoragePath(
   if (scope.vendorId) return `vendors/${scope.vendorId}/documents/${documentId}/${safeName}`;
   if (scope.propertyId) return `properties/${scope.propertyId}/documents/${documentId}/${safeName}`;
   if (scope.projectId) return `projects/${scope.projectId}/documents/${documentId}/${safeName}`;
+  if (scope.contactId) return `contacts/${scope.contactId}/documents/${documentId}/${safeName}`;
   return `general/documents/${documentId}/${safeName}`;
 }
 
@@ -100,6 +108,33 @@ export async function deleteDocumentFiles(paths: string[]): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.storage.from(BUCKET).remove(paths);
   if (error) console.error("deleteDocumentFiles failed:", error);
+}
+
+/** What is really stored at a path (size and type as the storage server saw them),
+ *  or null when nothing is there. Used to check a file the browser uploaded itself. */
+export async function getStoredObjectInfo(path: string): Promise<{ size: number; mimeType: string } | null> {
+  const supabase = createServiceRoleClient();
+  const slash = path.lastIndexOf("/");
+  const dir = path.slice(0, slash);
+  const name = path.slice(slash + 1);
+  const { data, error } = await supabase.storage.from(BUCKET).list(dir, { search: name, limit: 5 });
+  if (error) {
+    console.error("getStoredObjectInfo failed:", error);
+    return null;
+  }
+  const hit = (data ?? []).find((o) => o.name === name);
+  if (!hit) return null;
+  const meta = (hit.metadata ?? {}) as { size?: number; mimetype?: string };
+  return { size: Number(meta.size ?? 0), mimeType: String(meta.mimetype ?? "") };
+}
+
+/** Removes files with the service role - for cleaning up an upload that went wrong
+ *  or never finished (the caller already confirmed it is allowed to). */
+export async function removeStoredObjects(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+  const supabase = createServiceRoleClient();
+  const { error } = await supabase.storage.from(BUCKET).remove(paths);
+  if (error) console.error("removeStoredObjects failed:", error);
 }
 
 /** The ONLY place a signed URL is minted (section 41/58) — deliberately

@@ -11,7 +11,7 @@ import { profileService } from "@/services/profileService";
 import { customerService } from "@/services/customerService";
 import { notifyDocumentApproved, notifyDocumentRejected, notifySignatureRequired, notifySignatureCompleted } from "@/lib/documentNotifications";
 import { canAccess, canManageDealFinancials } from "@/lib/permissions";
-import type { DocumentInput, DocumentVisibility, DocumentTemplateInput, DocumentChecklistItemInput, SignatureParticipantInput, SigningOrderMode, SignatureMethod } from "@/lib/models/document";
+import type { DocumentInput, DocumentPrepareInput, DocumentTargetKind, DocumentVisibility, DocumentTemplateInput, DocumentChecklistItemInput, SignatureParticipantInput, SigningOrderMode, SignatureMethod } from "@/lib/models/document";
 
 async function requireDocumentsAccess() {
   const admin = await profileService.getCurrentAdmin();
@@ -55,6 +55,38 @@ export async function uploadDocumentAction(input: DocumentInput) {
   const doc = await documentService.upload(input, { adminId: admin.id, name: admin.name });
   revalidateDocument(doc.id, doc.dealId);
   return doc;
+}
+
+// Upload straight from the browser to storage: prepare -> (browser uploads) -> finalize.
+// A failed upload calls abort so no half-made record is left behind.
+
+export async function prepareDocumentUploadAction(input: DocumentPrepareInput) {
+  const admin = await requireDocumentsAccess();
+  return documentService.prepareUpload(input, { adminId: admin.id, name: admin.name });
+}
+
+export async function finalizeDocumentUploadAction(documentId: string, fileHash?: string) {
+  const admin = await requireDocumentsAccess();
+  const doc = await documentService.finalizeUpload(documentId, fileHash, { adminId: admin.id, name: admin.name });
+  revalidateDocument(doc.id, doc.dealId);
+  if (doc.propertyId) revalidatePath(`/admin/properties/${doc.propertyId}/edit`);
+  return { id: doc.id, documentNumber: doc.documentNumber };
+}
+
+export async function abortDocumentUploadAction(documentId: string) {
+  const admin = await requireDocumentsAccess();
+  await documentService.abortUpload(documentId, { adminId: admin.id });
+}
+
+export async function searchDocumentTargetsAction(kind: DocumentTargetKind, q: string) {
+  await requireDocumentsAccess();
+  return documentService.searchTargets(kind, q);
+}
+
+/** A temporary link to the file, for sending on WhatsApp. */
+export async function createDocumentShareLinkAction(documentId: string, days: number) {
+  const admin = await requireDocumentsAccess();
+  return documentService.createShareLink(documentId, days, { adminId: admin.id, name: admin.name });
 }
 
 export async function replaceDocumentAction(documentId: string, input: { dataUri: string; fileName: string; reason?: string }) {

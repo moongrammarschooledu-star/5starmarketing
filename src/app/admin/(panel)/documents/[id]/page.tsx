@@ -4,6 +4,8 @@ import { ArrowLeft, User, Building2, Handshake } from "lucide-react";
 import { documentService } from "@/services/documentService";
 import { documentSignatureService } from "@/services/documentSignatureService";
 import { profileService } from "@/services/profileService";
+import { ownerDetailsService } from "@/services/ownerDetailsService";
+import { DocumentShareWhatsApp } from "@/components/admin/documents/DocumentShareWhatsApp";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DocumentPreviewPanel } from "@/components/admin/documents/DocumentPreviewPanel";
 import { DocumentStatusActionsPanel } from "@/components/admin/documents/DocumentStatusActionsPanel";
@@ -29,6 +31,16 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
     profileService.getCurrentAdmin(),
   ]);
   const canManage = admin ? canManageDealFinancials(admin.role) : false;
+  // Who to send it to: the linked customer / contact, otherwise the property's owner.
+  let sharePhone = doc.linkedPhone;
+  let shareName = doc.customerContactName ?? doc.customerName;
+  if (!sharePhone && doc.propertyId) {
+    const owner = await ownerDetailsService.getForProperty(doc.propertyId).catch(() => null);
+    if (owner?.phone) {
+      sharePhone = owner.phone;
+      shareName = shareName ?? owner.name;
+    }
+  }
 
   return (
     <div>
@@ -50,7 +62,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
         <div className="space-y-6 lg:col-span-2">
           <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {doc.customerName && <Row icon={<User className="h-4 w-4 text-primary" />} label="Customer" value={doc.customerName} />}
+              {doc.customerName && <Row icon={<User className="h-4 w-4 text-primary" />} label={doc.customerContactName && !doc.customerId ? "Contact" : "Customer"} value={doc.customerName} />}
               {doc.propertyTitle && <Row icon={<Building2 className="h-4 w-4 text-primary" />} label="Property" value={doc.propertyTitle} />}
               {doc.projectName && <Row icon={<Building2 className="h-4 w-4 text-primary" />} label="Project" value={doc.projectName} />}
               {doc.dealNumber && doc.dealId && (
@@ -77,8 +89,9 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
           <DocumentAuditTimeline entries={audit} />
         </div>
 
-        <div>
+        <div className="space-y-6">
           <DocumentStatusActionsPanel document={doc} canManage={canManage} />
+          <DocumentShareWhatsApp documentId={doc.id} title={doc.title} documentNumber={doc.documentNumber} defaultPhone={sharePhone} defaultName={shareName} />
         </div>
       </div>
     </div>

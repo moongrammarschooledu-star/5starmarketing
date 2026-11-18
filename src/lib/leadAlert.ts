@@ -22,7 +22,7 @@ function esc(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-async function resolveRecipient(): Promise<string | undefined> {
+export async function resolveAlertRecipient(): Promise<string | undefined> {
   const fromEnv = process.env.LEAD_ALERT_EMAIL?.trim();
   if (fromEnv) return fromEnv;
   try {
@@ -35,7 +35,7 @@ async function resolveRecipient(): Promise<string | undefined> {
 
 async function send(lead: LeadInput): Promise<void> {
   if (!emailProvider().isConfigured) return;
-  const to = await resolveRecipient();
+  const to = await resolveAlertRecipient();
   if (!to) return;
 
   const campaign = lead.lastTouchCampaign || lead.firstTouchCampaign;

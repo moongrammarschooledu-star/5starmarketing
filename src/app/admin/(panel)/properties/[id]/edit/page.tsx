@@ -3,7 +3,8 @@ import { PropertyForm } from "@/components/admin/PropertyForm";
 import { PaymentPlanManager } from "@/components/admin/PaymentPlanManager";
 import { updatePropertyAction } from "@/lib/actions/properties.actions";
 import Link from "next/link";
-import { Handshake, FileStack, FileDown, MessageCircle } from "lucide-react";
+import { Handshake, FileDown, MessageCircle } from "lucide-react";
+import { PropertyDocumentsPanel } from "@/components/admin/documents/PropertyDocumentsPanel";
 import { propertyService } from "@/services/propertyService";
 import { projectService } from "@/services/projectService";
 import { paymentPlanService } from "@/services/paymentPlanService";
@@ -44,7 +45,7 @@ export default async function EditPropertyPage({
   const plan = await paymentPlanService.getForPropertyAdmin(id);
   const scheduleItems = plan ? await paymentPlanService.listScheduleItems(plan.id) : [];
   const deals = await dealService.listByProperty(id).catch(() => []);
-  const documents = await documentService.listByProperty(id).catch(() => []);
+  const [documents, documentTypes] = await Promise.all([documentService.listByProperty(id).catch(() => []), documentService.listTypes().catch(() => [])]);
   const admin = await profileService.getCurrentAdmin();
   const canSeeFinancials = admin ? canManageFinance(admin.role) : false;
 
@@ -73,6 +74,38 @@ export default async function EditPropertyPage({
         >
           <FileDown className="h-3.5 w-3.5" /> Download details as PDF
         </a>
+        {property.purpose === "For Rent" && admin && canAccess(admin.role, "rentals") && (
+          <Link
+            href={`/admin/rentals/agreements/new?property=${property.id}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+          >
+            <FileDown className="h-3.5 w-3.5" /> Make rent agreement
+          </Link>
+        )}
+        {property.purpose === "For Sale" && admin && canAccess(admin.role, "deals") && (
+          <>
+            <Link
+              href={`/admin/deals/sale-agreements/new?property=${property.id}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+            >
+              <FileDown className="h-3.5 w-3.5" /> Make sale agreement
+            </Link>
+            <Link
+              href={`/admin/rentals/tokens/new?property=${property.id}&purpose=sale`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+            >
+              <FileDown className="h-3.5 w-3.5" /> Take bayana (receipt)
+            </Link>
+          </>
+        )}
+        {property.purpose === "For Rent" && admin && canAccess(admin.role, "rentals") && (
+          <Link
+            href={`/admin/rentals/tokens/new?property=${property.id}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary"
+          >
+            <FileDown className="h-3.5 w-3.5" /> Take token money (receipt)
+          </Link>
+        )}
       </div>
 
       {deals.length > 0 && (
@@ -92,20 +125,10 @@ export default async function EditPropertyPage({
         </div>
       )}
 
-      {documents.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
-          <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            <FileStack className="h-3.5 w-3.5" /> Property Documents (admin-only — never shown publicly)
-          </h2>
-          <div className="mt-2.5 space-y-1.5">
-            {documents.map((d) => (
-              <Link key={d.id} href={`/admin/documents/${d.id}`} className="flex items-center justify-between gap-2 rounded-lg bg-surface-muted px-3 py-2 text-sm hover:bg-surface-muted/70">
-                <span className="truncate font-semibold text-ink">{d.title}</span>
-                <StatusBadge status={d.status} />
-              </Link>
-            ))}
-          </div>
-        </div>
+      {admin && canAccess(admin.role, "documents") ? (
+        <PropertyDocumentsPanel propertyId={id} documents={documents} types={documentTypes} canUpload />
+      ) : (
+        documents.length > 0 && <PropertyDocumentsPanel propertyId={id} documents={documents} types={documentTypes} canUpload={false} />
       )}
 
       {admin && canAccess(admin.role, "demands") && <PropertyDemandMatches property={property} />}

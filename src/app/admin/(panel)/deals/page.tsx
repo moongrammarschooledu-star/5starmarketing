@@ -51,6 +51,9 @@ export default async function DealsDashboardPage({ searchParams }: { searchParam
           <p className="mt-1 text-sm text-muted">Every transaction from booking to completion — real payments, real commission, real numbers.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/admin/deals/sale-agreements" className="flex items-center gap-1.5 rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary">
+            Sale Agreements &amp; Bayana
+          </Link>
           <Link href="/admin/deals/overdue" className="flex items-center gap-1.5 rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary">
             <AlertTriangle className="h-3.5 w-3.5" /> Overdue Payments
           </Link>

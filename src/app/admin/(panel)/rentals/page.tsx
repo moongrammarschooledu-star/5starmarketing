@@ -48,6 +48,8 @@ export default async function RentalsIndexPage() {
         <NavCard href="/admin/rentals/tenants" icon={Users} title="Tenants" desc="Tenant profiles and status." />
         <NavCard href="/admin/rentals/landlords" icon={Users} title="Landlords" desc="Owners, management fees, agreements." />
         <NavCard href="/admin/rentals/leases" icon={FileText} title="Leases" desc="Full lease lifecycle, rent schedules." />
+        <NavCard href="/admin/rentals/tokens" icon={Wallet} title="Token Receipts" desc="Proof of token money for the client - print or WhatsApp." />
+        <NavCard href="/admin/rentals/agreements" icon={FileText} title="Rent Agreements" desc="Make an Urdu / English agreement with the company letterhead." />
         <NavCard href="/admin/rentals/rent" icon={KeyRound} title="Rent Collection" desc="Due, overdue, partially paid." />
         <NavCard href="/admin/rentals/payments" icon={Wallet} title="Payments" desc="Every rent payment on record." />
         <NavCard href="/admin/rentals/deposits" icon={Wallet} title="Deposits" desc="Security deposits and deductions." />

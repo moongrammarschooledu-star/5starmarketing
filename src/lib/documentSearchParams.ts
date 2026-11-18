@@ -23,6 +23,8 @@ export function parseDocumentSearchParams(sp: RawSearchParams): DocumentSearchFi
   const status = documentStatuses.includes(one(sp.status) as DocumentStatus) ? (one(sp.status) as DocumentStatus) : undefined;
   const documentType = one(sp.type)?.trim().slice(0, 100) || undefined;
   const customerId = one(sp.customer)?.trim().slice(0, 100) || undefined;
+  const customerContactId = one(sp.contact)?.trim().slice(0, 100) || undefined;
+  const leadId = one(sp.lead)?.trim().slice(0, 100) || undefined;
   const propertyId = one(sp.property)?.trim().slice(0, 100) || undefined;
   const projectId = one(sp.project)?.trim().slice(0, 100) || undefined;
   const dealId = one(sp.deal)?.trim().slice(0, 100) || undefined;
@@ -34,5 +36,5 @@ export function parseDocumentSearchParams(sp: RawSearchParams): DocumentSearchFi
   const page = Math.max(1, num(one(sp.page), { min: 1, max: 100000 }) ?? 1);
   const pageSize = Math.min(MAX_DOCUMENT_PAGE_SIZE, Math.max(1, num(one(sp.page_size), { min: 1, max: MAX_DOCUMENT_PAGE_SIZE }) ?? DEFAULT_DOCUMENT_PAGE_SIZE));
 
-  return { q, status, documentType, customerId, propertyId, projectId, dealId, agentId, dateFrom, dateTo, expiringOnly, page, pageSize };
+  return { q, status, documentType, customerId, customerContactId, leadId, propertyId, projectId, dealId, agentId, dateFrom, dateTo, expiringOnly, page, pageSize };
 }

@@ -18,12 +18,20 @@ export default async function DocumentsDashboardPage({ searchParams }: { searchP
   let result: Awaited<ReturnType<typeof documentService.search>> = { documents: [], total: 0, page: 1, pageSize: 20, totalPages: 1 };
   let types: Awaited<ReturnType<typeof documentService.listTypes>> = [];
   let loadError: string | null = null;
+  // Opened from a customer contact: say whose documents these are.
+  let contactTarget: Awaited<ReturnType<typeof documentService.getTarget>>;
 
   try {
-    const [s, r, t] = await Promise.all([documentService.dashboardStats(), documentService.search(filters), documentService.listTypes()]);
+    const [s, r, t, c] = await Promise.all([
+      documentService.dashboardStats(),
+      documentService.search(filters),
+      documentService.listTypes(),
+      filters.customerContactId ? documentService.getTarget("contact", filters.customerContactId) : undefined,
+    ]);
     stats = s;
     result = r;
     types = t;
+    contactTarget = c;
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Could not load documents.";
   }
@@ -48,6 +56,23 @@ export default async function DocumentsDashboardPage({ searchParams }: { searchP
         </div>
       </div>
 
+      {contactTarget && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+          <p className="text-sm text-ink">
+            Documents of <b>{contactTarget.label}</b>
+            {contactTarget.sub ? <span className="text-muted"> ({contactTarget.sub})</span> : null}
+          </p>
+          <div className="flex gap-2">
+            <Link href={`/admin/documents/upload?contact=${contactTarget.id}`} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary-hover">
+              Upload for this contact
+            </Link>
+            <Link href="/admin/documents" className="rounded-full border-2 border-ink/15 px-4 py-2 text-xs font-bold text-ink hover:border-primary hover:text-primary">
+              Show all
+            </Link>
+          </div>
+        </div>
+      )}
+
       {loadError && (
         <div className="mt-6 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
           <AlertTriangle className="h-4.5 w-4.5 shrink-0" /> {loadError}
@@ -58,7 +83,7 @@ export default async function DocumentsDashboardPage({ searchParams }: { searchP
         <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
           <FileStack className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-heading text-base font-bold text-ink">No documents uploaded yet.</p>
-          <Link href="/admin/documents/upload" className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
+          <Link href={contactTarget ? `/admin/documents/upload?contact=${contactTarget.id}` : "/admin/documents/upload"} className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover">
             Upload Document
           </Link>
         </div>

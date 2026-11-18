@@ -57,14 +57,16 @@ const CSS = `
 .lh-co b { display: block; font-size: 17pt; letter-spacing: .3px; }
 .lh-co .tag { display: block; font-size: 8pt; color: #c81e2c; letter-spacing: 1.4px; font-weight: 700; margin: 1px 0 3px; }
 .lh-co span { display: block; font-size: 9pt; color: #444; }
-.lh-body { padding-top: 9mm; }
+/* the body fills the page, so the signature block sits at the bottom, above the footer */
+.lh-body { padding-top: 9mm; min-height: 215mm; display: flex; flex-direction: column; }
 .lh-en { font: 12pt/1.6 "Times New Roman", Times, serif; }
 .lh-ur { font: 14pt/2.4 "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif; }
 .lh-meta { display: flex; justify-content: space-between; font: 600 10.5pt Arial, Helvetica, sans-serif; margin-bottom: 7mm; direction: ltr; }
 .lh-to { margin-bottom: 5mm; white-space: pre-wrap; }
 .lh-subject { font-weight: 700; text-decoration: underline; margin-bottom: 5mm; }
 .lh-text { white-space: pre-wrap; text-align: justify; }
-.lh-sign { margin-top: 14mm; }
+.lh-sign { margin-top: auto; padding-top: 12mm; align-self: flex-end; min-width: 62mm; text-align: center; }
+.lh-sign .line { border-top: 0.3mm solid #1a1a1a; margin-top: 18mm; padding-top: 2mm; }
 .lh-foot { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; border-top: 1.5px solid #c81e2c; padding-top: 3mm; text-align: center; font: 8.5pt/1.5 Arial, Helvetica, sans-serif; color: #444; direction: ltr; }
 @media print {
   @page { size: A4; margin: 0; }
@@ -212,12 +214,12 @@ export function LetterheadMaker() {
                 </div>
                 {(d.signName || d.signTitle) && (
                   <div className="lh-sign" dir="auto">
-                    <div>{ur ? "آپ کا مخلص" : "Yours sincerely,"}</div>
-                    <div style={{ height: "16mm" }} />
-                    <div style={{ fontWeight: 700 }}>{d.signName}</div>
-                    <div>{d.signTitle}</div>
-                    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: "10pt" }} dir="ltr">
-                      {site.fullName}
+                    <div className="line">
+                      <div style={{ fontWeight: 700 }}>{d.signName}</div>
+                      <div>{d.signTitle}</div>
+                      <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: "10pt" }} dir="ltr">
+                        {site.fullName}
+                      </div>
                     </div>
                   </div>
                 )}

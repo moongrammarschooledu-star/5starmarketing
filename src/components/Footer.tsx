@@ -113,7 +113,10 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/10 px-4 py-5 text-center text-xs text-white/50 lg:px-8">
-        © {site.year} 5STAR.M Estate &amp; Builders. All Rights Reserved.
+        © {site.year} 5STAR.M Estate &amp; Builders. All Rights Reserved. ·{" "}
+        <a href="/privacy-policy" className="hover:text-white">
+          Privacy Policy
+        </a>
       </div>
     </footer>
   );

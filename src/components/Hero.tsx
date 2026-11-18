@@ -8,7 +8,7 @@ export function Hero() {
       <div className="pointer-events-none absolute inset-0 diagonal-clip-tl bg-gradient-to-br from-burgundy-dark via-burgundy to-primary opacity-[0.06]" />
 
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 pt-12 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:pb-20 lg:pt-16">
-        <div className="animate-fade-up">
+        <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-primary">
             Real Estate &amp; Builders · Lahore
           </div>
@@ -62,7 +62,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative animate-fade-up [animation-delay:150ms]">
+        <div className="relative">
           <div className="relative aspect-[4/5] w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-ink/20 sm:aspect-[5/4] sm:max-w-none lg:aspect-[4/5]">
             <Image
               src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200&auto=format&fit=crop"

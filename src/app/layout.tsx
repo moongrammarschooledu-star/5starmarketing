@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JsonLd } from "@/components/JsonLd";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { MetaPixel } from "@/components/MetaPixel";
+import { MetaPixelHead } from "@/components/MetaPixelHead";
 import { TikTokPixel } from "@/components/TikTokPixel";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { PwaRuntime } from "@/components/pwa/PwaRuntime";
@@ -125,6 +126,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <MetaPixelHead />
+      </head>
       <body className={`${poppins.variable} ${inter.variable} antialiased`}>
         <JsonLd data={localBusinessJsonLd} />
         <JsonLd data={websiteJsonLd} />

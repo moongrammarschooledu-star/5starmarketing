@@ -13,6 +13,8 @@ const SINGLE_PROPERTY = new RegExp(`^/properties/(?!(?:${PROPERTY_LISTS})/?$)[^/
 export function WhatsAppFloatButton() {
   const pathname = usePathname() ?? "";
   const aboveMobileBar = SINGLE_PROPERTY.test(pathname);
+  // Campaign landing pages have their own WhatsApp / Call bar at the bottom.
+  if (pathname.startsWith("/landing/")) return null;
 
   return (
     <a

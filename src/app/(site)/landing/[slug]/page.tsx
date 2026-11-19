@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { landingPageService } from "@/services/landingPageService";
 import { LandingPageInquiryForm } from "@/components/LandingPageInquiryForm";
+import { LandingContactButtons } from "@/components/LandingContactBar";
 import { JsonLd } from "@/components/JsonLd";
 import { site } from "@/lib/site";
 
@@ -53,6 +54,8 @@ export default async function CampaignLandingPage({ params }: { params: Promise<
         }
       : null;
 
+  const waMessage = `Assalam-o-Alaikum, mujhe "${page.title}" ke baare mein baat karni hai.`;
+
   return (
     <main>
       {faqJsonLd && <JsonLd data={faqJsonLd} />}
@@ -70,8 +73,13 @@ export default async function CampaignLandingPage({ params }: { params: Promise<
       <div className="mx-auto max-w-5xl px-4 py-10 lg:px-8">
         {!page.heroImage && <h1 className="font-heading text-3xl font-extrabold text-ink">{page.title}</h1>}
 
-        <div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+        {/* Ad visitors are on a phone and in a hurry: one-tap WhatsApp / call right under the heading. */}
+        <div className="mt-5 lg:max-w-md">
+          <LandingContactButtons message={waMessage} context={`landing_${page.slug}`} />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-8 pb-20 lg:grid-cols-3 lg:pb-0">
+          <div className="lg:col-span-2 lg:col-start-1">
             <p className="whitespace-pre-wrap text-base leading-relaxed text-muted">{page.description}</p>
 
             {page.propertyTitle && page.propertySlug && (
@@ -84,23 +92,10 @@ export default async function CampaignLandingPage({ params }: { params: Promise<
                 Featured Project: {page.projectName}
               </Link>
             )}
-
-            {page.faqItems.length > 0 && (
-              <div className="mt-10">
-                <h2 className="font-heading text-lg font-bold text-ink">Frequently Asked Questions</h2>
-                <div className="mt-4 space-y-4">
-                  {page.faqItems.map((f, i) => (
-                    <div key={i} className="rounded-xl border border-border bg-surface p-4">
-                      <p className="text-sm font-bold text-ink">{f.question}</p>
-                      <p className="mt-1.5 text-sm text-muted">{f.answer}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          <div>
+          {/* On a phone the form comes straight after the text, before the FAQ. */}
+          <div className="lg:col-start-3 lg:row-span-2 lg:row-start-1">
             <LandingPageInquiryForm
               slug={page.slug}
               ctaLabel={page.ctaLabel}
@@ -110,8 +105,24 @@ export default async function CampaignLandingPage({ params }: { params: Promise<
               projectTitle={page.projectName}
             />
           </div>
+
+          {page.faqItems.length > 0 && (
+            <div className="lg:col-span-2 lg:col-start-1">
+              <h2 className="font-heading text-lg font-bold text-ink">Frequently Asked Questions</h2>
+              <div className="mt-4 space-y-4">
+                {page.faqItems.map((f, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-surface p-4">
+                    <p className="text-sm font-bold text-ink">{f.question}</p>
+                    <p className="mt-1.5 text-sm text-muted">{f.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      <LandingContactButtons message={waMessage} context={`landing_${page.slug}`} sticky />
     </main>
   );
 }

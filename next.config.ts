@@ -17,7 +17,7 @@ const csp = [
   // blob: lets the admin preview a reel video it just recorded in the browser.
   "media-src 'self' blob: https://*.supabase.co",
   "frame-src 'self' https://maps.google.com https://www.google.com",
-  "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net https://analytics.tiktok.com https://business-api.tiktok.com wss://*.supabase.co",
+  "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net https://analytics.tiktok.com https://business-api.tiktok.com https://analytics-ipv6.tiktokw.us https://demo-1.conversionsapigateway.com https://1c-e0e78bd7d7fd408d87142c500d5b8890.ecs.us-west-1.on.aws wss://*.supabase.co",
   "form-action 'self'",
   "base-uri 'self'",
   // STEP 31 — the service worker registers as a same-origin worker.
@@ -56,13 +56,20 @@ const nextConfig: NextConfig = {
         destination: "/landing/rent-your-property",
         permanent: false,
       },
-      // "md_rent_tenants" (people who want to rent a property) opened /properties,
-      // which mixes sale and rent. Show only what is for rent.
+      // "md_rent_tenants" (people who want to rent a property) opened /properties
+      // or the home page - a browse page with nothing to act on. Send them to a
+      // short page with one-tap WhatsApp / call and a 2-field form.
+      {
+        source: "/",
+        has: [{ type: "query" as const, key: "utm_campaign", value: "md_rent_tenants" }],
+        destination: "/landing/rent-a-property-lahore",
+        permanent: false,
+      },
       {
         source: "/properties",
         has: [{ type: "query" as const, key: "utm_campaign", value: "md_rent_tenants" }],
         missing: [{ type: "query" as const, key: "purpose" }],
-        destination: "/properties?purpose=rent",
+        destination: "/landing/rent-a-property-lahore",
         permanent: false,
       },
     ];

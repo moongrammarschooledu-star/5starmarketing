@@ -53,10 +53,6 @@ export function LandingPageInquiryForm({
       setError("Please enter a valid phone number.");
       return;
     }
-    if (!data.consent) {
-      setError("Please agree to be contacted.");
-      return;
-    }
 
     setStatus("submitting");
     try {
@@ -65,6 +61,8 @@ export function LandingPageInquiryForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
+          // Sending the form means they asked us to get in touch.
+          consent: true,
           message: String(data.message ?? "").trim() || `Inquiry from the ${slug} landing page.`,
           property: propertyTitle,
           propertyId,
@@ -93,21 +91,18 @@ export function LandingPageInquiryForm({
       <div className="mt-5 grid grid-cols-1 gap-4">
         <input type="text" name="company" tabIndex={-1} autoComplete="off" className="absolute -left-[9999px] h-0 w-0 opacity-0" aria-hidden="true" />
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-semibold text-ink">Name *</span>
-          <input type="text" name="name" required placeholder="Your name" className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary" />
+          <span className="font-semibold text-ink">Naam (Name) *</span>
+          <input type="text" name="name" required placeholder="Aap ka naam" className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary" />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-semibold text-ink">Phone *</span>
+          <span className="font-semibold text-ink">Phone / WhatsApp number *</span>
           <input type="tel" name="phone" required placeholder="03XX-XXXXXXX" className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary" />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-semibold text-ink">Message</span>
-          <textarea name="message" rows={3} placeholder="Tell us what you're looking for…" className="w-full resize-none rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary" />
+          <span className="font-semibold text-ink">Message (zaroori nahi)</span>
+          <textarea name="message" rows={2} placeholder="Area, size, kitna budget / kiraya…" className="w-full resize-none rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary" />
         </label>
-        <label className="flex items-start gap-2.5 text-xs text-muted">
-          <input type="checkbox" name="consent" required className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary" />
-          I agree to be contacted regarding this inquiry.
-        </label>
+        <p className="text-xs text-muted">Form bhejne par hamari team aap se phone ya WhatsApp par rabta karegi.</p>
       </div>
 
       <button
@@ -121,7 +116,7 @@ export function LandingPageInquiryForm({
       {error && <p className="mt-3 text-sm font-semibold text-primary">{error}</p>}
       {status === "success" && (
         <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-success">
-          <CheckCircle2 className="h-4 w-4" /> Thank you! We&apos;ll be in touch soon.
+          <CheckCircle2 className="h-4 w-4" /> Shukriya! Hum jald aap se rabta karenge.
         </p>
       )}
     </form>

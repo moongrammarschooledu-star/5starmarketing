@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   MapPin,
   Handshake,
+  MessageCircle,
 } from "lucide-react";
 import { leadService } from "@/services/leadService";
 import { requireSection } from "@/lib/guard";
@@ -21,8 +22,9 @@ import { formatDateOnlyShort } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLeadsPage() {
+export default async function AdminLeadsPage({ searchParams }: { searchParams: Promise<{ added?: string }> }) {
   await requireSection("leads");
+  const added = (await searchParams).added === "1";
   let stats = {
     total: 0,
     new: 0,
@@ -63,10 +65,26 @@ export default async function AdminLeadsPage() {
 
   return (
     <div>
-      <h1 className="font-heading text-2xl font-extrabold text-ink">Lead Management</h1>
-      <p className="mt-1 text-sm text-muted">
-        Every property inquiry, WhatsApp click and contact-form submission, in one CRM.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-2xl font-extrabold text-ink">Lead Management</h1>
+          <p className="mt-1 text-sm text-muted">
+            Every property inquiry, WhatsApp click and contact-form submission, in one CRM.
+          </p>
+        </div>
+        <Link
+          href="/admin/leads/new"
+          className="inline-flex items-center gap-2 rounded-full bg-success px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:opacity-90"
+        >
+          <MessageCircle className="h-4 w-4" /> WhatsApp chat se lead banayein
+        </Link>
+      </div>
+
+      {added && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-success/30 bg-success/5 px-4 py-3 text-sm font-semibold text-success">
+          <CheckCircle2 className="h-4 w-4 shrink-0" /> Lead save ho gayi. Neeche list mein dekh lein.
+        </div>
+      )}
 
       {loadError && (
         <div className="mt-6 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">

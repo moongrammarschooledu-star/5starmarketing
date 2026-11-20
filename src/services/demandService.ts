@@ -12,8 +12,8 @@ import {
 import type { DemandInput, DemandPriority, DemandPurpose, DemandStatus, PropertyDemand } from "@/lib/models/demand";
 import type { Property, PropertyType } from "@/lib/models/property";
 
-const PURPOSE_TO_DB: Record<DemandPurpose, string> = { "For Sale": "sale", "For Rent": "rent" };
-const PURPOSE_FROM_DB: Record<string, DemandPurpose> = { sale: "For Sale", rent: "For Rent" };
+const PURPOSE_TO_DB: Record<DemandPurpose, string> = { "For Sale": "sale", "For Rent": "rent", "For Girvi": "girvi" };
+const PURPOSE_FROM_DB: Record<string, DemandPurpose> = { sale: "For Sale", rent: "For Rent", girvi: "For Girvi" };
 const STATUS_FROM_DB: Record<string, DemandStatus> = { open: "Open", matched: "Matched", closed: "Closed", lost: "Lost" };
 const PRIORITY_FROM_DB: Record<string, DemandPriority> = { low: "Low", normal: "Normal", high: "High", urgent: "Urgent" };
 

@@ -64,7 +64,7 @@ export function defaultSaleData(): SaleAgreementData {
   return {
     language: "ur",
     paper: "plain",
-    pageSize: "legal",
+    pageSize: "a4",
     agreementDate: today.toISOString().slice(0, 10),
     place: "Lahore",
     placeUr: "",
@@ -97,7 +97,7 @@ export function normalizeSaleData(input: Partial<SaleAgreementData> | null | und
     ...x,
     language: x.language === "en" ? "en" : "ur",
     paper: x.paper === "stamp" ? "stamp" : "plain",
-    pageSize: x.pageSize === "a4" ? "a4" : "legal",
+    pageSize: x.paper === "stamp" ? "legal" : "a4",
     seller: { ...d.seller, ...(x.seller ?? {}) },
     buyer: { ...d.buyer, ...(x.buyer ?? {}) },
     property: { ...d.property, ...(x.property ?? {}) },

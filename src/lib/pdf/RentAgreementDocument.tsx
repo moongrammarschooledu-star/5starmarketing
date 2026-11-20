@@ -110,7 +110,7 @@ export function RentAgreementDocument({ data, agreementNo, printedOn }: { data: 
 
   return (
     <Document title={`Rent Agreement${agreementNo ? ` ${agreementNo}` : ""}`} author={site.fullName}>
-      <Page size="A4" style={stamp ? s.pageStamp : s.pagePlain}>
+      <Page size={stamp ? "LEGAL" : "A4"} style={stamp ? s.pageStamp : s.pagePlain}>
         {!stamp && (
           <View style={s.header} fixed>
             <Image src={LOGO_DATA_URI} style={s.logo} />

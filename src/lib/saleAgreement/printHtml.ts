@@ -18,29 +18,22 @@ export function renderSaleHtml(data: SaleAgreementData, agreementNo?: string): s
   const t = (text: string) => (lang === "ur" ? ltrHtml(text, escHtml) : escHtml(text));
 
 
-  const sig = (en: string, ur: string, name: string, nameUr: string, cnic: string) =>
-    `<div><div class="lbl">${lang === "ur" ? ur : en}</div><div class="sigline"></div>${pick(name, nameUr) ? `<div class="nm">${t(pick(name, nameUr))}</div>` : ""}${cnic.trim() ? `<div class="cn">CNIC: ${escHtml(cnic.trim())}</div>` : ""}</div>`;
-  const thumb = `<div><div class="thumb"></div><div class="cap">${lang === "ur" ? "انگوٹھا" : "Thumb impression"}</div></div>`;
+  const sig = (en: string, ur: string, name: string, nameUr: string, cnic: string, witness = false) =>
+    `<div><div class="lbl">${lang === "ur" ? (witness ? ur : "العبد") : en}</div><div class="sigline"></div>${pick(name, nameUr) ? `<div class="nm"><b>${t(pick(name, nameUr))}</b>${lang === "ur" && !witness ? ` (${ur})` : ""}</div>` : ""}${cnic.trim() ? `<div class="cn">${lang === "ur" ? "شناختی کارڈ نمبر:" : "CNIC:"} <span class="ltr">${escHtml(cnic.trim())}</span></div>` : ""}</div>`;
   const w = data.witnesses;
-  const page = PAGES[data.pageSize === "a4" ? "a4" : "legal"];
+  const page = PAGES[stamp ? "legal" : "a4"];
   const rows: (string | { html: string; keep: boolean })[] = [];
   if (stamp) rows.push('<div class="stampspace"></div>');
-  rows.push({ keep: true, html: `<div class="title">${escHtml(c.title[lang])}</div>${agreementNo ? `<div class="ref">Agreement No. ${escHtml(agreementNo)}</div>` : ""}` });
+  rows.push({ keep: true, html: `<div class="title">${escHtml(c.title[lang])}</div>${agreementNo ? `<div class="ref"${lang === "ur" ? ` style="direction:rtl;text-align:left;font-size:10pt"` : ""}>${lang === "ur" ? "معاہدہ نمبر:" : "Agreement No."} <span class="ltr">${escHtml(agreementNo)}</span></div>` : ""}` });
   for (const p of c.intro) rows.push(`<p class="para">${t(p[lang])}</p>`);
   c.clauses.forEach((p, i) => rows.push(`<div class="clause"><span class="no">${i + 1}.</span><div class="txt">${t(p[lang])}</div></div>`));
   c.extra.forEach((x, i) => rows.push(`<div class="clause"><span class="no">${c.clauses.length + i + 1}.</span><div class="txt" dir="auto">${escHtml(x)}</div></div>`));
-  const note =
-    lang === "ur"
-      ? `یہ اقرار نامہ فریقین کی فراہم کردہ معلومات پر ${site.fullName} نے تیار کیا ہے۔ دستخط سے پہلے پورا اقرار نامہ پڑھ لیں۔`
-      : `Prepared by ${site.fullName} on the information given by the parties. Please read the whole agreement before signing.`;
 
   rows.push({ keep: true, html: `<p class="closing">${t(c.closing[lang])}</p>
   <div class="signs">
-    <div class="row2">${thumb}${thumb}</div>
-    <div class="row2">${sig("Seller (First Party)", "فریقِ اول (فروخت کنندہ)", data.seller.name, data.seller.nameUr, data.seller.cnic)}${sig("Buyer (Second Party)", "فریقِ دوم (خریدار)", data.buyer.name, data.buyer.nameUr, data.buyer.cnic)}</div>
-    <div class="row2">${sig("Witness 1", "گواہ شد (1)", w[0]?.name ?? "", w[0]?.nameUr ?? "", w[0]?.cnic ?? "")}${sig("Witness 2", "گواہ شد (2)", w[1]?.name ?? "", w[1]?.nameUr ?? "", w[1]?.cnic ?? "")}</div>
-    ${data.commissionPercent > 0 ? `<div class="row2">${sig(`For ${site.name} (Dealer)`, `برائے ${site.name} (ڈیلر)`, "", "", "")}<div></div></div>` : ""}
-    <div class="note">${escHtml(note)}</div>
+    <div class="row2">${sig("Seller (First Party)", "فروخت کنندہ", data.seller.name, data.seller.nameUr, data.seller.cnic)}${sig("Buyer (Second Party)", "خریدار", data.buyer.name, data.buyer.nameUr, data.buyer.cnic)}</div>
+    <div class="row2 wit">${sig("Witness 1", "گواہ شد (1)", w[0]?.name ?? "", w[0]?.nameUr ?? "", w[0]?.cnic ?? "", true)}${sig("Witness 2", "گواہ شد (2)", w[1]?.name ?? "", w[1]?.nameUr ?? "", w[1]?.cnic ?? "", true)}</div>
+    ${data.commissionPercent > 0 ? `<div class="row2">${sig(`For ${site.name} (Dealer)`, "ڈیلر", site.fullName, site.fullNameUr, "")}<div></div></div>` : ""}
   </div>` });
 
   return `<!doctype html>
@@ -54,14 +47,16 @@ export function renderSaleHtml(data: SaleAgreementData, agreementNo?: string): s
 <body class="lang-${lang} paper-${data.paper}">
 <div class="bar" dir="ltr">
   <button type="button" id="print-btn">Print / Save as PDF</button>
+  <a href="docx" title="Download the same agreement as an editable Word file">Word (.docx)</a>
   <a href="javascript:history.back()">Back</a>
-  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), paper ${data.pageSize === "a4" ? "A4" : "Legal"}, turn ON &ldquo;Background graphics&rdquo;. ${stamp ? "The top of the first page is left empty for the stamp." : "The company letterhead is printed at the top of every page."}</small>
+  <small>In the print window: choose your printer (or &ldquo;Save as PDF&rdquo;), paper ${stamp ? "Legal" : "A4"}, turn ON &ldquo;Background graphics&rdquo;. ${stamp ? "The top of the first page is left empty for the stamp." : "The company letterhead is printed at the top of every page."}</small>
 </div>
 <div class="page" dir="${dir}">
-${docTableHtml({ head: stamp ? '<div class="stamptop"></div>' : letterheadHtml(), rows, footer: footerHtml(agreementNo) })}
+${stamp ? "" : '<div class="frame"></div>'}
+${docTableHtml({ head: stamp ? '<div class="stamptop"></div>' : letterheadHtml(lang), rows, footer: footerHtml(agreementNo ? (lang === "ur" ? `معاہدہ نمبر <span class="ltr">${escHtml(agreementNo)}</span>` : agreementNo) : undefined, lang) })}
 </div>
 <script>document.getElementById("print-btn").addEventListener("click", function () { window.print(); });</script>
-${fitScript(page.h, 2, 0.8)}
+${fitScript(page.h, 2, 0.55)}
 </body>
 </html>`;
 }

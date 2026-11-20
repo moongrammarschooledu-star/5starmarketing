@@ -1,6 +1,6 @@
 import { site } from "@/lib/site";
 import type { Property } from "@/lib/models/property";
-import type { PropertyDemand } from "@/lib/models/demand";
+import { demandPurposeWord, type PropertyDemand } from "@/lib/models/demand";
 import type { RentalProperty } from "@/lib/models/rental";
 import type { OwnerDetails } from "@/lib/models/ownerDetails";
 import { describeBudget, describeSize } from "@/lib/demandText";
@@ -103,7 +103,7 @@ export function demandSheet(d: PropertyDemand, matches: DemandMatchLine[]): Shee
   add(client, "WhatsApp", d.clientWhatsapp);
 
   const wants: SheetPoint[] = [];
-  add(wants, "Wants to", d.purpose === "For Sale" ? "Buy" : "Rent");
+  add(wants, "Wants to", demandPurposeWord(d.purpose));
   add(wants, "Property type", d.propertyTypes.length ? d.propertyTypes.join(", ") : "Any type");
   add(wants, "Areas", d.locations.length ? d.locations.join(", ") : "Anywhere");
   add(wants, "Budget", describeBudget(d));
@@ -134,7 +134,7 @@ export function demandSheet(d: PropertyDemand, matches: DemandMatchLine[]): Shee
   }
 
   return {
-    kind: `CLIENT DEMAND (${d.purpose === "For Sale" ? "BUY" : "RENT"}) - OFFICE RECORD`,
+    kind: `CLIENT DEMAND (${demandPurposeWord(d.purpose).toUpperCase()}) - OFFICE RECORD`,
     title: clean(d.clientName),
     recordNo: d.serialNo,
     sections,

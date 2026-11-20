@@ -92,7 +92,7 @@ export function defaultAgreementData(): RentAgreementData {
   return {
     language: "ur",
     paper: "plain",
-    pageSize: "legal",
+    pageSize: "a4",
     agreementDate: today,
     place: "Lahore",
     placeUr: "",
@@ -126,13 +126,38 @@ export function normalizeAgreementData(input: Partial<RentAgreementData> | null 
     ...x,
     // (an older draft could say "both"; that option no longer exists)
     language: x.language === "en" ? "en" : "ur",
-    pageSize: x.pageSize === "a4" ? "a4" : "legal",
+    // company letterhead = A4, stamp paper = Legal (the page size always follows the paper)
+    pageSize: x.paper === "stamp" ? "legal" : "a4",
     owner: { ...d.owner, ...(x.owner ?? {}) },
     tenant: { ...d.tenant, ...(x.tenant ?? {}) },
     property: { ...d.property, ...(x.property ?? {}) },
     options: { ...d.options, ...(x.options ?? {}) },
     witnesses: [0, 1].map((i) => ({ name: x.witnesses?.[i]?.name ?? "", nameUr: x.witnesses?.[i]?.nameUr ?? "", cnic: x.witnesses?.[i]?.cnic ?? "" })),
   };
+}
+
+/** What is typed only in English although the agreement is in Urdu - it would print in English inside the Urdu page. */
+export function urduGaps(d: RentAgreementData): string[] {
+  const out: string[] = [];
+  const miss = (label: string, en: string, ur: string) => {
+    if (en.trim() && !ur.trim()) out.push(label);
+  };
+  const party = (who: string, p: AgreementParty) => {
+    miss(`${who} name`, p.name, p.nameUr);
+    miss(`${who} father/husband name`, p.relationName, p.relationNameUr);
+    miss(`${who} address`, p.address, p.addressUr);
+  };
+  party("Owner", d.owner);
+  party("Tenant", d.tenant);
+  const pr = d.property;
+  miss("Property description", pr.description, pr.descriptionUr);
+  miss("Area / locality", pr.area, pr.areaUr);
+  if (!/^lahore$/i.test(pr.city.trim())) miss("City", pr.city, pr.cityUr);
+  miss("Property size", pr.size, pr.sizeUr);
+  miss("Facilities", pr.facilities, pr.facilitiesUr);
+  if (d.place.trim() && !/^lahore$/i.test(d.place.trim())) miss("Place", d.place, d.placeUr);
+  d.witnesses.forEach((w, i) => miss(`Witness ${i + 1} name`, w.name, w.nameUr));
+  return out;
 }
 
 /** Why an agreement cannot be made yet (empty when it is complete enough to print). */
@@ -148,5 +173,10 @@ export function agreementProblems(d: RentAgreementData): string[] {
   if (!(d.monthlyRent > 0)) out.push("Monthly rent is required.");
   if (!d.startDate) out.push("Start date is required.");
   if (!(d.termMonths >= 1)) out.push("Agreement duration is required.");
+  // An Urdu agreement must be Urdu all through: anything typed only in English would print in English.
+  if (d.language === "ur") {
+    const gaps = urduGaps(d);
+    if (gaps.length) out.push(`Write these in Urdu too (the Urdu boxes), so the agreement is all Urdu: ${gaps.join(", ")}.`);
+  }
   return out;
 }

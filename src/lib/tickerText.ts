@@ -37,7 +37,7 @@ export function publicDemandLine(row: PublicDemandRow): string {
   const where = (row.locations ?? []).map((l) => l.trim()).filter(Boolean).slice(0, 3);
   const budget = range(num(row.budget_min), num(row.budget_max), formatPrice);
 
-  const parts = [`${[sizeText, what].filter(Boolean).join(" ")} ${row.purpose === "rent" ? "on rent" : "to buy"}`];
+  const parts = [`${[sizeText, what].filter(Boolean).join(" ")} ${row.purpose === "rent" ? "on rent" : row.purpose === "girvi" ? "on girvi" : "to buy"}`];
   if (where.length) parts[0] += ` in ${where.join(" / ")}`;
   if (row.min_bedrooms) parts[0] += ` (${row.min_bedrooms}+ bedrooms)`;
   if (budget) parts.push(`budget ${budget}`);

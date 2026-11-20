@@ -5,6 +5,7 @@ import { ArrowLeft, Check, AlertTriangle, ExternalLink, FileDown, Pencil, Phone,
 import { demandService } from "@/services/demandService";
 import { requireSection } from "@/lib/guard";
 import { describeBudget, describeSize } from "@/lib/demandText";
+import { demandPurposeWord } from "@/lib/models/demand";
 import { DemandStatusControl } from "@/components/admin/DemandStatusControl";
 import { DemandShareButton } from "@/components/admin/DemandShareButton";
 import { DemandConfirmSend } from "@/components/admin/DemandConfirmSend";
@@ -142,7 +143,7 @@ export default async function DemandDetailPage({
         <div className="space-y-6 lg:col-span-1">
           <div className="space-y-3 rounded-2xl border border-border bg-surface p-5">
             <h2 className="font-heading text-base font-bold text-ink">Looking for</h2>
-            <Row label="Wants to">{demand.purpose === "For Sale" ? "Buy" : "Rent"}</Row>
+            <Row label="Wants to">{demandPurposeWord(demand.purpose)}</Row>
             <Row label="Type">{demand.propertyTypes.length ? demand.propertyTypes.join(", ") : "Any type"}</Row>
             <Row label="Areas">{demand.locations.length ? demand.locations.join(", ") : "Anywhere"}</Row>
             <Row label="Budget">{describeBudget(demand)}</Row>

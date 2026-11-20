@@ -8,6 +8,9 @@ export const site = {
   websiteUrl: "https://5starmestate.com",
   name: "5STAR.M",
   fullName: "5STAR.M Estate & Builders",
+  // Urdu forms of the name and address, for printed Urdu documents (no English in an Urdu page).
+  fullNameUr: "فائیو سٹار ایم ایسٹیٹ اینڈ بلڈرز",
+  addressUr: "1037-E-1 جوہر ٹاؤن، لاہور",
   tagline: "NOW YOU WILL DREAM",
   taglineSecondary: "WE WILL FULFILL IT",
   taglineFull: "NOW YOU WILL DREAM — WE WILL FULFILL IT",

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const purpose = url.searchParams.get("purpose");
-  const which = purpose === "buy" || purpose === "rent" ? purpose : "all";
+  const which = purpose === "buy" || purpose === "rent" || purpose === "girvi" ? purpose : "all";
   const waitingOnly = url.searchParams.get("status") !== "all";
 
   const all = await demandService.list();
@@ -57,6 +57,7 @@ export async function GET(request: Request) {
   const groupDefs = [
     { heading: "WANT TO BUY", key: "buy", match: (d: PropertyDemand) => d.purpose === "For Sale" },
     { heading: "WANT TO RENT", key: "rent", match: (d: PropertyDemand) => d.purpose === "For Rent" },
+    { heading: "WANT ON GIRVI", key: "girvi", match: (d: PropertyDemand) => d.purpose === "For Girvi" },
   ];
   const groups: TableListGroup[] = groupDefs
     .filter((g) => which === "all" || g.key === which)
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
     .filter((g) => g.rows.length > 0);
 
   const total = groups.reduce((s, g) => s + g.rows.length, 0);
-  const subtitle = `${which === "all" ? "Buy and rent" : which === "buy" ? "Buy only" : "Rent only"}  |  ${waitingOnly ? "Still waiting (open or matched)" : "All demands"}  |  ${total} demands`;
+  const subtitle = `${which === "all" ? "Buy, rent and girvi" : which === "buy" ? "Buy only" : which === "rent" ? "Rent only" : "Girvi only"}  |  ${waitingOnly ? "Still waiting (open or matched)" : "All demands"}  |  ${total} demands`;
   const printedOn = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Karachi" });
 
   const buffer = await renderToBuffer(

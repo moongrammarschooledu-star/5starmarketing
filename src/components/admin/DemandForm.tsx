@@ -107,7 +107,7 @@ export function DemandForm({
             <select name="purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} className={inputClass}>
               {demandPurposes.map((p) => (
                 <option key={p} value={p}>
-                  {p === "For Sale" ? "Buy (For Sale)" : "Rent (For Rent)"}
+                  {p === "For Sale" ? "Buy (For Sale)" : p === "For Girvi" ? "Girvi (Rehan)" : "Rent (For Rent)"}
                 </option>
               ))}
             </select>

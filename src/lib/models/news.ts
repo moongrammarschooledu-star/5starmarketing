@@ -31,7 +31,7 @@ export interface TickerItem {
 
 /** The columns of the `public_demand_board` view - nothing identifying. */
 export interface PublicDemandRow {
-  purpose: "sale" | "rent";
+  purpose: "sale" | "rent" | "girvi";
   property_types: string[] | null;
   locations: string[] | null;
   budget_min: number | string | null;

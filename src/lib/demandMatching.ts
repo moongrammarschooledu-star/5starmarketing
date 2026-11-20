@@ -66,7 +66,8 @@ function locationMatches(wanted: string, haystack: string): boolean {
 export function matchPropertyToDemand(demand: PropertyDemand, property: Property): DemandMatch | null {
   if (property.status !== "Available") return null;
 
-  const purposeOk = property.purpose === demand.purpose || (demand.purpose === "For Sale" && property.purpose === "Investment");
+  // (a girvi demand is not matched automatically: the properties are listed only for sale or rent)
+  const purposeOk = demand.purpose !== "For Girvi" && (property.purpose === demand.purpose || (demand.purpose === "For Sale" && property.purpose === "Investment"));
   if (!purposeOk) return null;
   if (demand.propertyTypes.length > 0 && !demand.propertyTypes.includes(property.type)) return null;
 

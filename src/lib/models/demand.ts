@@ -3,11 +3,17 @@ import type { PropertyType } from "./property";
 // A client's demand: what a customer who came to the office (or called) is
 // looking for. Private staff data - never shown on the public site.
 
-export type DemandPurpose = "For Sale" | "For Rent";
+/** "For Girvi" = the client wants a property on girvi (rehan / mortgage: a lump sum is paid to the owner and the property is lived in without monthly rent). */
+export type DemandPurpose = "For Sale" | "For Rent" | "For Girvi";
 export type DemandStatus = "Open" | "Matched" | "Closed" | "Lost";
 export type DemandPriority = "Low" | "Normal" | "High" | "Urgent";
 
-export const demandPurposes: DemandPurpose[] = ["For Sale", "For Rent"];
+export const demandPurposes: DemandPurpose[] = ["For Sale", "For Rent", "For Girvi"];
+
+/** What the client wants to do, in one word: Buy, Rent or Girvi. */
+export function demandPurposeWord(purpose: DemandPurpose): "Buy" | "Rent" | "Girvi" {
+  return purpose === "For Sale" ? "Buy" : purpose === "For Girvi" ? "Girvi" : "Rent";
+}
 export const demandStatuses: DemandStatus[] = ["Open", "Matched", "Closed", "Lost"];
 export const demandPriorities: DemandPriority[] = ["Low", "Normal", "High", "Urgent"];
 

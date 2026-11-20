@@ -31,9 +31,10 @@ export const PROPERTY_PRINT_CONFIG: PrintListConfig = {
 export const DEMAND_PRINT_CONFIG: PrintListConfig = {
   basePath: "/admin/demands/list-pdf",
   purposes: [
-    ["all", "Buy and rent"],
+    ["all", "Buy, rent and girvi"],
     ["buy", "Want to buy only"],
     ["rent", "Want to rent only"],
+    ["girvi", "Want on girvi only"],
   ],
   statuses: [
     ["waiting", "Still waiting (open or matched)"],

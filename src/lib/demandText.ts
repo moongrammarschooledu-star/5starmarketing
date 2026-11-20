@@ -1,4 +1,4 @@
-import type { PropertyDemand } from "./models/demand";
+import { demandPurposeWord, type PropertyDemand } from "./models/demand";
 import { formatMarla, formatPrice } from "./pkUnits";
 
 function range(min: number | undefined, max: number | undefined, show: (n: number) => string): string | null {
@@ -19,7 +19,7 @@ export function describeSize(d: PropertyDemand): string {
 /** "Buy - House, Flat - Johar Town, DHA - up to 1.5 Crore - 8 Marla - 3+ bedrooms" */
 export function describeDemand(d: PropertyDemand): string {
   const parts = [
-    d.purpose === "For Sale" ? "Buy" : "Rent",
+    demandPurposeWord(d.purpose),
     d.propertyTypes.length ? d.propertyTypes.join(", ") : "Any type",
     d.locations.length ? d.locations.join(", ") : "Anywhere",
     describeBudget(d),

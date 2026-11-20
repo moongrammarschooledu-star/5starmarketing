@@ -43,7 +43,7 @@ export function renderTokenHtml(data: TokenReceiptData, receiptNo?: string): str
     const receiver = pick(lang === "ur" ? data.receivedByUr : data.receivedBy, lang === "ur" ? data.receivedBy : "");
     return `<section class="copy">
   ${data.copies === 2 ? `<div class="tag">${escHtml(tag)}</div>` : ""}
-  ${letterheadHtml()}
+  ${letterheadHtml(lang)}
   <div class="title">${escHtml(c.title[lang])}</div>
   <div class="meta"><span>${receiptNo ? `Receipt No. ${escHtml(receiptNo)}` : ""}</span><span>Date: ${escHtml(fmtDate(data.receiptDate))}</span></div>
   <div class="amountbox">Rs. ${escHtml(Math.round(data.amount).toLocaleString("en-IN"))}/-</div>

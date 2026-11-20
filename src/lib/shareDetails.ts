@@ -1,6 +1,6 @@
 import { site } from "@/lib/site";
 import type { Property } from "@/lib/models/property";
-import type { PropertyDemand } from "@/lib/models/demand";
+import { demandPurposeWord, type PropertyDemand } from "@/lib/models/demand";
 import { describeBudget, describeSize } from "@/lib/demandText";
 
 // Builds the "please check these details" WhatsApp / SMS text that is sent
@@ -86,7 +86,7 @@ export const PROPERTY_CONFIRM_TEXT =
 export function demandShareLines(d: PropertyDemand): string[] {
   const lines: string[] = [];
   if (d.serialNo) lines.push(`Ref: ${d.serialNo}`);
-  lines.push(`You want to: ${d.purpose === "For Sale" ? "Buy" : "Rent"}`);
+  lines.push(`You want to: ${demandPurposeWord(d.purpose)}`);
   lines.push(`Property type: ${d.propertyTypes.length ? d.propertyTypes.join(", ") : "Any type"}`);
   lines.push(`Areas: ${d.locations.length ? d.locations.join(", ") : "Anywhere"}`);
   lines.push(`Budget: ${describeBudget(d)}`);

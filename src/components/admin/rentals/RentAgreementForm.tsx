@@ -78,7 +78,7 @@ export function RentAgreementForm({
     });
   }
 
-  function save(then: "print" | "download" | "none") {
+  function save(then: "print" | "download" | "word" | "none") {
     setError(null);
     const problems = agreementProblems(d);
     if (problems.length) return setError(problems[0]);
@@ -93,6 +93,14 @@ export function RentAgreementForm({
           const a = document.createElement("a");
           a.href = `/admin/rentals/agreements/${saved.id}/pdf`;
           a.download = `rent-agreement-${saved.agreementNo}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+        if (then === "word") {
+          const a = document.createElement("a");
+          a.href = `/admin/rentals/agreements/${saved.id}/docx`;
+          a.download = `rent-agreement-${saved.agreementNo}.docx`;
           document.body.appendChild(a);
           a.click();
           a.remove();
@@ -143,18 +151,13 @@ export function RentAgreementForm({
               <option value="en">English - the whole agreement in English</option>
             </select>
           </Field>
-          <Field label="Paper" hint={d.paper === "stamp" ? "The top of the first page is left empty for the stamp. Company details go in the footer." : "Prints with the company logo and details at the top."}>
-            <select value={d.paper} onChange={(e) => set({ paper: e.target.value as RentAgreementData["paper"] })} className={input}>
-              <option value="plain">Plain paper (with company letterhead)</option>
-              <option value="stamp">Stamp paper (leave space for the stamp)</option>
+          <Field label="Paper" hint={d.paper === "stamp" ? "Legal page. The top of the first page is left empty so it prints straight onto the stamp paper." : "A4 page. Prints with the company logo and details at the top of every page."}>
+            <select value={d.paper} onChange={(e) => set({ paper: e.target.value as RentAgreementData["paper"], pageSize: e.target.value === "stamp" ? "legal" : "a4" })} className={input}>
+              <option value="plain">Company letterhead paper (A4)</option>
+              <option value="stamp">Stamp paper (Legal, top left empty for the stamp)</option>
             </select>
           </Field>
-          <Field label="Page size" hint="Legal (8.5 x 14 in) is the usual size for agreements; the text is fitted into 2 pages.">
-            <select value={d.pageSize} onChange={(e) => set({ pageSize: e.target.value as RentAgreementData["pageSize"] })} className={input}>
-              <option value="legal">Legal (8.5 x 14 in)</option>
-              <option value="a4">A4</option>
-            </select>
-          </Field>
+
           <Field label="Agreement date">
             <input type="date" value={d.agreementDate} onChange={(e) => set({ agreementDate: e.target.value })} className={input} />
           </Field>
@@ -302,6 +305,9 @@ export function RentAgreementForm({
             <Download className="h-4 w-4" /> Save &amp; download PDF file
           </button>
         )}
+        <button type="button" onClick={() => save("word")} disabled={busy} className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-60">
+          <Download className="h-4 w-4" /> Save &amp; download Word (.docx)
+        </button>
         <button type="button" onClick={() => save("none")} disabled={busy} className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-60">
           <Save className="h-4 w-4" /> Save only
         </button>

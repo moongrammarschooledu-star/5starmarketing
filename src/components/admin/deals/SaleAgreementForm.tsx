@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Printer, Save, Trash2 } from "lucide-react";
+import { AlertCircle, Download, Loader2, Printer, Save, Trash2 } from "lucide-react";
 import { saleProblems, type CommissionBy, type CostsBy, type SaleAgreementData, type SaleKind } from "@/lib/saleAgreement/types";
 import type { AgreementParty } from "@/lib/rentAgreement/types";
 import { groupLakh, numberToWordsEn } from "@/lib/rentAgreement/words";
@@ -76,7 +76,7 @@ export function SaleAgreementForm({
     });
   }
 
-  function save(then: "print" | "none") {
+  function save(then: "print" | "word" | "none") {
     setError(null);
     const problems = saleProblems(d);
     if (problems.length) return setError(problems[0]);
@@ -87,6 +87,14 @@ export function SaleAgreementForm({
         const saved = await saveSaleAgreementAction(id ?? null, d, propertyId || undefined);
         toast.show("Agreement saved.");
         if (printTab) printTab.location.href = `/admin/deals/sale-agreements/${saved.id}/print`;
+        if (then === "word") {
+          const a = document.createElement("a");
+          a.href = `/admin/deals/sale-agreements/${saved.id}/docx`;
+          a.download = `sale-agreement-${saved.agreementNo}.docx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
         if (!id) router.push(`/admin/deals/sale-agreements/${saved.id}`);
         else router.refresh();
       } catch (e) {
@@ -121,18 +129,13 @@ export function SaleAgreementForm({
               <option value="en">English - the whole agreement in English</option>
             </select>
           </Field>
-          <Field label="Paper" hint={d.paper === "stamp" ? "The top of the first page is left empty for the stamp." : "Prints with the company logo and details at the top."}>
-            <select value={d.paper} onChange={(e) => set({ paper: e.target.value as SaleAgreementData["paper"] })} className={input}>
-              <option value="plain">Plain paper (with company letterhead)</option>
-              <option value="stamp">Stamp paper (leave space for the stamp)</option>
+          <Field label="Paper" hint={d.paper === "stamp" ? "Legal page. The top of the first page is left empty so it prints straight onto the stamp paper." : "A4 page. Prints with the company logo and details at the top of every page."}>
+            <select value={d.paper} onChange={(e) => set({ paper: e.target.value as SaleAgreementData["paper"], pageSize: e.target.value === "stamp" ? "legal" : "a4" })} className={input}>
+              <option value="plain">Company letterhead paper (A4)</option>
+              <option value="stamp">Stamp paper (Legal, top left empty for the stamp)</option>
             </select>
           </Field>
-          <Field label="Page size" hint="Legal (8.5 x 14 in) is the usual size for agreements; the text is fitted into 2 pages.">
-            <select value={d.pageSize} onChange={(e) => set({ pageSize: e.target.value as SaleAgreementData["pageSize"] })} className={input}>
-              <option value="legal">Legal (8.5 x 14 in)</option>
-              <option value="a4">A4</option>
-            </select>
-          </Field>
+
           <Field label="Agreement date">
             <input type="date" value={d.agreementDate} onChange={(e) => set({ agreementDate: e.target.value })} className={input} />
           </Field>
@@ -264,6 +267,9 @@ export function SaleAgreementForm({
       <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur">
         <button type="button" onClick={() => save("print")} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:opacity-60">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />} Save &amp; Print / Save as PDF
+        </button>
+        <button type="button" onClick={() => save("word")} disabled={busy} className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-60">
+          <Download className="h-4 w-4" /> Save &amp; download Word (.docx)
         </button>
         <button type="button" onClick={() => save("none")} disabled={busy} className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-60">
           <Save className="h-4 w-4" /> Save only

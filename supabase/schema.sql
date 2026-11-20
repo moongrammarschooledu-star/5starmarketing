@@ -11629,7 +11629,7 @@ create table if not exists public.property_demands (
   client_name text not null,
   client_phone text not null,
   client_whatsapp text,
-  purpose text not null default 'sale' check (purpose in ('sale', 'rent')),
+  purpose text not null default 'sale' check (purpose in ('sale', 'rent', 'girvi')),
   -- house / flat / residential_plot / commercial; empty array = any type
   property_types text[] not null default '{}',
   -- areas the client would accept, free text; empty array = anywhere

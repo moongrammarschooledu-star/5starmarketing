@@ -9,7 +9,7 @@ import { requireSection } from "@/lib/guard";
 import { StatCard } from "@/components/admin/StatCard";
 import { describeBudget, describeSize } from "@/lib/demandText";
 import { formatDateOnlyShort } from "@/lib/date";
-import { demandStatuses, type DemandStatus, type PropertyDemand } from "@/lib/models/demand";
+import { demandPurposeWord, demandStatuses, type DemandStatus, type PropertyDemand } from "@/lib/models/demand";
 
 export const metadata: Metadata = { title: "Demands" };
 export const dynamic = "force-dynamic";
@@ -119,7 +119,7 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
               return (
                 <tr
                   key={d.id}
-                  data-search={[d.clientName, d.clientPhone, d.clientWhatsapp, d.serialNo, d.purpose === "For Sale" ? "buy" : "rent", d.propertyTypes.join(" "), d.locations.join(" "), d.notes, d.status, d.assignedToName]
+                  data-search={[d.clientName, d.clientPhone, d.clientWhatsapp, d.serialNo, d.purpose === "For Sale" ? "buy" : d.purpose === "For Girvi" ? "girvi rehan" : "rent", d.propertyTypes.join(" "), d.locations.join(" "), d.notes, d.status, d.assignedToName]
                     .filter(Boolean)
                     .join(" ")
                     .toLowerCase()}
@@ -134,7 +134,7 @@ export default async function AdminDemandsPage({ searchParams }: { searchParams:
                   </td>
                   <td className="px-4 py-3 text-ink">
                     <div>
-                      {d.purpose === "For Sale" ? "Buy" : "Rent"} - {d.propertyTypes.length ? d.propertyTypes.join(", ") : "any type"}
+                      {demandPurposeWord(d.purpose)} - {d.propertyTypes.length ? d.propertyTypes.join(", ") : "any type"}
                     </div>
                     <div className="text-xs text-muted">{d.locations.length ? d.locations.join(", ") : "Anywhere"}</div>
                     {d.purpose === "For Rent" && d.familyMembers != null && <div className="text-xs text-muted">{d.familyMembers} family member{d.familyMembers === 1 ? "" : "s"}</div>}
